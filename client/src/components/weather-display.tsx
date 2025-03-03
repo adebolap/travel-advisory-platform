@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sun, Cloud, CloudRain, Wind, Droplets } from "lucide-react";
+import { Sun, Cloud, CloudRain, Wind, Droplets, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
+import { useState } from "react";
 
 interface WeatherData {
   weather: Array<{
@@ -46,6 +47,8 @@ interface WeatherDisplayProps {
 }
 
 export default function WeatherDisplay({ city }: WeatherDisplayProps) {
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
+
   const { data: currentWeather, isLoading: isLoadingCurrent, error: currentError } = useQuery<WeatherData>({
     queryKey: [`/api/weather/${encodeURIComponent(city)}`],
     enabled: Boolean(city)
@@ -121,8 +124,12 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
       <div>
         <h3 className="text-lg font-semibold mb-3">4-Day Forecast</h3>
         <div className="grid grid-cols-4 gap-3">
-          {dailyForecasts.map((day) => (
-            <Card key={day.dt} className="h-full">
+          {dailyForecasts.map((day, index) => (
+            <Card 
+              key={day.dt} 
+              className="h-full cursor-pointer transition-all duration-200 hover:shadow-md"
+              onClick={() => setExpandedDay(expandedDay === index ? null : index)}
+            >
               <CardContent className="p-4">
                 <div className="flex flex-col h-full">
                   <div className="text-center border-b border-border/50 pb-2">
@@ -138,14 +145,23 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 rounded-lg p-2 mt-auto">
-                    <div className="flex items-center justify-center gap-1">
+                  <div className="mt-auto">
+                    <div className="flex items-center justify-center gap-1 text-xs">
                       <Droplets className="h-3 w-3 text-blue-500" />
                       <span>{day.main.humidity}%</span>
                     </div>
-                    <div className="flex items-center justify-center gap-1 text-[10px]">
-                      <Wind className="h-3 w-3 text-blue-500" />
-                      <span>{day.wind.speed.toFixed(1)}m/s</span>
+
+                    {/* Expandable wind section */}
+                    <div className={`overflow-hidden transition-all duration-200 ${expandedDay === index ? 'max-h-8' : 'max-h-0'}`}>
+                      <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
+                        <Wind className="h-3 w-3" />
+                        <span>{day.wind.speed.toFixed(1)}m/s</span>
+                      </div>
+                    </div>
+
+                    {/* Expand indicator */}
+                    <div className="flex justify-center mt-2">
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedDay === index ? 'rotate-180' : ''}`} />
                     </div>
                   </div>
                 </div>
