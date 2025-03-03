@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { searchPreferenceSchema } from "@shared/schema";
 import axios from "axios";
+import { addMonths, format } from "date-fns";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
@@ -55,14 +56,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mock events API endpoint
+  // Enhanced events API endpoint
   apiRouter.get("/api/events/:city", async (req, res) => {
     const { city } = req.params;
-    const events = [
-      { id: 1, name: "Summer Festival", date: "2024-07-15", type: "festival" },
-      { id: 2, name: "Food Fair", date: "2024-08-20", type: "food" },
-      { id: 3, name: "Cultural Week", date: "2024-09-10", type: "culture" },
-    ];
+    const { date } = req.query;
+
+    // Generate events for 12 months from the selected date or current date
+    const startDate = date ? new Date(date as string) : new Date();
+    const events = [];
+
+    // Mock yearly events data
+    const eventTypes = ["festival", "concert", "exhibition", "sports", "food"];
+    const eventPrefixes = ["Annual", "International", "Local", "Traditional"];
+
+    for (let i = 0; i < 12; i++) {
+      const currentMonth = addMonths(startDate, i);
+      const numEvents = Math.floor(Math.random() * 3) + 2; // 2-4 events per month
+
+      for (let j = 0; j < numEvents; j++) {
+        const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+        const prefix = eventPrefixes[Math.floor(Math.random() * eventPrefixes.length)];
+        events.push({
+          id: events.length + 1,
+          name: `${prefix} ${city} ${eventType.charAt(0).toUpperCase() + eventType.slice(1)}`,
+          date: format(currentMonth, "yyyy-MM-dd"),
+          type: eventType,
+          description: `Experience the amazing ${eventType} scene in ${city}!`,
+          highlight: Math.random() > 0.7 // 30% chance of being a highlight event
+        });
+      }
+    }
+
+    // Sort events by date
+    events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
     res.json(events);
   });
 
