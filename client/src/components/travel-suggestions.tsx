@@ -66,15 +66,19 @@ export default function TravelSuggestions({ city, interests }: TravelSuggestions
           const Icon = suggestion.icon;
 
           return (
-            <Card key={interest} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="bg-primary/10 p-2 rounded-lg">
+            <Card key={interest} className="bg-card hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 p-2 rounded-lg shrink-0">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold">{suggestion.title}</h3>
+                  <div className="min-h-[90px] flex flex-col">
+                    <h3 className="text-base font-semibold mb-2">{suggestion.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {suggestion.suggestion}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-muted-foreground">{suggestion.suggestion}</p>
               </CardContent>
             </Card>
           );
