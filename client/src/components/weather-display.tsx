@@ -2,12 +2,22 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sun, Cloud, CloudRain } from "lucide-react";
 
+interface WeatherData {
+  weather: Array<{
+    main: string;
+    description: string;
+  }>;
+  main: {
+    temp: number;
+  };
+}
+
 interface WeatherDisplayProps {
   city: string;
 }
 
 export default function WeatherDisplay({ city }: WeatherDisplayProps) {
-  const { data: weather, isLoading } = useQuery({
+  const { data: weather, isLoading } = useQuery<WeatherData>({
     queryKey: ['/api/weather', city],
     enabled: !!city
   });

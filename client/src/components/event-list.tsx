@@ -1,14 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+interface Event {
+  id: number;
+  name: string;
+  date: string;
+  type: string;
+}
 
 interface EventListProps {
   city: string;
 }
 
 export default function EventList({ city }: EventListProps) {
-  const { data: events, isLoading } = useQuery({
+  const { data: events, isLoading } = useQuery<Event[]>({
     queryKey: ['/api/events', city],
     enabled: !!city
   });
@@ -21,7 +29,7 @@ export default function EventList({ city }: EventListProps) {
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Upcoming Events in {city}</h2>
       <div className="space-y-4">
-        {events?.map((event: any) => (
+        {events?.map((event) => (
           <Card key={event.id}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">{event.name}</CardTitle>
