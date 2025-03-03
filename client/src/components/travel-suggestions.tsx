@@ -10,17 +10,17 @@ const mockSuggestions = {
   shopping: {
     icon: ShoppingBag,
     title: "Shopping Hours",
-    suggestion: "Most shops are open 10AM-8PM, with late night shopping on Thursdays"
+    suggestion: "Most shops open 10AM-8PM, late night Thursdays"
   },
   nightlife: {
     icon: Moon,
     title: "Nightlife Scene",
-    suggestion: "Best venues are active from 10PM-3AM, peak days Thursday to Saturday"
+    suggestion: "Best venues active 10PM-3AM, peak Thu-Sat"
   },
   culture: {
     icon: Calendar,
     title: "Cultural Events",
-    suggestion: "Plan for July-August when most festivals happen"
+    suggestion: "Plan for July-August for festivals"
   },
   food: {
     icon: Sun,
@@ -35,22 +35,22 @@ const mockSuggestions = {
   budget: {
     icon: DollarSign,
     title: "Budget-Friendly Period",
-    suggestion: "Visit during off-season (November-February) for better deals"
+    suggestion: "Nov-Feb for better deals"
   },
   tips: {
     icon: Lightbulb,
     title: "Travel Tips",
-    suggestion: "Book accommodations 3 months in advance for best rates"
+    suggestion: "Book 3 months ahead for best rates"
   },
   local: {
     icon: Home,
     title: "Local Experience",
-    suggestion: "Join local community events every weekend in the city center"
+    suggestion: "Join weekend community events in city center"
   },
   transport: {
     icon: Train,
     title: "Transportation",
-    suggestion: "Public transport runs from 5AM to midnight, get a travel card for discounts"
+    suggestion: "5AM to midnight, get travel card for discounts"
   }
 };
 
@@ -72,9 +72,9 @@ export default function TravelSuggestions({ city, interests }: TravelSuggestions
                   <div className="bg-primary/10 p-2 rounded-lg shrink-0">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="min-h-[90px] flex flex-col">
-                    <h3 className="text-base font-semibold mb-2">{suggestion.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                  <div className="flex flex-col min-h-[60px]">
+                    <h3 className="text-sm font-semibold mb-1">{suggestion.title}</h3>
+                    <p className="text-xs text-muted-foreground">
                       {suggestion.suggestion}
                     </p>
                   </div>
