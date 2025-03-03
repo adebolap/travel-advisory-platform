@@ -86,8 +86,8 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
     }
   };
 
-  // Get one forecast per day (noon)
-  const dailyForecasts = forecast.list.filter((item, index) => index % 8 === 4).slice(0, 5);
+  // Get next 4 days forecast
+  const dailyForecasts = forecast.list.filter((item, index) => index % 8 === 4).slice(0, 4);
 
   return (
     <div className="space-y-4">
@@ -117,34 +117,36 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
         </CardContent>
       </Card>
 
-      {/* 5-Day Forecast - Rectangular Layout */}
+      {/* 4-Day Forecast */}
       <div>
-        <h3 className="text-lg font-semibold mb-3">5-Day Forecast</h3>
-        <div className="grid grid-cols-5 gap-2">
+        <h3 className="text-lg font-semibold mb-3">4-Day Forecast</h3>
+        <div className="grid grid-cols-4 gap-3">
           {dailyForecasts.map((day) => (
             <Card key={day.dt} className="h-full">
-              <CardContent className="p-3 flex flex-col justify-between h-full">
-                <div>
-                  <div className="text-center border-b border-border/50 pb-2 mb-3">
-                    <p className="text-sm font-medium">{format(new Date(day.dt * 1000), 'EEE')},</p>
+              <CardContent className="p-4">
+                <div className="flex flex-col h-full">
+                  <div className="text-center border-b border-border/50 pb-2">
+                    <p className="font-medium">{format(new Date(day.dt * 1000), 'EEE')}</p>
                     <p className="text-xs text-muted-foreground">{format(new Date(day.dt * 1000), 'MMM d')}</p>
                   </div>
-                  <div className="text-center space-y-2">
+
+                  <div className="flex flex-col items-center justify-center py-4 flex-grow">
                     {getWeatherIcon(day.weather[0].main)}
-                    <p className="text-xl font-bold">{Math.round(day.main.temp)}°C</p>
-                    <p className="text-xs text-muted-foreground h-8 flex items-center justify-center">
+                    <p className="text-2xl font-bold mt-2">{Math.round(day.main.temp)}°C</p>
+                    <p className="text-xs text-center text-muted-foreground mt-1 h-8 flex items-center">
                       {day.weather[0].description}
                     </p>
                   </div>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs bg-muted/30 rounded-lg p-2">
-                  <div className="flex items-center justify-center gap-1">
-                    <Droplets className="h-3 w-3 text-blue-500" />
-                    {day.main.humidity}%
-                  </div>
-                  <div className="flex items-center justify-center gap-1">
-                    <Wind className="h-3 w-3 text-blue-500" />
-                    {day.wind.speed}m/s
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 rounded-lg p-2 mt-auto">
+                    <div className="flex items-center justify-center gap-1">
+                      <Droplets className="h-3 w-3 text-blue-500" />
+                      {day.main.humidity}%
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <Wind className="h-3 w-3 text-blue-500" />
+                      {day.wind.speed}m/s
+                    </div>
                   </div>
                 </div>
               </CardContent>
