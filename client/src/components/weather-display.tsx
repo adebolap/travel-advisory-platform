@@ -141,11 +141,11 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
                   <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 rounded-lg p-2 mt-auto">
                     <div className="flex items-center justify-center gap-1">
                       <Droplets className="h-3 w-3 text-blue-500" />
-                      {day.main.humidity}%
+                      <span>{day.main.humidity}%</span>
                     </div>
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex items-center justify-center gap-1 text-[10px]">
                       <Wind className="h-3 w-3 text-blue-500" />
-                      {day.wind.speed}m/s
+                      <span>{day.wind.speed.toFixed(1)}m/s</span>
                     </div>
                   </div>
                 </div>
