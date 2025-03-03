@@ -23,6 +23,31 @@ interface EventListProps {
   city: string;
 }
 
+function EventSkeleton() {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5 rounded-full" />
+          <Skeleton className="h-6 w-48" />
+        </div>
+        <div className="flex items-center">
+          <Skeleton className="h-4 w-4 mr-2" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-4 w-full mb-4" />
+        <Skeleton className="h-4 w-3/4 mb-2" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function EventList({ city }: EventListProps) {
   const [dateRange, setDateRange] = useState<DateRange>();
 
@@ -32,7 +57,22 @@ export default function EventList({ city }: EventListProps) {
   });
 
   if (isLoading) {
-    return <Skeleton className="h-64 w-full" />;
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col space-y-4">
+          <h2 className="text-2xl font-bold">Events in {city}</h2>
+          <DatePicker 
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+          />
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <EventSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
