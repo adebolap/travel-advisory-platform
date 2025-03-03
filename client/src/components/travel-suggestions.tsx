@@ -49,8 +49,8 @@ const mockSuggestions = {
   },
   transport: {
     icon: Train,
-    title: "Transportation",
-    suggestion: "Public transport 5AM-midnight"
+    title: "Transport",
+    suggestion: "Public transport runs 5AM to midnight"
   }
 };
 
@@ -72,9 +72,9 @@ export default function TravelSuggestions({ city, interests }: TravelSuggestions
                   <div className="bg-primary/10 p-2 rounded-lg shrink-0">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="flex flex-col min-h-[60px]">
+                  <div className="flex flex-col min-h-[70px]">
                     <h3 className="text-sm font-semibold mb-1">{suggestion.title}</h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
                       {suggestion.suggestion}
                     </p>
                   </div>
