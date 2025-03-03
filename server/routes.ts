@@ -10,13 +10,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Weather API endpoint
   apiRouter.get("/weather/:city", async (req, res) => {
     const { city } = req.params;
+    if (!process.env.WEATHER_API_KEY) {
+      return res.status(500).json({ error: "Weather API key not configured" });
+    }
+
     try {
       const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.WEATHER_API_KEY}&units=metric`
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${process.env.WEATHER_API_KEY}&units=metric`
       );
       res.json(response.data);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch weather data" });
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        res.status(404).json({ error: "City not found" });
+      } else {
+        console.error("Weather API error:", error);
+        res.status(500).json({ error: "Failed to fetch weather data" });
+      }
     }
   });
 
