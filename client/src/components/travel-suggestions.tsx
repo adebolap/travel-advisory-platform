@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, DollarSign, Sun, Umbrella } from "lucide-react";
+import { Calendar, DollarSign, Sun, Umbrella, ShoppingBag, Moon } from "lucide-react";
 
 interface TravelSuggestionsProps {
   city: string;
@@ -7,6 +7,16 @@ interface TravelSuggestionsProps {
 }
 
 const mockSuggestions = {
+  shopping: {
+    icon: ShoppingBag,
+    title: "Shopping Hours",
+    suggestion: "Most shops are open 10AM-8PM, with late night shopping on Thursdays"
+  },
+  nightlife: {
+    icon: Moon,
+    title: "Nightlife Scene",
+    suggestion: "Best venues are active from 10PM-3AM, peak days Thursday to Saturday"
+  },
   budget: {
     icon: DollarSign,
     title: "Budget-Friendly Period",
