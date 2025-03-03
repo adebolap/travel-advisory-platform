@@ -16,6 +16,7 @@ export default function Explore() {
 
   const handleCitySelect = (selectedCity: string) => {
     setCity(selectedCity);
+    setSearchSubmitted(true); // Automatically trigger search when city is selected
   };
 
   const handleSearch = () => {
@@ -37,8 +38,12 @@ export default function Explore() {
                 <div className="flex-1">
                   <CitySearch onCitySelect={handleCitySelect} />
                 </div>
-                <Button onClick={handleSearch}>
-                  Search
+                <Button 
+                  onClick={handleSearch}
+                  disabled={!city} // Disable if no city selected
+                  variant="secondary"
+                >
+                  Update
                 </Button>
               </div>
             </div>
