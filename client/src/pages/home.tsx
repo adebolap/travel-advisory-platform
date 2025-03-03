@@ -43,7 +43,7 @@ export default function Home() {
         </div>
 
         <div className="text-center">
-          <Link href="/dashboard">
+          <Link href="/explore">
             <Button size="lg" className="gap-2">
               <FaPlane className="w-4 h-4" />
               Start Planning

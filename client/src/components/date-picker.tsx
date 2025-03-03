@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DateRange } from "react-day-picker";
+import { useState } from "react";
 
 interface DatePickerProps {
   dateRange: DateRange | undefined;
@@ -16,9 +17,21 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempRange, setTempRange] = useState<DateRange | undefined>(dateRange);
+
+  const handleSelect = (range: DateRange | undefined) => {
+    setTempRange(range);
+  };
+
+  const handleConfirm = () => {
+    onDateRangeChange(tempRange);
+    setIsOpen(false);
+  };
+
   return (
     <div className="grid gap-2">
-      <Popover>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
@@ -43,13 +56,29 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="range"
-            selected={dateRange}
-            onSelect={onDateRangeChange}
-            numberOfMonths={2}
-            initialFocus
-          />
+          <div className="space-y-3">
+            <Calendar
+              mode="range"
+              selected={tempRange}
+              onSelect={handleSelect}
+              numberOfMonths={2}
+              initialFocus
+            />
+            <div className="flex justify-end gap-2 p-3 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTempRange(dateRange);
+                  setIsOpen(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleConfirm}>
+                Confirm Dates
+              </Button>
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
     </div>
