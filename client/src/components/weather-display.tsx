@@ -81,14 +81,14 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
   const getWeatherIcon = (condition: string) => {
     switch (condition.toLowerCase()) {
       case 'clear':
-        return <Sun className="h-12 w-12 text-yellow-500" />;
+        return <Sun className="h-8 w-8 text-yellow-500" />;
       case 'clouds':
-        return <Cloud className="h-12 w-12 text-gray-500" />;
+        return <Cloud className="h-8 w-8 text-gray-500" />;
       case 'rain':
       case 'drizzle':
-        return <CloudRain className="h-12 w-12 text-blue-500" />;
+        return <CloudRain className="h-8 w-8 text-blue-500" />;
       default:
-        return <Sun className="h-12 w-12 text-yellow-500" />;
+        return <Sun className="h-8 w-8 text-yellow-500" />;
     }
   };
 
@@ -124,22 +124,27 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
       {/* 5-Day Forecast */}
       <div>
         <h3 className="text-xl font-semibold mb-4">5-Day Forecast</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {dailyForecasts.map((day) => (
-            <Card key={day.dt}>
-              <CardContent className="p-4 text-center">
-                <p className="font-medium mb-2">{format(new Date(day.dt * 1000), 'EEE, MMM d')}</p>
-                {getWeatherIcon(day.weather[0].main)}
-                <p className="text-xl font-bold mt-2">{Math.round(day.main.temp)}°C</p>
-                <p className="text-sm text-muted-foreground capitalize">{day.weather[0].description}</p>
-                <div className="mt-2 text-sm">
-                  <div className="flex items-center gap-1 justify-center">
+            <Card key={day.dt} className="overflow-hidden">
+              <CardContent className="p-3">
+                <div className="text-center">
+                  <p className="font-medium text-sm">{format(new Date(day.dt * 1000), 'EEE')}</p>
+                  <p className="text-xs text-muted-foreground">{format(new Date(day.dt * 1000), 'MMM d')}</p>
+                </div>
+                <div className="flex justify-center my-2">
+                  {getWeatherIcon(day.weather[0].main)}
+                </div>
+                <p className="text-xl font-bold text-center">{Math.round(day.main.temp)}°C</p>
+                <p className="text-xs text-center text-muted-foreground mb-2 capitalize">{day.weather[0].description}</p>
+                <div className="grid grid-cols-2 gap-1 text-xs">
+                  <div className="flex items-center justify-center gap-1 bg-muted/50 rounded p-1">
                     <Droplets className="h-3 w-3 text-blue-500" />
-                    <span>{day.main.humidity}%</span>
+                    {day.main.humidity}%
                   </div>
-                  <div className="flex items-center gap-1 justify-center">
+                  <div className="flex items-center justify-center gap-1 bg-muted/50 rounded p-1">
                     <Wind className="h-3 w-3 text-blue-500" />
-                    <span>{day.wind.speed} m/s</span>
+                    {day.wind.speed}m/s
                   </div>
                 </div>
               </CardContent>
