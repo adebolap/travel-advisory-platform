@@ -6,13 +6,13 @@ interface InterestSelectorProps {
 }
 
 const interests = [
-  { id: "budget", label: "Budget Travel", icon: "💰" },
+  { id: "shopping", label: "Shopping", icon: "🛍️" },
+  { id: "nightlife", label: "Nightlife", icon: "🌙" },
   { id: "culture", label: "Cultural Events", icon: "🎭" },
   { id: "food", label: "Food & Cuisine", icon: "🍜" },
   { id: "nature", label: "Nature & Outdoors", icon: "🏞️" },
-  { id: "nightlife", label: "Nightlife", icon: "🌙" },
-  { id: "shopping", label: "Shopping", icon: "🛍️" }
-];
+  { id: "budget", label: "Budget Travel", icon: "💰" }
+].sort((a, b) => a.label.localeCompare(b.label));
 
 export default function InterestSelector({ 
   selectedInterests,
@@ -34,7 +34,7 @@ export default function InterestSelector({
           <Badge
             key={id}
             variant={selectedInterests.includes(id) ? "default" : "outline"}
-            className="cursor-pointer text-sm py-2 px-3"
+            className="cursor-pointer text-sm py-2 px-3 hover:bg-primary/90 transition-colors"
             onClick={() => toggleInterest(id)}
           >
             {icon} {label}
