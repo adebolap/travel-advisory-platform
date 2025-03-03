@@ -69,8 +69,22 @@ export default function TravelSuggestions({ city, interests }: TravelSuggestions
             <Card key={interest} className="bg-card hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="bg-primary/10 p-2 rounded-lg shrink-0">
-                    <Icon className="h-5 w-5 text-primary" />
+                  <div className="relative">
+                    <div className="bg-primary/5 p-3 rounded-lg shrink-0">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    {/* Decorative curved line */}
+                    <svg
+                      className="absolute -right-2 -bottom-2 text-primary/10"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M4 12s3-3 6-3 6 3 6 3" />
+                    </svg>
                   </div>
                   <div className="flex flex-col min-h-[70px]">
                     <h3 className="text-sm font-semibold mb-1">{suggestion.title}</h3>
