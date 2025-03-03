@@ -117,30 +117,30 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
         </CardContent>
       </Card>
 
-      {/* 5-Day Forecast - Improved Grid Layout */}
+      {/* 5-Day Forecast - Rectangular Cards Layout */}
       <div>
         <h3 className="text-lg font-semibold mb-3">5-Day Forecast</h3>
         <div className="grid grid-cols-5 gap-2">
           {dailyForecasts.map((day) => (
             <Card key={day.dt} className="overflow-hidden">
-              <CardContent className="p-2">
-                <div className="text-center mb-1">
-                  <p className="font-medium text-sm">{format(new Date(day.dt * 1000), 'EEE')}</p>
+              <CardContent className="p-2 flex flex-col h-full">
+                <div className="text-center border-b pb-1 mb-2">
+                  <p className="font-medium">{format(new Date(day.dt * 1000), 'EEE')},</p>
                   <p className="text-xs text-muted-foreground">{format(new Date(day.dt * 1000), 'MMM d')}</p>
                 </div>
-                <div className="flex justify-center my-1">
+                <div className="flex flex-col items-center gap-1 flex-grow">
                   {getWeatherIcon(day.weather[0].main)}
+                  <p className="text-lg font-bold">{Math.round(day.main.temp)}°C</p>
+                  <p className="text-xs text-center text-muted-foreground min-h-[2.5em]">{day.weather[0].description}</p>
                 </div>
-                <p className="text-lg font-bold text-center">{Math.round(day.main.temp)}°C</p>
-                <p className="text-xs text-center text-muted-foreground mb-1 line-clamp-1">{day.weather[0].description}</p>
-                <div className="grid grid-cols-2 gap-1 text-xs">
-                  <div className="flex items-center justify-center gap-1 bg-muted/50 rounded p-1">
+                <div className="grid grid-cols-2 gap-1 text-xs mt-2 pt-2 border-t">
+                  <div className="flex items-center justify-center gap-1">
                     <Droplets className="h-3 w-3 text-blue-500" />
-                    {day.main.humidity}%
+                    <span>{day.main.humidity}%</span>
                   </div>
-                  <div className="flex items-center justify-center gap-1 bg-muted/50 rounded p-1">
+                  <div className="flex items-center justify-center gap-1">
                     <Wind className="h-3 w-3 text-blue-500" />
-                    {day.wind.speed}m/s
+                    <span>{day.wind.speed}m/s</span>
                   </div>
                 </div>
               </CardContent>
