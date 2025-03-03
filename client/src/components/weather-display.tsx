@@ -26,19 +26,27 @@ interface WeatherDisplayProps {
 
 export default function WeatherDisplay({ city }: WeatherDisplayProps) {
   const { data: weather, isLoading, error } = useQuery<WeatherData>({
-    queryKey: ['/api/weather', city],
-    enabled: !!city
+    queryKey: [`/api/weather/${encodeURIComponent(city)}`],
+    enabled: Boolean(city)
   });
 
   if (isLoading) {
-    return <Skeleton className="h-48 w-full" />;
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <Skeleton className="h-48 w-full" />
+        </CardContent>
+      </Card>
+    );
   }
 
   if (error) {
     return (
-      <div className="text-center text-destructive">
-        Error loading weather data
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center text-destructive">
+          Unable to load weather data. Please try again later.
+        </CardContent>
+      </Card>
     );
   }
 
