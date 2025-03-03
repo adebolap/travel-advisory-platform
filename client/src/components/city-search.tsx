@@ -6,17 +6,24 @@ interface CitySearchProps {
   onCitySelect: (city: string) => void;
 }
 
+// Extended list of cities including more European cities
 const popularCities = [
-  "Paris", "Tokyo", "New York", "London", "Barcelona",
-  "Rome", "Dubai", "Singapore", "Sydney", "Istanbul"
-];
+  "Amsterdam", "Antwerp", "Barcelona", "Berlin", "Brussels",
+  "Copenhagen", "Dubai", "Dublin", "Edinburgh", "Florence",
+  "Geneva", "Hamburg", "Istanbul", "London", "Madrid",
+  "Milan", "Munich", "New York", "Oslo", "Paris",
+  "Prague", "Rome", "Singapore", "Stockholm", "Sydney",
+  "Tokyo", "Venice", "Vienna", "Zurich"
+].sort();
 
 export default function CitySearch({ onCitySelect }: CitySearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredCities = popularCities.filter(city =>
-    city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCities = searchTerm
+    ? popularCities.filter(city =>
+        city.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : popularCities;
 
   return (
     <div className="space-y-4">
@@ -29,23 +36,21 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
           className="pl-9"
         />
       </div>
-      
-      {searchTerm && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {filteredCities.map((city) => (
-            <button
-              key={city}
-              onClick={() => {
-                onCitySelect(city);
-                setSearchTerm(city);
-              }}
-              className="p-2 text-sm rounded-md hover:bg-accent text-left"
-            >
-              {city}
-            </button>
-          ))}
-        </div>
-      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        {filteredCities.map((city) => (
+          <button
+            key={city}
+            onClick={() => {
+              onCitySelect(city);
+              setSearchTerm(city);
+            }}
+            className="p-2 text-sm rounded-md hover:bg-accent text-left truncate"
+          >
+            {city}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

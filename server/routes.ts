@@ -31,6 +31,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 5-day forecast endpoint
+  apiRouter.get("/api/forecast/:city", async (req, res) => {
+    const { city } = req.params;
+    if (!process.env.WEATHER_API_KEY) {
+      return res.status(500).json({ error: "Weather API key not configured" });
+    }
+
+    try {
+      console.log(`Fetching 5-day forecast for city: ${city}`);
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${process.env.WEATHER_API_KEY}&units=metric`
+      );
+      console.log(`Forecast data received for ${city}`);
+      res.json(response.data);
+    } catch (error: any) {
+      console.error("Forecast API error:", error.response?.data || error.message);
+      if (error.response?.status === 404) {
+        res.status(404).json({ error: "City not found" });
+      } else {
+        res.status(500).json({ error: "Failed to fetch forecast data" });
+      }
+    }
+  });
+
   // Mock events API endpoint
   apiRouter.get("/api/events/:city", async (req, res) => {
     const { city } = req.params;
