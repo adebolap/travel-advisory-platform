@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { DatePicker } from "./date-picker";
 import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 
 interface Event {
   id: number;
@@ -14,6 +15,8 @@ interface Event {
   type: string;
   description: string;
   highlight: boolean;
+  source?: string;
+  url?: string;
 }
 
 interface EventListProps {
@@ -21,10 +24,10 @@ interface EventListProps {
 }
 
 export default function EventList({ city }: EventListProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [dateRange, setDateRange] = useState<DateRange>();
 
   const { data: events, isLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events', city, selectedDate?.toISOString()],
+    queryKey: ['/api/events', city, dateRange?.from?.toISOString(), dateRange?.to?.toISOString()],
     enabled: !!city
   });
 
@@ -37,8 +40,8 @@ export default function EventList({ city }: EventListProps) {
       <div className="flex flex-col space-y-4">
         <h2 className="text-2xl font-bold">Events in {city}</h2>
         <DatePicker 
-          date={selectedDate}
-          onDateChange={setSelectedDate}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
         />
       </div>
 
@@ -59,12 +62,19 @@ export default function EventList({ city }: EventListProps) {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
-              <Badge 
-                variant={event.highlight ? "default" : "secondary"}
-                className="capitalize"
-              >
-                {event.type}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant={event.highlight ? "default" : "secondary"}
+                  className="capitalize"
+                >
+                  {event.type}
+                </Badge>
+                {event.source && (
+                  <span className="text-xs text-muted-foreground">
+                    Source: {event.source}
+                  </span>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
