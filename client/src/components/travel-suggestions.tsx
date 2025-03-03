@@ -35,7 +35,7 @@ const mockSuggestions = {
   budget: {
     icon: DollarSign,
     title: "Budget-Friendly Period",
-    suggestion: "Nov-Feb for better deals"
+    suggestion: "Visit during off-season (Nov-Feb)"
   },
   tips: {
     icon: Lightbulb,
@@ -45,12 +45,12 @@ const mockSuggestions = {
   local: {
     icon: Home,
     title: "Local Experience",
-    suggestion: "Join weekend community events in city center"
+    suggestion: "Weekend community events in city center"
   },
   transport: {
     icon: Train,
     title: "Transportation",
-    suggestion: "5AM to midnight, get travel card for discounts"
+    suggestion: "Public transport 5AM-midnight"
   }
 };
 
