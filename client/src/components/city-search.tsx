@@ -18,6 +18,7 @@ const popularCities = [
 
 export default function CitySearch({ onCitySelect }: CitySearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 
   const filteredCities = searchTerm
     ? popularCities.filter(city =>
@@ -32,24 +33,31 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
         <Input
           placeholder="Search for a city..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsDropdownVisible(true);
+          }}
+          onFocus={() => setIsDropdownVisible(true)}
+          onBlur={() => setTimeout(() => setIsDropdownVisible(false), 100)} // Added to close on blur
           className="pl-9"
         />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-        {filteredCities.map((city) => (
-          <button
-            key={city}
-            onClick={() => {
-              onCitySelect(city);
-              setSearchTerm(city);
-            }}
-            className="p-2 text-sm rounded-md hover:bg-accent text-left truncate"
-          >
-            {city}
-          </button>
-        ))}
+        {isDropdownVisible && (
+          <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-y-auto">
+            {filteredCities.map((city) => (
+              <button
+                key={city}
+                onClick={() => {
+                  onCitySelect(city);
+                  setSearchTerm(city);
+                  setIsDropdownVisible(false);
+                }}
+                className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
