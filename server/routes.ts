@@ -56,79 +56,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced events API endpoint with date range and personalization
+  // Enhanced events API endpoint with Ticketmaster integration
   apiRouter.get("/api/events/:city", async (req, res) => {
     const { city } = req.params;
-    const { from, to, interests } = req.query;
+    const { from, to, category } = req.query;
 
-    // Parse date range
-    const startDate = from ? parseISO(from as string) : new Date();
-    const endDate = to ? parseISO(to as string) : addMonths(startDate, 12);
+    if (!process.env.TICKETMASTER_API_KEY) {
+      return res.status(500).json({ error: "Ticketmaster API key not configured" });
+    }
 
     try {
-      // Initialize events array
-      let events = [];
+      // Format dates for Ticketmaster API
+      const startDate = from ? `${format(parseISO(from as string), "yyyy-MM-dd")}T00:00:00Z` : undefined;
+      const endDate = to ? `${format(parseISO(to as string), "yyyy-MM-dd")}T23:59:59Z` : undefined;
 
-      // Mock data for development - will be replaced with real scraping
-      const eventTypes = ["festival", "concert", "exhibition", "sports", "food"];
-      const eventPrefixes = ["Annual", "International", "Local", "Traditional"];
+      // Build Ticketmaster API query
+      const params = new URLSearchParams({
+        apikey: process.env.TICKETMASTER_API_KEY,
+        city: city,
+        sort: "date,asc",
+        ...(startDate && { startDateTime: startDate }),
+        ...(endDate && { endDateTime: endDate }),
+        ...(category && { classificationName: category as string }),
+      });
 
-      // Generate events for the date range
-      let currentDate = startDate;
-      while (currentDate <= endDate) {
-        const numEvents = Math.floor(Math.random() * 3) + 2; // 2-4 events per month
+      console.log(`Fetching events for ${city} from Ticketmaster`);
+      const response = await axios.get(
+        `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`
+      );
 
-        for (let j = 0; j < numEvents; j++) {
-          const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
-          const prefix = eventPrefixes[Math.floor(Math.random() * eventPrefixes.length)];
-
-          // Add more variety to event descriptions
-          const descriptions = [
-            `Experience the amazing ${eventType} scene in ${city}!`,
-            `Don't miss this incredible ${eventType} event in ${city}!`,
-            `Join locals and tourists at this popular ${city} ${eventType}!`,
-            `A must-visit ${eventType} celebration in the heart of ${city}!`
-          ];
-
-          events.push({
-            id: events.length + 1,
-            name: `${prefix} ${city} ${eventType.charAt(0).toUpperCase() + eventType.slice(1)}`,
-            date: format(currentDate, "yyyy-MM-dd"),
-            type: eventType,
-            description: descriptions[Math.floor(Math.random() * descriptions.length)],
-            highlight: Math.random() > 0.7, // 30% chance of being a highlight event
-            source: "Local Events Calendar", // Placeholder for real source
-            url: `https://example.com/events/${city.toLowerCase()}` // Placeholder for real URL
-          });
-        }
-
-        currentDate = addMonths(currentDate, 1);
-      }
-
-      // Sort events by date
-      events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-      // Filter events by date range if specified
-      if (from || to) {
-        events = events.filter(event => {
-          const eventDate = parseISO(event.date);
-          return isWithinInterval(eventDate, { start: startDate, end: endDate });
-        });
-      }
-
-      // If interests are specified, prioritize matching events
-      if (interests) {
-        const userInterests = (interests as string).split(',');
-        events = events.map(event => ({
-          ...event,
-          highlight: userInterests.includes(event.type) || event.highlight
-        }));
-      }
+      // Transform Ticketmaster events to our format
+      const events = response.data._embedded?.events?.map((event: any) => ({
+        id: event.id,
+        name: event.name,
+        date: event.dates.start.dateTime || event.dates.start.localDate,
+        type: event.classifications?.[0]?.segment?.name || "Other",
+        description: event.description || event.info || `${event.name} in ${city}`,
+        highlight: event.pleaseNote ? true : false,
+        source: "Ticketmaster",
+        url: event.url,
+        location: event._embedded?.venues?.[0]?.name,
+        category: event.classifications?.[0]?.segment?.name?.toLowerCase(),
+        price: event.priceRanges 
+          ? `$${event.priceRanges[0].min}-$${event.priceRanges[0].max}`
+          : "Price TBA",
+        culturalSignificance: event.pleaseNote || null,
+      })) || [];
 
       res.json(events);
-    } catch (error) {
-      console.error("Error generating events:", error);
-      res.status(500).json({ error: "Failed to generate events" });
+    } catch (error: any) {
+      console.error("Ticketmaster API error:", error.response?.data || error.message);
+      if (error.response?.status === 404) {
+        res.json([]); // Return empty array if no events found
+      } else {
+        res.status(500).json({ error: "Failed to fetch events" });
+      }
     }
   });
 
