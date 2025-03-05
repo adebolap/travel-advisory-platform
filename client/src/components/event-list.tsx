@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Star, Filter, ArrowUpDown, Bookmark } from "lucide-react";
+import { Calendar, Star, Filter, ArrowUpDown, Bookmark, Share2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { useState } from "react";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ShareButtons from "@/components/share-buttons";
 
 interface Event {
   id: number;
@@ -197,6 +198,12 @@ export default function EventList({ city, dateRange }: EventListProps) {
                 {event.name}
               </CardTitle>
               <div className="flex items-center gap-4">
+                <ShareButtons
+                  title={`Check out ${event.name} in ${city}!`}
+                  description={event.description}
+                  url={`${window.location.origin}/events/${event.id}`}
+                  compact
+                />
                 <Button
                   variant="ghost"
                   size="icon"
