@@ -9,6 +9,7 @@ import PackingListGenerator from "@/components/packing-list-generator";
 import ItineraryBuilder from "@/components/itinerary-builder";
 import CitySearch from "@/components/city-search";
 import WeatherDisplay from "@/components/weather-display";
+import EventList from "@/components/event-list";
 
 export default function Explore() {
   const [city, setCity] = useState("");
@@ -78,6 +79,10 @@ export default function Explore() {
               <TravelSuggestions 
                 city={city}
                 interests={interests}
+              />
+              <EventList 
+                city={city}
+                dateRange={dateRange}
               />
               <ItineraryBuilder
                 city={city}

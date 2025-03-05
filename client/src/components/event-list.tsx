@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Star, Filter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
-import { DatePicker } from "./date-picker";
+//import { DatePicker } from "./date-picker"; // Removed as date picker is now a prop
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ interface Event {
 
 interface EventListProps {
   city: string;
+  dateRange?: DateRange;
 }
 
 // Event categories with visual styling
@@ -63,8 +64,7 @@ function EventSkeleton() {
   );
 }
 
-export default function EventList({ city }: EventListProps) {
-  const [dateRange, setDateRange] = useState<DateRange>();
+export default function EventList({ city, dateRange }: EventListProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const { data: events, isLoading } = useQuery<Event[]>({
@@ -72,13 +72,13 @@ export default function EventList({ city }: EventListProps) {
     enabled: !!city
   });
 
-  const filteredEvents = events?.filter(event => 
+  const filteredEvents = events?.filter(event =>
     selectedCategories.length === 0 || selectedCategories.includes(event.category || 'other')
   );
 
   const toggleCategory = (category: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
+    setSelectedCategories(prev =>
+      prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
@@ -89,10 +89,7 @@ export default function EventList({ city }: EventListProps) {
       <div className="space-y-6">
         <div className="flex flex-col space-y-4">
           <h2 className="text-2xl font-bold">Events in {city}</h2>
-          <DatePicker 
-            dateRange={dateRange}
-            onDateRangeChange={setDateRange}
-          />
+          {/* DatePicker removed */}
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -107,10 +104,7 @@ export default function EventList({ city }: EventListProps) {
     <div className="space-y-6">
       <div className="flex flex-col space-y-4">
         <h2 className="text-2xl font-bold">Events in {city}</h2>
-        <DatePicker 
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-        />
+        {/* DatePicker removed */}
 
         {/* Category filters */}
         <div className="flex flex-wrap gap-2">
@@ -148,7 +142,7 @@ export default function EventList({ city }: EventListProps) {
               <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
               <div className="flex flex-wrap items-center gap-2">
                 {event.category && (
-                  <Badge 
+                  <Badge
                     variant="secondary"
                     className={`capitalize ${eventCategories[event.category as keyof typeof eventCategories]?.color || ''}`}
                   >
