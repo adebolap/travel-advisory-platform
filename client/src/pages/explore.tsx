@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
 import TravelSuggestions from "@/components/travel-suggestions";
+import BudgetEstimator from "@/components/budget-estimator";
 import CitySearch from "@/components/city-search";
 
 export default function Explore() {
@@ -40,7 +41,7 @@ export default function Explore() {
                 </div>
                 <Button 
                   onClick={handleSearch}
-                  disabled={!city} // Disable if no city selected
+                  disabled={!city}
                   variant="secondary"
                 >
                   Update
@@ -59,10 +60,17 @@ export default function Explore() {
       </Card>
 
       {searchSubmitted && city && (
-        <TravelSuggestions 
-          city={city}
-          interests={interests}
-        />
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <TravelSuggestions 
+              city={city}
+              interests={interests}
+            />
+          </div>
+          <div>
+            <BudgetEstimator city={city} />
+          </div>
+        </div>
       )}
     </div>
   );
