@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DollarSign, Plane, Bed, Utensils, MapPin } from "lucide-react";
+import { DateRange } from "react-day-picker";
+import { differenceInDays } from "date-fns";
 
 interface BudgetEstimatorProps {
   city: string;
   travelStyle?: string;
+  dateRange?: DateRange;
 }
 
 // Mock data for cost estimates (to be replaced with real data)
@@ -38,8 +41,16 @@ const travelStyleMultipliers: Record<string, number> = {
   "Family": 1.3
 };
 
-export default function BudgetEstimator({ city, travelStyle = "Cultural" }: BudgetEstimatorProps) {
+export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRange }: BudgetEstimatorProps) {
   const [days, setDays] = useState(7);
+
+  // Update days when dateRange changes
+  useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      const numberOfDays = differenceInDays(dateRange.to, dateRange.from) + 1;
+      setDays(numberOfDays);
+    }
+  }, [dateRange]);
 
   // Get base costs for the city or use defaults
   const baseCosts = cityBaseCosts[city] || defaultCosts;
@@ -76,6 +87,7 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural" }: Budg
               value={days}
               onChange={(e) => setDays(parseInt(e.target.value) || 1)}
               className="w-full"
+              disabled={!!dateRange?.from && !!dateRange?.to}
             />
           </div>
 

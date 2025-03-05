@@ -68,7 +68,10 @@ export default function Explore() {
             />
           </div>
           <div>
-            <BudgetEstimator city={city} />
+            <BudgetEstimator 
+              city={city} 
+              dateRange={dateRange}
+            />
           </div>
         </div>
       )}
