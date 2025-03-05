@@ -25,13 +25,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const geocodeResponse = await axios.get(geocodeUrl);
       console.log('Geocode response:', geocodeResponse.data);
 
+      if (geocodeResponse.data.status === 'REQUEST_DENIED') {
+        console.error('API Key error:', geocodeResponse.data.error_message);
+        return res.status(500).json({ 
+          error: "Google API key error",
+          details: geocodeResponse.data.error_message 
+        });
+      }
+
       if (!geocodeResponse.data.results?.[0]?.geometry?.location) {
         return res.status(404).json({ error: "City not found" });
       }
 
       const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
 
-      // Then, get attractions near this location with more place types
+      // Define place types to search for
       const placeTypes = [
         'tourist_attraction',
         'museum',
@@ -47,11 +55,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'shopping_mall'
       ];
 
-      const attractionsPromises = placeTypes.map(type =>
-        axios.get(
-          `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=10000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`
-        )
-      );
+      // Make parallel requests for each place type
+      const attractionsPromises = placeTypes.map(type => {
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=10000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`;
+        return axios.get(searchUrl)
+          .then(response => {
+            if (response.data.status === 'REQUEST_DENIED') {
+              throw new Error(response.data.error_message || 'Places API request denied');
+            }
+            return response;
+          });
+      });
 
       const responses = await Promise.all(attractionsPromises);
 
@@ -59,8 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const seenPlaceIds = new Set();
       const attractions = responses.flatMap(response =>
         (response.data.results || [])
-          .filter(place => !seenPlaceIds.has(place.place_id))
-          .map(place => {
+          .filter((place: any) => !seenPlaceIds.has(place.place_id))
+          .map((place: any) => {
             seenPlaceIds.add(place.place_id);
             return {
               id: place.place_id,
@@ -77,7 +91,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       console.log(`Found ${attractions.length} unique attractions in ${city}`);
-
       if (attractions.length === 0) {
         console.log('No attractions found. API responses:', responses.map(r => r.data));
       }
