@@ -26,6 +26,12 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
       )
     : popularCities;
 
+  const handleCitySelect = (city: string) => {
+    setSearchTerm(city);
+    onCitySelect(city);
+    setIsDropdownVisible(false);
+  };
+
   return (
     <div className="space-y-4">
       <div className="relative">
@@ -38,7 +44,10 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
             setIsDropdownVisible(true);
           }}
           onFocus={() => setIsDropdownVisible(true)}
-          onBlur={() => setTimeout(() => setIsDropdownVisible(false), 100)} //Added onBlur for better UX
+          onBlur={() => {
+            // Delay hiding the dropdown to allow click events to fire
+            setTimeout(() => setIsDropdownVisible(false), 200);
+          }}
           className="pl-9"
         />
         {isDropdownVisible && filteredCities.length > 0 && (
@@ -48,10 +57,9 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
             {filteredCities.map((city) => (
               <button
                 key={city}
-                onClick={() => {
-                  setSearchTerm(city);
-                  onCitySelect(city);
-                  setIsDropdownVisible(false);
+                onMouseDown={(e) => {
+                  e.preventDefault(); // Prevent blur from firing immediately
+                  handleCitySelect(city);
                 }}
                 className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors"
               >
