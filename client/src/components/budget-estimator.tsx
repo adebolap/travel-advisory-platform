@@ -1,4 +1,3 @@
-```typescript
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,13 +40,13 @@ const travelStyleMultipliers: Record<string, number> = {
 
 export default function BudgetEstimator({ city, travelStyle = "Cultural" }: BudgetEstimatorProps) {
   const [days, setDays] = useState(7);
-  
+
   // Get base costs for the city or use defaults
   const baseCosts = cityBaseCosts[city] || defaultCosts;
-  
+
   // Apply travel style multiplier
   const multiplier = travelStyleMultipliers[travelStyle] || 1.0;
-  
+
   const costs = {
     accommodation: Math.round(baseCosts.accommodation * multiplier * days),
     food: Math.round(baseCosts.food * multiplier * days),
@@ -125,4 +124,3 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural" }: Budg
     </Card>
   );
 }
-```
