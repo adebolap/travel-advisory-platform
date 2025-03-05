@@ -7,6 +7,7 @@ import TravelSuggestions from "@/components/travel-suggestions";
 import BudgetEstimator from "@/components/budget-estimator";
 import PackingListGenerator from "@/components/packing-list-generator";
 import CitySearch from "@/components/city-search";
+import WeatherDisplay from "@/components/weather-display";
 
 export default function Explore() {
   const [city, setCity] = useState("");
@@ -63,10 +64,13 @@ export default function Explore() {
       {searchSubmitted && city && (
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <TravelSuggestions 
-              city={city}
-              interests={interests}
-            />
+            <div className="space-y-8">
+              <WeatherDisplay city={city} />
+              <TravelSuggestions 
+                city={city}
+                interests={interests}
+              />
+            </div>
           </div>
           <div className="space-y-8">
             <BudgetEstimator 

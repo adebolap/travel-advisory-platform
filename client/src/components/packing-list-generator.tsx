@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Luggage, Sun, Umbrella, ThermometerSun } from "lucide-react";
+import { DateRange } from "react-day-picker";
 
 interface PackingListGeneratorProps {
   city: string;
