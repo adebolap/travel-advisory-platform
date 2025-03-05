@@ -73,17 +73,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build Ticketmaster API query
       const params = new URLSearchParams({
         apikey: process.env.TICKETMASTER_API_KEY,
-        city: city,
+        city,
+        size: "100", // Get more events
         sort: "date,asc",
         ...(startDate && { startDateTime: startDate }),
         ...(endDate && { endDateTime: endDate }),
         ...(category && { classificationName: category as string }),
       });
 
-      console.log(`Fetching events for ${city} from Ticketmaster`);
+      console.log(`Fetching events for ${city} from Ticketmaster API...`);
+      console.log(`API URL: https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`);
+
       const response = await axios.get(
         `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`
       );
+
+      console.log(`Ticketmaster API response status: ${response.status}`);
+      console.log(`Events found: ${response.data?._embedded?.events?.length || 0}`);
 
       // Transform Ticketmaster events to our format
       const events = response.data._embedded?.events?.map((event: any) => ({
@@ -106,10 +112,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(events);
     } catch (error: any) {
       console.error("Ticketmaster API error:", error.response?.data || error.message);
+      console.error("Full error details:", error);
+
       if (error.response?.status === 404) {
         res.json([]); // Return empty array if no events found
       } else {
-        res.status(500).json({ error: "Failed to fetch events" });
+        res.status(500).json({ 
+          error: "Failed to fetch events",
+          details: error.response?.data?.message || error.message
+        });
       }
     }
   });
