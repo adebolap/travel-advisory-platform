@@ -100,6 +100,46 @@ const cityBaseCosts: Record<string, {
     transport: 8,
     currency: "EUR",
     symbol: "€"
+  },
+  "Bangkok": {
+    accommodation: 2000,
+    food: 500,
+    activities: 800,
+    transport: 200,
+    currency: "THB",
+    symbol: "฿"
+  },
+  "Seoul": {
+    accommodation: 100000,
+    food: 30000,
+    activities: 40000,
+    transport: 10000,
+    currency: "KRW",
+    symbol: "₩"
+  },
+  "Mumbai": {
+    accommodation: 5000,
+    food: 1000,
+    activities: 1500,
+    transport: 500,
+    currency: "INR",
+    symbol: "₹"
+  },
+  "Istanbul": {
+    accommodation: 800,
+    food: 200,
+    activities: 300,
+    transport: 100,
+    currency: "TRY",
+    symbol: "₺"
+  },
+  "Mexico City": {
+    accommodation: 1500,
+    food: 400,
+    activities: 500,
+    transport: 150,
+    currency: "MXN",
+    symbol: "$"
   }
 };
 
