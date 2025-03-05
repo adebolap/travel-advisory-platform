@@ -6,6 +6,7 @@ import { DatePicker } from "@/components/date-picker";
 import TravelSuggestions from "@/components/travel-suggestions";
 import BudgetEstimator from "@/components/budget-estimator";
 import PackingListGenerator from "@/components/packing-list-generator";
+import ItineraryBuilder from "@/components/itinerary-builder";
 import CitySearch from "@/components/city-search";
 import WeatherDisplay from "@/components/weather-display";
 
@@ -77,6 +78,10 @@ export default function Explore() {
               <TravelSuggestions 
                 city={city}
                 interests={interests}
+              />
+              <ItineraryBuilder
+                city={city}
+                dateRange={dateRange}
               />
             </div>
           </div>
