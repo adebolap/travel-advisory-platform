@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
 import TravelSuggestions from "@/components/travel-suggestions";
 import BudgetEstimator from "@/components/budget-estimator";
+import PackingListGenerator from "@/components/packing-list-generator";
 import CitySearch from "@/components/city-search";
 
 export default function Explore() {
@@ -67,9 +68,13 @@ export default function Explore() {
               interests={interests}
             />
           </div>
-          <div>
+          <div className="space-y-8">
             <BudgetEstimator 
               city={city} 
+              dateRange={dateRange}
+            />
+            <PackingListGenerator
+              city={city}
               dateRange={dateRange}
             />
           </div>
