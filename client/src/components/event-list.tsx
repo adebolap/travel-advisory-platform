@@ -146,25 +146,28 @@ export default function EventList({ city, dateRange }: EventListProps) {
           <h2 className="text-2xl font-bold">Events in {city}</h2>
           <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by..." />
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-4 w-4" />
+                <SelectValue placeholder="Sort by..." />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="date">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>Date</span>
+                  <span>Sort by Date</span>
                 </div>
               </SelectItem>
               <SelectItem value="price">
                 <div className="flex items-center gap-2">
                   <ArrowUpDown className="h-4 w-4" />
-                  <span>Price</span>
+                  <span>Sort by Price</span>
                 </div>
               </SelectItem>
               <SelectItem value="popularity">
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4" />
-                  <span>Popularity</span>
+                  <span>Sort by Popularity</span>
                 </div>
               </SelectItem>
             </SelectContent>

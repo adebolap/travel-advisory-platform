@@ -73,9 +73,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build Ticketmaster API query
       const params = new URLSearchParams({
         apikey: process.env.TICKETMASTER_API_KEY,
-        city,
+        keyword: city, // Changed from city to keyword for better results
         size: "100", // Get more events
         sort: "date,asc",
+        locale: "*", // Include all locales
         ...(startDate && { startDateTime: startDate }),
         ...(endDate && { endDateTime: endDate }),
         ...(category && { classificationName: category as string }),
