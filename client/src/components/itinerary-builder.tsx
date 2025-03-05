@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, addDays, differenceInDays } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 
 interface ItineraryBuilderProps {
   city: string;
@@ -24,7 +25,7 @@ interface ItineraryItem {
   activity: string;
   location?: string;
   cost?: number;
-  type: 'custom' | 'event';
+  type: 'custom' | 'event' | 'attraction';
 }
 
 interface DayPlan {
@@ -32,136 +33,101 @@ interface DayPlan {
   items: ItineraryItem[];
 }
 
-const cityActivities: Record<string, {
-  morning: string[],
-  afternoon: string[],
-  evening: string[],
-  landmarks: string[],
-  dining: string[]
-}> = {
-  "London": {
-    morning: [
-      "Visit the Tower of London",
-      "Explore Borough Market",
-      "Walk through Hyde Park",
-      "Tour Westminster Abbey",
-      "Visit the British Museum"
-    ],
-    afternoon: [
-      "Shop at Covent Garden",
-      "Visit the Tate Modern",
-      "Take a Thames River Cruise",
-      "Explore the Natural History Museum",
-      "Visit Buckingham Palace"
-    ],
-    evening: [
-      "Watch a West End Show",
-      "Dine in Soho",
-      "Take a Jack the Ripper Tour",
-      "Visit Sky Garden",
-      "Enjoy live music in Camden"
-    ],
-    landmarks: [
-      "Big Ben",
-      "London Eye",
-      "Tower Bridge",
-      "St. Paul's Cathedral",
-      "Trafalgar Square"
-    ],
-    dining: [
-      "Traditional pub lunch",
-      "Afternoon tea at The Ritz",
-      "Fish and chips in Greenwich",
-      "Indian cuisine in Brick Lane",
-      "Fine dining in Mayfair"
-    ]
-  },
-  // Add more cities with their activities...
-};
+interface Attraction {
+  id: string;
+  name: string;
+  location: string;
+  rating?: number;
+  types: string[];
+}
 
-const defaultActivities = {
-  morning: [
-    "Visit the main museum",
-    "Explore the local market",
-    "Take a walking tour",
-    "Visit historical sites",
-    "Enjoy breakfast at a local cafe"
-  ],
-  afternoon: [
-    "Visit popular attractions",
-    "Shopping in city center",
-    "Take a guided tour",
-    "Visit art galleries",
-    "Explore local neighborhoods"
-  ],
-  evening: [
-    "Dinner at local restaurant",
-    "Attend cultural shows",
-    "Night city tour",
-    "Visit rooftop bars",
-    "Experience local nightlife"
-  ],
-  landmarks: [
-    "Main square",
-    "Historical district",
-    "Cultural center",
-    "City park",
-    "Local monument"
-  ],
-  dining: [
-    "Local cuisine restaurant",
-    "Popular cafe",
-    "Street food market",
-    "Traditional restaurant",
-    "Modern fusion dining"
-  ]
-};
+// Helper function to categorize attractions
+function categorizeAttraction(types: string[]): 'morning' | 'afternoon' | 'evening' {
+  const timeMapping: Record<string, 'morning' | 'afternoon' | 'evening'> = {
+    museum: 'morning',
+    art_gallery: 'morning',
+    park: 'morning',
+    tourist_attraction: 'afternoon',
+    shopping_mall: 'afternoon',
+    amusement_park: 'afternoon',
+    restaurant: 'evening',
+    bar: 'evening',
+    night_club: 'evening'
+  };
 
-function generateSuggestions(city: string, date: Date): ItineraryItem[] {
-  const activities = cityActivities[city] || defaultActivities;
+  for (const type of types) {
+    if (timeMapping[type]) {
+      return timeMapping[type];
+    }
+  }
+
+  return 'afternoon'; // Default to afternoon
+}
+
+function generateSuggestions(attractions: Attraction[], date: Date): ItineraryItem[] {
   const suggestions: ItineraryItem[] = [];
+  const categorizedAttractions = {
+    morning: attractions.filter(a => categorizeAttraction(a.types) === 'morning'),
+    afternoon: attractions.filter(a => categorizeAttraction(a.types) === 'afternoon'),
+    evening: attractions.filter(a => categorizeAttraction(a.types) === 'evening')
+  };
 
-  // Morning activity
-  suggestions.push({
-    id: `morning-${date.getTime()}`,
-    time: "09:00",
-    activity: activities.morning[Math.floor(Math.random() * activities.morning.length)],
-    type: 'custom'
-  });
+  // Morning activities
+  if (categorizedAttractions.morning.length > 0) {
+    const morningAttraction = categorizedAttractions.morning[Math.floor(Math.random() * categorizedAttractions.morning.length)];
+    suggestions.push({
+      id: `morning-${date.getTime()}`,
+      time: "09:00",
+      activity: `Visit ${morningAttraction.name}`,
+      location: morningAttraction.location,
+      type: 'attraction'
+    });
+  }
 
-  // Landmark visit
-  suggestions.push({
-    id: `landmark-${date.getTime()}`,
-    time: "11:30",
-    activity: `Visit ${activities.landmarks[Math.floor(Math.random() * activities.landmarks.length)]}`,
-    type: 'custom'
-  });
+  // Afternoon activities
+  if (categorizedAttractions.afternoon.length > 0) {
+    const afternoonAttraction = categorizedAttractions.afternoon[Math.floor(Math.random() * categorizedAttractions.afternoon.length)];
+    suggestions.push({
+      id: `afternoon-${date.getTime()}`,
+      time: "14:00",
+      activity: `Explore ${afternoonAttraction.name}`,
+      location: afternoonAttraction.location,
+      type: 'attraction'
+    });
+  }
 
-  // Lunch
-  suggestions.push({
-    id: `lunch-${date.getTime()}`,
-    time: "13:00",
-    activity: activities.dining[Math.floor(Math.random() * activities.dining.length)],
-    type: 'custom'
-  });
+  // Evening activities
+  if (categorizedAttractions.evening.length > 0) {
+    const eveningAttraction = categorizedAttractions.evening[Math.floor(Math.random() * categorizedAttractions.evening.length)];
+    suggestions.push({
+      id: `evening-${date.getTime()}`,
+      time: "19:00",
+      activity: `Experience ${eveningAttraction.name}`,
+      location: eveningAttraction.location,
+      type: 'attraction'
+    });
+  }
 
-  // Afternoon activity
-  suggestions.push({
-    id: `afternoon-${date.getTime()}`,
-    time: "15:00",
-    activity: activities.afternoon[Math.floor(Math.random() * activities.afternoon.length)],
-    type: 'custom'
-  });
+  // Add meals if no specific restaurant attractions
+  if (!suggestions.some(s => s.time === "12:00")) {
+    suggestions.push({
+      id: `lunch-${date.getTime()}`,
+      time: "12:00",
+      activity: "Lunch break at a local restaurant",
+      type: 'custom'
+    });
+  }
 
-  // Evening activity
-  suggestions.push({
-    id: `evening-${date.getTime()}`,
-    time: "19:00",
-    activity: activities.evening[Math.floor(Math.random() * activities.evening.length)],
-    type: 'custom'
-  });
+  if (!suggestions.some(s => s.time === "19:00")) {
+    suggestions.push({
+      id: `dinner-${date.getTime()}`,
+      time: "19:00",
+      activity: "Dinner at a local restaurant",
+      type: 'custom'
+    });
+  }
 
-  return suggestions;
+  return suggestions.sort((a, b) => a.time.localeCompare(b.time));
 }
 
 export default function ItineraryBuilder({ city, dateRange, events }: ItineraryBuilderProps) {
@@ -170,20 +136,26 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
   const [selectedTime, setSelectedTime] = useState("09:00");
   const [draggedItem, setDraggedItem] = useState<{dayIndex: number, itemIndex: number} | null>(null);
 
-  // Initialize itinerary when dateRange changes
+  // Fetch attractions for the city
+  const { data: attractions } = useQuery<Attraction[]>({
+    queryKey: [`/api/attractions/${city}`],
+    enabled: Boolean(city)
+  });
+
+  // Initialize itinerary when dateRange or attractions change
   useEffect(() => {
-    if (dateRange?.from && dateRange?.to) {
+    if (dateRange?.from && dateRange?.to && attractions?.length) {
       const days = differenceInDays(dateRange.to, dateRange.from) + 1;
       const newItinerary: DayPlan[] = Array.from({ length: days }, (_, i) => {
         const currentDate = addDays(dateRange.from!, i);
         return {
           date: currentDate,
-          items: generateSuggestions(city, currentDate) 
+          items: generateSuggestions(attractions, currentDate)
         };
       });
       setItinerary(newItinerary);
     }
-  }, [dateRange, city]);
+  }, [dateRange, attractions, city]);
 
   const addActivity = (dayIndex: number) => {
     if (!newActivity) return;
@@ -225,13 +197,11 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
       const updated = [...prev];
       const [draggedDay, draggedItemIndex] = [draggedItem.dayIndex, draggedItem.itemIndex];
       const item = updated[draggedDay].items[draggedItemIndex];
-      
 
       // Remove from original position
       updated[draggedDay].items.splice(draggedItemIndex, 1);
       // Add to new position
       updated[dayIndex].items.splice(itemIndex, 0, item);
-      
 
       return updated;
     });
@@ -241,7 +211,6 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Your Itinerary for {city}</h2>
-      
 
       {itinerary.map((day, dayIndex) => (
         <Card key={day.date.toISOString()} className="overflow-hidden">
@@ -266,6 +235,12 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">{item.time}</span>
                     <span className="flex-1">{item.activity}</span>
+                    {item.location && (
+                      <span className="text-sm text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {item.location}
+                      </span>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
