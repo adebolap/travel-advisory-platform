@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Star } from "lucide-react";
+import { Calendar, Star, Filter } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { DatePicker } from "./date-picker";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
+import { Button } from "@/components/ui/button";
 
 interface Event {
   id: number;
@@ -17,11 +18,25 @@ interface Event {
   highlight: boolean;
   source?: string;
   url?: string;
+  location?: string;
+  category?: string;
+  price?: string;
+  culturalSignificance?: string;
 }
 
 interface EventListProps {
   city: string;
 }
+
+// Event categories with visual styling
+const eventCategories = {
+  "cultural": { label: "Cultural", color: "bg-purple-100 text-purple-800" },
+  "festival": { label: "Festival", color: "bg-green-100 text-green-800" },
+  "music": { label: "Music", color: "bg-blue-100 text-blue-800" },
+  "art": { label: "Art", color: "bg-pink-100 text-pink-800" },
+  "food": { label: "Food", color: "bg-orange-100 text-orange-800" },
+  "sport": { label: "Sport", color: "bg-red-100 text-red-800" }
+};
 
 function EventSkeleton() {
   return (
@@ -50,11 +65,24 @@ function EventSkeleton() {
 
 export default function EventList({ city }: EventListProps) {
   const [dateRange, setDateRange] = useState<DateRange>();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const { data: events, isLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events', city, dateRange?.from?.toISOString(), dateRange?.to?.toISOString()],
+    queryKey: ['/api/events', city, dateRange?.from?.toISOString(), dateRange?.to?.toISOString(), selectedCategories],
     enabled: !!city
   });
+
+  const filteredEvents = events?.filter(event => 
+    selectedCategories.length === 0 || selectedCategories.includes(event.category || 'other')
+  );
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
 
   if (isLoading) {
     return (
@@ -83,10 +111,26 @@ export default function EventList({ city }: EventListProps) {
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         />
+
+        {/* Category filters */}
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(eventCategories).map(([key, { label, color }]) => (
+            <Button
+              key={key}
+              variant={selectedCategories.includes(key) ? "default" : "outline"}
+              size="sm"
+              onClick={() => toggleCategory(key)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              {label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-4">
-        {events?.map((event) => (
+        {filteredEvents?.map((event) => (
           <Card key={event.id} className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -101,14 +145,31 @@ export default function EventList({ city }: EventListProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant={event.highlight ? "default" : "secondary"}
-                  className="capitalize"
-                >
-                  {event.type}
-                </Badge>
+              <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {event.category && (
+                  <Badge 
+                    variant="secondary"
+                    className={`capitalize ${eventCategories[event.category as keyof typeof eventCategories]?.color || ''}`}
+                  >
+                    {event.category}
+                  </Badge>
+                )}
+                {event.culturalSignificance && (
+                  <Badge variant="outline" className="bg-purple-50">
+                    Cultural Event
+                  </Badge>
+                )}
+                {event.price && (
+                  <span className="text-xs text-muted-foreground">
+                    Price: {event.price}
+                  </span>
+                )}
+                {event.location && (
+                  <span className="text-xs text-muted-foreground">
+                    Location: {event.location}
+                  </span>
+                )}
                 {event.source && (
                   <span className="text-xs text-muted-foreground">
                     Source: {event.source}
