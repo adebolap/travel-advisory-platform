@@ -31,23 +31,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
 
-      // Then, get attractions near this location
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&type=tourist_attraction&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`;
+      // Then, get attractions near this location with more place types
+      const placeTypes = [
+        'tourist_attraction',
+        'museum',
+        'art_gallery',
+        'park',
+        'amusement_park',
+        'church',
+        'mosque',
+        'temple',
+        'zoo',
+        'aquarium',
+        'restaurant',
+        'shopping_mall'
+      ];
 
-      const searchResponse = await axios.get(searchUrl);
-      console.log('Search response:', searchResponse.data);
+      const attractionsPromises = placeTypes.map(type =>
+        axios.get(
+          `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=10000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`
+        )
+      );
 
-      const attractions = searchResponse.data.results?.map((place: any) => ({
-        id: place.place_id,
-        name: place.name,
-        rating: place.rating,
-        userRatingsTotal: place.user_ratings_total,
-        location: place.vicinity,
-        types: place.types,
-        photo: place.photos?.[0]?.photo_reference,
-        openNow: place.opening_hours?.open_now,
-        geometry: place.geometry.location
-      })) || [];
+      const responses = await Promise.all(attractionsPromises);
+
+      // Combine and deduplicate attractions
+      const seenPlaceIds = new Set();
+      const attractions = responses.flatMap(response =>
+        (response.data.results || [])
+          .filter(place => !seenPlaceIds.has(place.place_id))
+          .map(place => {
+            seenPlaceIds.add(place.place_id);
+            return {
+              id: place.place_id,
+              name: place.name,
+              rating: place.rating,
+              userRatingsTotal: place.user_ratings_total,
+              location: place.vicinity,
+              types: place.types,
+              photo: place.photos?.[0]?.photo_reference,
+              openNow: place.opening_hours?.open_now,
+              geometry: place.geometry.location
+            };
+          })
+      );
+
+      console.log(`Found ${attractions.length} unique attractions in ${city}`);
+
+      if (attractions.length === 0) {
+        console.log('No attractions found. API responses:', responses.map(r => r.data));
+      }
 
       res.json(attractions);
     } catch (error: any) {
