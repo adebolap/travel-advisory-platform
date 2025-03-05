@@ -8,6 +8,57 @@ import axios from "axios";
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
 
+  // Google Places API endpoint for attractions
+  apiRouter.get("/api/attractions/:city", async (req, res) => {
+    const { city } = req.params;
+
+    if (!process.env.GOOGLE_PLACES_API_KEY) {
+      return res.status(500).json({ error: "Google Places API key not configured" });
+    }
+
+    try {
+      console.log(`Fetching attractions for ${city} from Google Places API...`);
+
+      // First, get the geocode for the city
+      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+
+      const geocodeResponse = await axios.get(geocodeUrl);
+      console.log('Geocode response:', geocodeResponse.data);
+
+      if (!geocodeResponse.data.results?.[0]?.geometry?.location) {
+        return res.status(404).json({ error: "City not found" });
+      }
+
+      const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
+
+      // Then, get attractions near this location
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&type=tourist_attraction&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`;
+
+      const searchResponse = await axios.get(searchUrl);
+      console.log('Search response:', searchResponse.data);
+
+      const attractions = searchResponse.data.results?.map((place: any) => ({
+        id: place.place_id,
+        name: place.name,
+        rating: place.rating,
+        userRatingsTotal: place.user_ratings_total,
+        location: place.vicinity,
+        types: place.types,
+        photo: place.photos?.[0]?.photo_reference,
+        openNow: place.opening_hours?.open_now,
+        geometry: place.geometry.location
+      })) || [];
+
+      res.json(attractions);
+    } catch (error: any) {
+      console.error("Google Places API error:", error.response?.data || error.message);
+      res.status(500).json({
+        error: "Failed to fetch attractions",
+        details: error.response?.data?.message || error.message
+      });
+    }
+  });
+
   // Weather API endpoint
   apiRouter.get("/api/weather/:city", async (req, res) => {
     const { city } = req.params;
@@ -103,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url: event.url,
         location: event._embedded?.venues?.[0]?.name,
         category: event.classifications?.[0]?.segment?.name?.toLowerCase(),
-        price: event.priceRanges 
+        price: event.priceRanges
           ? `$${event.priceRanges[0].min}-$${event.priceRanges[0].max}`
           : "Price TBA",
         culturalSignificance: event.pleaseNote || null,
@@ -122,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error.response?.status === 404) {
         res.json([]); // Return empty array if no events found
       } else {
-        res.status(500).json({ 
+        res.status(500).json({
           error: "Failed to fetch events",
           details: error.response?.data?.message || error.message
         });
@@ -148,6 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(preferences);
   });
 
+  // Mount API routes before the catchall route
   app.use("/", apiRouter);
 
   const httpServer = createServer(app);
