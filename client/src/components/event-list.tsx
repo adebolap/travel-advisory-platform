@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ShareButtons from "@/components/share-buttons";
+import CalendarIntegration from "@/components/calendar-integration";
 
 interface Event {
   id: number;
@@ -252,6 +253,9 @@ export default function EventList({ city, dateRange }: EventListProps) {
                     Source: {event.source}
                   </span>
                 )}
+              </div>
+              <div className="mt-4">
+                <CalendarIntegration event={event} />
               </div>
             </CardContent>
           </Card>
