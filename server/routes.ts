@@ -110,6 +110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         culturalSignificance: event.pleaseNote || null,
       })) || [];
 
+      console.log(`Transformed events count: ${events.length}`);
+      if (events.length === 0) {
+        console.log('No events found in response data:', response.data);
+      }
+
       res.json(events);
     } catch (error: any) {
       console.error("Ticketmaster API error:", error.response?.data || error.message);
