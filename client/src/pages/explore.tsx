@@ -29,12 +29,12 @@ export default function Explore() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8">Explore Destinations</h1>
+    <div className="container mx-auto px-4 py-4 sm:py-8">
+      <h1 className="text-3xl sm:text-4xl font-bold mb-4 sm:mb-8">Explore Destinations</h1>
 
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="grid md:grid-cols-2 gap-4">
+      <Card className="mb-6 sm:mb-8">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Destination</label>
               <div className="flex gap-2">
@@ -62,9 +62,9 @@ export default function Explore() {
       </Card>
 
       {searchSubmitted && city && (
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           <div className="lg:col-span-2">
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-8">
               <WeatherDisplay city={city} />
               <TravelSuggestions 
                 city={city}
@@ -72,7 +72,7 @@ export default function Explore() {
               />
             </div>
           </div>
-          <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-8">
             <BudgetEstimator 
               city={city} 
               dateRange={dateRange}

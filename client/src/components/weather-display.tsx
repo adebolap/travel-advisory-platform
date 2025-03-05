@@ -97,7 +97,7 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
       {/* Current Weather - Compact Horizontal Layout */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               {getWeatherIcon(currentWeather.weather[0].main)}
               <div>
@@ -123,23 +123,23 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
       {/* 4-Day Forecast */}
       <div>
         <h3 className="text-lg font-semibold mb-3">4-Day Forecast</h3>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {dailyForecasts.map((day, index) => (
             <Card 
               key={day.dt} 
               className="h-full cursor-pointer transition-all duration-200 hover:shadow-md"
               onClick={() => setExpandedDay(expandedDay === index ? null : index)}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex flex-col h-full">
                   <div className="text-center border-b border-border/50 pb-2">
                     <p className="font-medium">{format(new Date(day.dt * 1000), 'EEE')}</p>
                     <p className="text-xs text-muted-foreground">{format(new Date(day.dt * 1000), 'MMM d')}</p>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center py-4 flex-grow">
+                  <div className="flex flex-col items-center justify-center py-3 sm:py-4 flex-grow">
                     {getWeatherIcon(day.weather[0].main)}
-                    <p className="text-2xl font-bold mt-2">{Math.round(day.main.temp)}°C</p>
+                    <p className="text-xl sm:text-2xl font-bold mt-2">{Math.round(day.main.temp)}°C</p>
                     <p className="text-xs text-center text-muted-foreground mt-1 h-8 flex items-center">
                       {day.weather[0].description}
                     </p>
@@ -151,7 +151,6 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
                       <span>{day.main.humidity}%</span>
                     </div>
 
-                    {/* Expandable wind section */}
                     <div className={`overflow-hidden transition-all duration-200 ${expandedDay === index ? 'max-h-8' : 'max-h-0'}`}>
                       <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
                         <Wind className="h-3 w-3" />
@@ -159,7 +158,6 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
                       </div>
                     </div>
 
-                    {/* Expand indicator */}
                     <div className="flex justify-center mt-2">
                       <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedDay === index ? 'rotate-180' : ''}`} />
                     </div>
