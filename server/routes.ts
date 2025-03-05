@@ -57,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Make parallel requests for each place type
       const attractionsPromises = placeTypes.map(type => {
-        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=10000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`;
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=50000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`;
         return axios.get(searchUrl)
           .then(response => {
             if (response.data.status === 'REQUEST_DENIED') {
@@ -67,6 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
       });
 
+      console.log('Making API requests for place types:', placeTypes);
       const responses = await Promise.all(attractionsPromises);
 
       // Combine and deduplicate attractions
@@ -98,10 +99,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(attractions);
     } catch (error: any) {
       console.error("Google Places API error:", error.response?.data || error.message);
-      res.status(500).json({
-        error: "Failed to fetch attractions",
-        details: error.response?.data?.message || error.message
-      });
+      console.error("Full error details:", error);
+
+      if (error.response?.status === 404) {
+        res.json([]); // Return empty array if no events found
+      } else {
+        res.status(500).json({
+          error: "Failed to fetch attractions",
+          details: error.response?.data?.message || error.message
+        });
+      }
     }
   });
 
