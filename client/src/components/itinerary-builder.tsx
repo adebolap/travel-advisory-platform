@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2 } from "lucide-react";
+import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2, Share2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, addDays, differenceInDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import ShareButtons from "@/components/share-buttons";
 
 interface ItineraryBuilderProps {
   city: string;
@@ -266,6 +267,16 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
     setDraggedItem({ dayIndex, itemIndex });
   };
 
+  const generateShareableDescription = () => {
+    if (!dateRange?.from || !dateRange?.to) return '';
+
+    const days = differenceInDays(dateRange.to, dateRange.from) + 1;
+    const formattedStartDate = format(dateRange.from, 'MMM d');
+    const formattedEndDate = format(dateRange.to, 'MMM d, yyyy');
+
+    return `${days}-day itinerary for ${city} from ${formattedStartDate} to ${formattedEndDate}. Plan includes daily activities, attractions, and local experiences.`;
+  };
+
   if (isLoadingAttractions) {
     return (
       <div className="space-y-4">
@@ -292,8 +303,14 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Your Itinerary for {city}</h2>
-
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Your Itinerary for {city}</h2>
+        <ShareButtons
+          title={`Travel Itinerary: ${city}`}
+          description={generateShareableDescription()}
+          url={`${window.location.origin}/itinerary/${encodeURIComponent(city)}`}
+        />
+      </div>
       {itinerary.map((day, dayIndex) => (
         <Card key={day.date.toISOString()} className="overflow-hidden">
           <CardHeader className="bg-primary/5">
