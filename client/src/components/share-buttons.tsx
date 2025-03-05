@@ -1,4 +1,3 @@
-```typescript
 import { Button } from "@/components/ui/button";
 import { Twitter, Facebook, Linkedin, Link2, Share2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -18,7 +17,7 @@ export default function ShareButtons({ title, description, url, compact = false 
   const shareUrls = {
     twitter: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`
   };
 
   const copyToClipboard = async () => {
@@ -26,13 +25,13 @@ export default function ShareButtons({ title, description, url, compact = false 
       await navigator.clipboard.writeText(url);
       toast({
         title: "Link copied!",
-        description: "The link has been copied to your clipboard.",
+        description: "The link has been copied to your clipboard."
       });
     } catch (err) {
       toast({
         title: "Failed to copy",
         description: "Please try again or copy the URL manually.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -51,7 +50,7 @@ export default function ShareButtons({ title, description, url, compact = false 
               navigator.share({
                 title,
                 text: description,
-                url,
+                url
               });
             } else {
               copyToClipboard();
@@ -100,4 +99,3 @@ export default function ShareButtons({ title, description, url, compact = false 
     </div>
   );
 }
-```
