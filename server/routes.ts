@@ -70,10 +70,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDate = from ? `${format(parseISO(from as string), "yyyy-MM-dd")}T00:00:00Z` : undefined;
       const endDate = to ? `${format(parseISO(to as string), "yyyy-MM-dd")}T23:59:59Z` : undefined;
 
-      // Build Ticketmaster API query
+      // Build Ticketmaster API query with better parameters
       const params = new URLSearchParams({
         apikey: process.env.TICKETMASTER_API_KEY,
-        keyword: city, // Changed from city to keyword for better results
+        keyword: city, // Using keyword for better search results
         size: "100", // Get more events
         sort: "date,asc",
         locale: "*", // Include all locales
@@ -83,16 +83,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       console.log(`Fetching events for ${city} from Ticketmaster API...`);
-      console.log(`API URL: https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`);
+      const apiUrl = `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`;
+      console.log(`API URL: ${apiUrl}`);
 
-      const response = await axios.get(
-        `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`
-      );
+      const response = await axios.get(apiUrl);
 
       console.log(`Ticketmaster API response status: ${response.status}`);
-      console.log(`Events found: ${response.data?._embedded?.events?.length || 0}`);
+      console.log(`Response data:`, JSON.stringify(response.data, null, 2));
 
-      // Transform Ticketmaster events to our format
+      // Transform Ticketmaster events to our format, handling the _embedded structure
       const events = response.data._embedded?.events?.map((event: any) => ({
         id: event.id,
         name: event.name,

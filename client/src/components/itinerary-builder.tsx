@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,138 @@ interface DayPlan {
   items: ItineraryItem[];
 }
 
+const cityActivities: Record<string, {
+  morning: string[],
+  afternoon: string[],
+  evening: string[],
+  landmarks: string[],
+  dining: string[]
+}> = {
+  "London": {
+    morning: [
+      "Visit the Tower of London",
+      "Explore Borough Market",
+      "Walk through Hyde Park",
+      "Tour Westminster Abbey",
+      "Visit the British Museum"
+    ],
+    afternoon: [
+      "Shop at Covent Garden",
+      "Visit the Tate Modern",
+      "Take a Thames River Cruise",
+      "Explore the Natural History Museum",
+      "Visit Buckingham Palace"
+    ],
+    evening: [
+      "Watch a West End Show",
+      "Dine in Soho",
+      "Take a Jack the Ripper Tour",
+      "Visit Sky Garden",
+      "Enjoy live music in Camden"
+    ],
+    landmarks: [
+      "Big Ben",
+      "London Eye",
+      "Tower Bridge",
+      "St. Paul's Cathedral",
+      "Trafalgar Square"
+    ],
+    dining: [
+      "Traditional pub lunch",
+      "Afternoon tea at The Ritz",
+      "Fish and chips in Greenwich",
+      "Indian cuisine in Brick Lane",
+      "Fine dining in Mayfair"
+    ]
+  },
+  // Add more cities with their activities...
+};
+
+const defaultActivities = {
+  morning: [
+    "Visit the main museum",
+    "Explore the local market",
+    "Take a walking tour",
+    "Visit historical sites",
+    "Enjoy breakfast at a local cafe"
+  ],
+  afternoon: [
+    "Visit popular attractions",
+    "Shopping in city center",
+    "Take a guided tour",
+    "Visit art galleries",
+    "Explore local neighborhoods"
+  ],
+  evening: [
+    "Dinner at local restaurant",
+    "Attend cultural shows",
+    "Night city tour",
+    "Visit rooftop bars",
+    "Experience local nightlife"
+  ],
+  landmarks: [
+    "Main square",
+    "Historical district",
+    "Cultural center",
+    "City park",
+    "Local monument"
+  ],
+  dining: [
+    "Local cuisine restaurant",
+    "Popular cafe",
+    "Street food market",
+    "Traditional restaurant",
+    "Modern fusion dining"
+  ]
+};
+
+function generateSuggestions(city: string, date: Date): ItineraryItem[] {
+  const activities = cityActivities[city] || defaultActivities;
+  const suggestions: ItineraryItem[] = [];
+
+  // Morning activity
+  suggestions.push({
+    id: `morning-${date.getTime()}`,
+    time: "09:00",
+    activity: activities.morning[Math.floor(Math.random() * activities.morning.length)],
+    type: 'custom'
+  });
+
+  // Landmark visit
+  suggestions.push({
+    id: `landmark-${date.getTime()}`,
+    time: "11:30",
+    activity: `Visit ${activities.landmarks[Math.floor(Math.random() * activities.landmarks.length)]}`,
+    type: 'custom'
+  });
+
+  // Lunch
+  suggestions.push({
+    id: `lunch-${date.getTime()}`,
+    time: "13:00",
+    activity: activities.dining[Math.floor(Math.random() * activities.dining.length)],
+    type: 'custom'
+  });
+
+  // Afternoon activity
+  suggestions.push({
+    id: `afternoon-${date.getTime()}`,
+    time: "15:00",
+    activity: activities.afternoon[Math.floor(Math.random() * activities.afternoon.length)],
+    type: 'custom'
+  });
+
+  // Evening activity
+  suggestions.push({
+    id: `evening-${date.getTime()}`,
+    time: "19:00",
+    activity: activities.evening[Math.floor(Math.random() * activities.evening.length)],
+    type: 'custom'
+  });
+
+  return suggestions;
+}
+
 export default function ItineraryBuilder({ city, dateRange, events }: ItineraryBuilderProps) {
   const [itinerary, setItinerary] = useState<DayPlan[]>([]);
   const [newActivity, setNewActivity] = useState("");
@@ -39,16 +171,19 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
   const [draggedItem, setDraggedItem] = useState<{dayIndex: number, itemIndex: number} | null>(null);
 
   // Initialize itinerary when dateRange changes
-  useState(() => {
+  useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
       const days = differenceInDays(dateRange.to, dateRange.from) + 1;
-      const newItinerary: DayPlan[] = Array.from({ length: days }, (_, i) => ({
-        date: addDays(dateRange.from!, i),
-        items: []
-      }));
+      const newItinerary: DayPlan[] = Array.from({ length: days }, (_, i) => {
+        const currentDate = addDays(dateRange.from!, i);
+        return {
+          date: currentDate,
+          items: generateSuggestions(city, currentDate) 
+        };
+      });
       setItinerary(newItinerary);
     }
-  }, [dateRange]);
+  }, [dateRange, city]);
 
   const addActivity = (dayIndex: number) => {
     if (!newActivity) return;
@@ -91,11 +226,13 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
       const [draggedDay, draggedItemIndex] = [draggedItem.dayIndex, draggedItem.itemIndex];
       const item = updated[draggedDay].items[draggedItemIndex];
       
+
       // Remove from original position
       updated[draggedDay].items.splice(draggedItemIndex, 1);
       // Add to new position
       updated[dayIndex].items.splice(itemIndex, 0, item);
       
+
       return updated;
     });
     setDraggedItem({ dayIndex, itemIndex });
@@ -105,6 +242,7 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Your Itinerary for {city}</h2>
       
+
       {itinerary.map((day, dayIndex) => (
         <Card key={day.date.toISOString()} className="overflow-hidden">
           <CardHeader className="bg-primary/5">
