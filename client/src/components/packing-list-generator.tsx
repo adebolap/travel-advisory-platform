@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Luggage, Sun, Umbrella, ThermometerSun } from "lucide-react";
+import { Luggage, Sun, Umbrella, ThermometerSun, Wind } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
 interface PackingListGeneratorProps {
   city: string;
   travelStyle?: string;
   dateRange?: DateRange;
+  currentWeather?: string;
 }
 
 interface PackingItem {
@@ -21,46 +22,80 @@ interface PackingItem {
   checked: boolean;
 }
 
-const categories = {
-  essentials: "Essential Items",
-  clothing: "Clothing",
-  electronics: "Electronics",
-  toiletries: "Toiletries",
-  documents: "Documents",
-  misc: "Miscellaneous"
+const weatherBasedItems = {
+  "Warm": {
+    clothing: ["T-shirts", "Tank tops", "Shorts", "Lightweight dresses", "Swimwear"],
+    accessories: ["Sun hat", "Sunglasses", "Light scarf", "Waterproof phone pouch"],
+    footwear: ["Sandals", "Flip-flops", "Lightweight sneakers"],
+    essentials: ["Sunscreen", "Aloe vera gel", "Bug repellent", "Water bottle", "Cooling towel"]
+  },
+  "Rainy": {
+    clothing: ["Quick-dry clothing", "Waterproof jacket", "Light layers", "Capris"],
+    accessories: ["Umbrella", "Waterproof bag", "Lightweight poncho", "Brimmed hat"],
+    footwear: ["Waterproof shoes", "Quick-dry socks", "Sandals with grip"],
+    essentials: ["Waterproof phone case", "Microfiber towel", "Insect repellent"]
+  },
+  "Cold": {
+    clothing: ["Thermal layers", "Wool/fleece layers", "Waterproof coat", "Sweaters"],
+    accessories: ["Beanie", "Gloves", "Scarf", "Thermal socks"],
+    footwear: ["Waterproof boots", "Warm socks", "Snow grips"],
+    essentials: ["Lip balm", "Hand warmers", "Moisturizer", "Thermos"]
+  },
+  "Mild": {
+    clothing: ["T-shirts", "Long-sleeves", "Jeans", "Light sweater"],
+    accessories: ["Sunglasses", "Light hat", "Small backpack"],
+    footwear: ["Walking shoes", "Light boots", "Water-resistant shoes"],
+    essentials: ["Umbrella", "Travel blanket", "Lip balm"]
+  },
+  "Windy": {
+    clothing: ["Long sleeves", "Loose clothing", "Light windbreaker"],
+    accessories: ["Wraparound sunglasses", "Hat with strap", "Buff or face covering"],
+    footwear: ["Closed-toe shoes", "Walking shoes"],
+    essentials: ["Moisturizer", "Hydration pack", "Eye drops"]
+  }
 };
 
-// Mock AI-generated packing lists based on context
-const generatePackingList = (city: string, travelStyle: string = "Cultural", season: string = "Summer"): PackingItem[] => {
+const categories = {
+  clothing: "Clothing",
+  accessories: "Accessories",
+  footwear: "Footwear",
+  essentials: "Essential Items",
+  documents: "Documents & Tech"
+};
+
+// Generate packing list based on weather and travel details
+const generatePackingList = (
+  city: string,
+  weatherType: string = "Mild",
+  travelStyle: string = "Cultural"
+): PackingItem[] => {
   const baseList: PackingItem[] = [
     { id: "passport", name: "Passport", category: "documents", essential: true, checked: false },
     { id: "wallet", name: "Wallet & Cards", category: "documents", essential: true, checked: false },
-    { id: "phone", name: "Phone & Charger", category: "electronics", essential: true, checked: false },
-    { id: "adapter", name: "Universal Adapter", category: "electronics", essential: true, checked: false },
+    { id: "phone", name: "Phone & Charger", category: "documents", essential: true, checked: false },
+    { id: "adapter", name: "Universal Adapter", category: "documents", essential: true, checked: false },
   ];
 
   // Add weather-specific items
-  if (season === "Summer") {
-    baseList.push(
-      { id: "sunscreen", name: "Sunscreen", category: "toiletries", weather: "sunny", essential: true, checked: false },
-      { id: "sunglasses", name: "Sunglasses", category: "clothing", weather: "sunny", essential: false, checked: false },
-      { id: "hat", name: "Sun Hat", category: "clothing", weather: "sunny", essential: false, checked: false }
-    );
-  }
+  const weatherItems = weatherBasedItems[weatherType as keyof typeof weatherBasedItems] || weatherBasedItems.Mild;
 
-  // Add style-specific items
-  if (travelStyle === "Adventure") {
-    baseList.push(
-      { id: "hikingBoots", name: "Hiking Boots", category: "clothing", essential: true, checked: false },
-      { id: "backpack", name: "Day Backpack", category: "misc", essential: true, checked: false },
-      { id: "firstAid", name: "First Aid Kit", category: "misc", essential: true, checked: false }
-    );
-  }
+  Object.entries(weatherItems).forEach(([category, items]) => {
+    items.forEach((item, index) => {
+      baseList.push({
+        id: `${category}-${index}`,
+        name: item,
+        category,
+        weather: weatherType,
+        essential: category === "essentials",
+        checked: false
+      });
+    });
+  });
 
   return baseList;
 };
 
-export default function PackingListGenerator({ city, travelStyle = "Cultural", dateRange }: PackingListGeneratorProps) {
+export default function PackingListGenerator({ city, travelStyle = "Cultural", dateRange, currentWeather = "Mild" }: PackingListGeneratorProps) {
   const [packingList, setPackingList] = useState<PackingItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -68,10 +103,10 @@ export default function PackingListGenerator({ city, travelStyle = "Cultural", d
     setIsGenerating(true);
     // Simulate AI processing time
     setTimeout(() => {
-      const newList = generatePackingList(city, travelStyle);
+      const newList = generatePackingList(city, currentWeather, travelStyle);
       setPackingList(newList);
       setIsGenerating(false);
-    }, 1500);
+    }, 1000);
   };
 
   const toggleItem = (itemId: string) => {
@@ -90,6 +125,21 @@ export default function PackingListGenerator({ city, travelStyle = "Cultural", d
     return acc;
   }, {} as Record<string, PackingItem[]>);
 
+  const getWeatherIcon = (weather: string) => {
+    switch (weather?.toLowerCase()) {
+      case 'warm':
+        return <Sun className="h-3 w-3 text-yellow-500" />;
+      case 'rainy':
+        return <Umbrella className="h-3 w-3 text-blue-500" />;
+      case 'cold':
+        return <ThermometerSun className="h-3 w-3 text-blue-500" />;
+      case 'windy':
+        return <Wind className="h-3 w-3 text-gray-500" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -102,7 +152,7 @@ export default function PackingListGenerator({ city, travelStyle = "Cultural", d
         {packingList.length === 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Get a personalized packing list based on your destination, dates, and travel style.
+              Get a personalized packing list based on your destination, weather, and travel style.
             </p>
             <Button
               onClick={handleGenerate}
@@ -135,11 +185,7 @@ export default function PackingListGenerator({ city, travelStyle = "Cultural", d
                             Essential
                           </Badge>
                         )}
-                        {item.weather && (
-                          <span className="text-muted-foreground">
-                            {item.weather === "sunny" ? <Sun className="h-3 w-3" /> : <Umbrella className="h-3 w-3" />}
-                          </span>
-                        )}
+                        {item.weather && getWeatherIcon(item.weather)}
                       </label>
                     </div>
                   ))}

@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sun, Cloud, CloudRain, Wind, Droplets, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface WeatherData {
   weather: Array<{
@@ -44,9 +44,10 @@ interface ForecastData {
 
 interface WeatherDisplayProps {
   city: string;
+  onWeatherUpdate?: (weather: string) => void;
 }
 
-export default function WeatherDisplay({ city }: WeatherDisplayProps) {
+export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplayProps) {
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const { data: currentWeather, isLoading: isLoadingCurrent, error: currentError } = useQuery<WeatherData>({
@@ -58,6 +59,26 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
     queryKey: [`/api/forecast/${encodeURIComponent(city)}`],
     enabled: Boolean(city)
   });
+
+  // Map weather condition to our categories
+  const mapWeatherToCategory = (temp: number, description: string): string => {
+    const desc = description.toLowerCase();
+    if (desc.includes('rain') || desc.includes('drizzle')) return 'Rainy';
+    if (desc.includes('wind')) return 'Windy';
+    if (temp <= 10) return 'Cold';
+    if (temp >= 25) return 'Warm';
+    return 'Mild';
+  };
+
+  useEffect(() => {
+    if (currentWeather && onWeatherUpdate) {
+      const weatherCategory = mapWeatherToCategory(
+        currentWeather.main.temp,
+        currentWeather.weather[0].description
+      );
+      onWeatherUpdate(weatherCategory);
+    }
+  }, [currentWeather, onWeatherUpdate]);
 
   if (isLoadingCurrent || isLoadingForecast) {
     return <Skeleton className="h-64 w-full" />;
@@ -125,8 +146,8 @@ export default function WeatherDisplay({ city }: WeatherDisplayProps) {
         <h3 className="text-lg font-semibold mb-3">4-Day Forecast</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {dailyForecasts.map((day, index) => (
-            <Card 
-              key={day.dt} 
+            <Card
+              key={day.dt}
               className="h-full cursor-pointer transition-all duration-200 hover:shadow-md"
               onClick={() => setExpandedDay(expandedDay === index ? null : index)}
             >

@@ -13,6 +13,7 @@ export default function Explore() {
   const [city, setCity] = useState("");
   const [dateRange, setDateRange] = useState<DateRange>();
   const [searchSubmitted, setSearchSubmitted] = useState(false);
+  const [currentWeather, setCurrentWeather] = useState<string>("Mild");
 
   // Mock interests for now - will be personalized later
   const interests = ["culture", "food", "nightlife", "shopping", "transport"];
@@ -20,6 +21,10 @@ export default function Explore() {
   const handleCitySelect = (selectedCity: string) => {
     setCity(selectedCity);
     setSearchSubmitted(true); // Automatically trigger search when city is selected
+  };
+
+  const handleWeatherUpdate = (weather: string) => {
+    setCurrentWeather(weather);
   };
 
   const handleSearch = () => {
@@ -65,7 +70,10 @@ export default function Explore() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           <div className="lg:col-span-2">
             <div className="space-y-4 sm:space-y-8">
-              <WeatherDisplay city={city} />
+              <WeatherDisplay 
+                city={city}
+                onWeatherUpdate={handleWeatherUpdate}
+              />
               <TravelSuggestions 
                 city={city}
                 interests={interests}
@@ -80,6 +88,7 @@ export default function Explore() {
             <PackingListGenerator
               city={city}
               dateRange={dateRange}
+              currentWeather={currentWeather}
             />
           </div>
         </div>
