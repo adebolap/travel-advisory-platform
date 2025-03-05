@@ -7,6 +7,7 @@ import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2 } from "lucide-re
 import { DateRange } from "react-day-picker";
 import { format, addDays, differenceInDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ItineraryBuilderProps {
   city: string;
@@ -41,7 +42,68 @@ interface Attraction {
   types: string[];
 }
 
-// Helper function to categorize attractions
+const defaultActivities = {
+  morning: [
+    "Visit local museums and galleries",
+    "Explore historic sites",
+    "Take a walking tour",
+    "Visit main attractions",
+    "Morning coffee at local cafe"
+  ],
+  afternoon: [
+    "Shopping in city center",
+    "Visit popular landmarks",
+    "Explore local neighborhoods",
+    "Visit parks and gardens",
+    "Cultural activities"
+  ],
+  evening: [
+    "Dinner at local restaurant",
+    "Evening entertainment",
+    "Night tour",
+    "Local cultural events",
+    "Visit viewpoints"
+  ]
+};
+
+function generateDefaultSuggestions(date: Date): ItineraryItem[] {
+  const suggestions: ItineraryItem[] = [];
+
+  // Morning activity
+  suggestions.push({
+    id: `morning-${date.getTime()}`,
+    time: "09:00",
+    activity: defaultActivities.morning[Math.floor(Math.random() * defaultActivities.morning.length)],
+    type: 'custom'
+  });
+
+  // Lunch
+  suggestions.push({
+    id: `lunch-${date.getTime()}`,
+    time: "12:00",
+    activity: "Lunch break at a local restaurant",
+    type: 'custom'
+  });
+
+  // Afternoon activity
+  suggestions.push({
+    id: `afternoon-${date.getTime()}`,
+    time: "14:00",
+    activity: defaultActivities.afternoon[Math.floor(Math.random() * defaultActivities.afternoon.length)],
+    type: 'custom'
+  });
+
+  // Evening activity
+  suggestions.push({
+    id: `evening-${date.getTime()}`,
+    time: "19:00",
+    activity: defaultActivities.evening[Math.floor(Math.random() * defaultActivities.evening.length)],
+    type: 'custom'
+  });
+
+  return suggestions;
+}
+
 function categorizeAttraction(types: string[]): 'morning' | 'afternoon' | 'evening' {
   const timeMapping: Record<string, 'morning' | 'afternoon' | 'evening'> = {
     museum: 'morning',
@@ -61,10 +123,10 @@ function categorizeAttraction(types: string[]): 'morning' | 'afternoon' | 'eveni
     }
   }
 
-  return 'afternoon'; // Default to afternoon
+  return 'afternoon';
 }
 
-function generateSuggestions(attractions: Attraction[], date: Date): ItineraryItem[] {
+function generateAttractionSuggestions(attractions: Attraction[], date: Date): ItineraryItem[] {
   const suggestions: ItineraryItem[] = [];
   const categorizedAttractions = {
     morning: attractions.filter(a => categorizeAttraction(a.types) === 'morning'),
@@ -83,6 +145,14 @@ function generateSuggestions(attractions: Attraction[], date: Date): ItineraryIt
       type: 'attraction'
     });
   }
+
+  // Add lunch
+  suggestions.push({
+    id: `lunch-${date.getTime()}`,
+    time: "12:00",
+    activity: "Lunch break at a local restaurant",
+    type: 'custom'
+  });
 
   // Afternoon activities
   if (categorizedAttractions.afternoon.length > 0) {
@@ -106,19 +176,7 @@ function generateSuggestions(attractions: Attraction[], date: Date): ItineraryIt
       location: eveningAttraction.location,
       type: 'attraction'
     });
-  }
-
-  // Add meals if no specific restaurant attractions
-  if (!suggestions.some(s => s.time === "12:00")) {
-    suggestions.push({
-      id: `lunch-${date.getTime()}`,
-      time: "12:00",
-      activity: "Lunch break at a local restaurant",
-      type: 'custom'
-    });
-  }
-
-  if (!suggestions.some(s => s.time === "19:00")) {
+  } else {
     suggestions.push({
       id: `dinner-${date.getTime()}`,
       time: "19:00",
@@ -137,20 +195,22 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
   const [draggedItem, setDraggedItem] = useState<{dayIndex: number, itemIndex: number} | null>(null);
 
   // Fetch attractions for the city
-  const { data: attractions } = useQuery<Attraction[]>({
+  const { data: attractions, isLoading: isLoadingAttractions } = useQuery<Attraction[]>({
     queryKey: [`/api/attractions/${city}`],
     enabled: Boolean(city)
   });
 
-  // Initialize itinerary when dateRange or attractions change
+  // Initialize or update itinerary when date range changes
   useEffect(() => {
-    if (dateRange?.from && dateRange?.to && attractions?.length) {
+    if (dateRange?.from && dateRange?.to) {
       const days = differenceInDays(dateRange.to, dateRange.from) + 1;
       const newItinerary: DayPlan[] = Array.from({ length: days }, (_, i) => {
         const currentDate = addDays(dateRange.from!, i);
         return {
           date: currentDate,
-          items: generateSuggestions(attractions, currentDate)
+          items: attractions?.length 
+            ? generateAttractionSuggestions(attractions, currentDate)
+            : generateDefaultSuggestions(currentDate)
         };
       });
       setItinerary(newItinerary);
@@ -198,15 +258,37 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
       const [draggedDay, draggedItemIndex] = [draggedItem.dayIndex, draggedItem.itemIndex];
       const item = updated[draggedDay].items[draggedItemIndex];
 
-      // Remove from original position
       updated[draggedDay].items.splice(draggedItemIndex, 1);
-      // Add to new position
       updated[dayIndex].items.splice(itemIndex, 0, item);
 
       return updated;
     });
     setDraggedItem({ dayIndex, itemIndex });
   };
+
+  if (isLoadingAttractions) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((j) => (
+                    <Skeleton key={j} className="h-12 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
