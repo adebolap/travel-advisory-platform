@@ -123,30 +123,4 @@ export function setupAuth(app: Express) {
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
-
-  // Travel quiz endpoints
-  app.post("/api/quiz/submit", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const quizResponse = await storage.createTravelQuizResponse({
-        userId: req.user.id,
-        responses: req.body.responses,
-        recommendedDestinations: req.body.recommendedDestinations,
-        recommendedActivities: req.body.recommendedActivities,
-      });
-
-      // Update user preferences based on quiz responses
-      await storage.updateUserPreferences(req.user.id, {
-        lastQuizDate: new Date(),
-        ...req.body.preferences,
-      });
-
-      res.json(quizResponse);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to save quiz responses" });
-    }
-  });
 }
