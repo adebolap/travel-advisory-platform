@@ -5,12 +5,15 @@ import { queryClient } from "@/lib/queryClient";
 import { Navigation } from "@/components/ui/navigation";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 // Lazy load pages
 const Home = lazy(() => import("@/pages/home"));
 const Explore = lazy(() => import("@/pages/explore"));
 const Events = lazy(() => import("@/pages/events"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const Auth = lazy(() => import("@/pages/auth-page"));
 
 // Loading component
 function LoadingSpinner() {
@@ -24,18 +27,21 @@ function LoadingSpinner() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <Suspense fallback={<LoadingSpinner />}>
-          <Switch>
-            <Route path="/" component={Home} />
-            <Route path="/explore" component={Explore} />
-            <Route path="/events" component={Events} />
-            <Route component={NotFound} />
-          </Switch>
-        </Suspense>
-        <Toaster />
-      </div>
+      <AuthProvider>
+        <div className="min-h-screen bg-background">
+          <Navigation />
+          <Suspense fallback={<LoadingSpinner />}>
+            <Switch>
+              <Route path="/auth" component={Auth} />
+              <ProtectedRoute path="/" component={Home} />
+              <ProtectedRoute path="/explore" component={Explore} />
+              <ProtectedRoute path="/events" component={Events} />
+              <Route component={NotFound} />
+            </Switch>
+          </Suspense>
+          <Toaster />
+        </div>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

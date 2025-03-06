@@ -8,6 +8,15 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   travelStyle: text("travel_style"), // e.g., "Adventure", "Luxury", "Budget"
   preferredActivities: text("preferred_activities").array(),
+  // New fields for travel preferences
+  lastQuizDate: timestamp("last_quiz_date"),
+  preferredDestinations: text("preferred_destinations").array(),
+  travelBudget: integer("travel_budget"),
+  preferredSeason: text("preferred_season"),
+  travelWithKids: boolean("travel_with_kids"),
+  foodPreferences: text("food_preferences").array(),
+  accessibilityNeeds: text("accessibility_needs").array(),
+  languagesSpoken: text("languages_spoken").array(),
 });
 
 export const searchPreferences = pgTable("search_preferences", {
@@ -26,7 +35,16 @@ export const searchPreferences = pgTable("search_preferences", {
   travelWithKids: boolean("travel_with_kids"),
 });
 
-// Extended schemas for better type safety
+export const travelQuizResponses = pgTable("travel_quiz_responses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  quizDate: timestamp("quiz_date").defaultNow(),
+  responses: json("responses").notNull(),
+  recommendedDestinations: text("recommended_destinations").array(),
+  recommendedActivities: text("recommended_activities").array(),
+});
+
+// Enums for better type safety
 export const travelStyleEnum = [
   "Adventure",
   "Cultural",
@@ -53,10 +71,16 @@ export const accommodationEnum = [
   "BnB",
 ] as const;
 
-export const insertUserSchema = createInsertSchema(users).extend({
-  travelStyle: z.enum(travelStyleEnum).optional(),
-  preferredActivities: z.array(z.string()).optional(),
-});
+// Extended schemas for input validation
+export const insertUserSchema = createInsertSchema(users)
+  .extend({
+    travelStyle: z.enum(travelStyleEnum).optional(),
+    preferredActivities: z.array(z.string()).optional(),
+    preferredDestinations: z.array(z.string()).optional(),
+    foodPreferences: z.array(z.string()).optional(),
+    accessibilityNeeds: z.array(z.string()).optional(),
+    languagesSpoken: z.array(z.string()).optional(),
+  });
 
 export const searchPreferenceSchema = createInsertSchema(searchPreferences)
   .omit({
@@ -69,19 +93,25 @@ export const searchPreferenceSchema = createInsertSchema(searchPreferences)
     accommodation: z.enum(accommodationEnum).optional(),
   });
 
+export const travelQuizResponseSchema = createInsertSchema(travelQuizResponses)
+  .omit({
+    id: true,
+    quizDate: true,
+  });
+
+// Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type SearchPreference = typeof searchPreferences.$inferSelect;
 export type InsertSearchPreference = z.infer<typeof searchPreferenceSchema>;
+export type TravelQuizResponse = typeof travelQuizResponses.$inferSelect;
+export type InsertTravelQuizResponse = z.infer<typeof travelQuizResponseSchema>;
 
-// Types for recommendations
-export interface TravelRecommendation {
-  city: string;
-  score: number;
-  matchingInterests: string[];
-  bestTimeToVisit: string;
-  estimatedBudget: number;
-  popularEvents: string[];
-  weatherInfo: string;
-  localTips: string[];
+// Travel quiz question types
+export interface TravelQuizQuestion {
+  id: string;
+  text: string;
+  type: 'single' | 'multiple' | 'scale';
+  options?: string[];
+  category: 'preferences' | 'style' | 'budget' | 'accessibility';
 }
