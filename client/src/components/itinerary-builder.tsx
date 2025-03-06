@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2 } from "lucide-react";
+import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2, LayoutGrid, LayoutList } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, addDays, differenceInDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import ShareButtons from "@/components/share-buttons";
+import TimelineView from "./timeline-view";
 
 interface ItineraryBuilderProps {
   city: string;
@@ -296,6 +297,7 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
   const [newActivity, setNewActivity] = useState("");
   const [selectedTime, setSelectedTime] = useState("09:00");
   const [draggedItem, setDraggedItem] = useState<{ dayIndex: number; itemIndex: number } | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
 
   // Fetch attractions for the city
   const { data: attractions, isLoading: isLoadingAttractions } = useQuery<Attraction[]>({
@@ -370,6 +372,17 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
     setDraggedItem({ dayIndex, itemIndex });
   };
 
+  const handleReorder = (dayIndex: number, newItems: ItineraryItem[]) => {
+    setItinerary(prev => {
+      const updated = [...prev];
+      updated[dayIndex] = {
+        ...updated[dayIndex],
+        items: newItems
+      };
+      return updated;
+    });
+  };
+
   const generateShareableDescription = () => {
     if (!dateRange?.from || !dateRange?.to) return '';
 
@@ -408,12 +421,26 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Your Itinerary for {city}</h2>
-        <ShareButtons
-          title={`Travel Itinerary: ${city}`}
-          description={generateShareableDescription()}
-          url={`${window.location.origin}/itinerary/${encodeURIComponent(city)}`}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setViewMode('list')}
+            className={viewMode === 'list' ? 'bg-accent' : ''}
+          >
+            <LayoutList className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setViewMode('timeline')}
+            className={viewMode === 'timeline' ? 'bg-accent' : ''}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
       {itinerary.map((day, dayIndex) => (
         <Card key={day.date.toISOString()} className="overflow-hidden">
           <CardHeader className="bg-primary/5">
@@ -422,63 +449,70 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
-              {/* Activity list */}
-              <div className="space-y-2">
-                {day.items.map((item, itemIndex) => (
-                  <div
-                    key={item.id}
-                    draggable
-                    onDragStart={() => handleDragStart(dayIndex, itemIndex)}
-                    onDragOver={(e) => handleDragOver(e, dayIndex, itemIndex)}
-                    className="flex items-center gap-3 p-2 bg-card hover:bg-accent rounded-lg group"
-                  >
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-move opacity-0 group-hover:opacity-100" />
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{item.time}</span>
-                    <span className="flex-1">{item.activity}</span>
-                    {item.location && (
-                      <span className="text-sm text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {item.location}
-                      </span>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeActivity(dayIndex, itemIndex)}
-                      className="opacity-0 group-hover:opacity-100"
+            {viewMode === 'timeline' ? (
+              <TimelineView
+                items={day.items}
+                onReorder={(newItems) => handleReorder(dayIndex, newItems)}
+              />
+            ) : (
+              <div className="space-y-4">
+                {/* Activity list */}
+                <div className="space-y-2">
+                  {day.items.map((item, itemIndex) => (
+                    <div
+                      key={item.id}
+                      draggable
+                      onDragStart={() => handleDragStart(dayIndex, itemIndex)}
+                      onDragOver={(e) => handleDragOver(e, dayIndex, itemIndex)}
+                      className="flex items-center gap-3 p-2 bg-card hover:bg-accent rounded-lg group"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Add new activity */}
-              <div className="flex gap-2">
-                <div className="w-24">
-                  <Input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                  />
+                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-move opacity-0 group-hover:opacity-100" />
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{item.time}</span>
+                      <span className="flex-1">{item.activity}</span>
+                      {item.location && (
+                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {item.location}
+                        </span>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeActivity(dayIndex, itemIndex)}
+                        className="opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-                <Input
-                  placeholder="Add activity..."
-                  value={newActivity}
-                  onChange={(e) => setNewActivity(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      addActivity(dayIndex);
-                    }
-                  }}
-                />
-                <Button onClick={() => addActivity(dayIndex)} disabled={!newActivity}>
-                  <Plus className="h-4 w-4" />
-                </Button>
+
+                {/* Add new activity */}
+                <div className="flex gap-2 mt-4">
+                  <div className="w-24">
+                    <Input
+                      type="time"
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                    />
+                  </div>
+                  <Input
+                    placeholder="Add activity..."
+                    value={newActivity}
+                    onChange={(e) => setNewActivity(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addActivity(dayIndex);
+                      }
+                    }}
+                  />
+                  <Button onClick={() => addActivity(dayIndex)} disabled={!newActivity}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       ))}
