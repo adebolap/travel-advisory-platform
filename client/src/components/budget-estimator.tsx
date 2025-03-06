@@ -19,7 +19,8 @@ const cityBaseCosts: Record<string, {
   activities: number,
   transport: number,
   currency: string,
-  symbol: string
+  symbol: string,
+  exchangeRate?: number // Optional exchange rate to USD for comparison
 }> = {
   "London": { 
     accommodation: 150, 
@@ -27,7 +28,8 @@ const cityBaseCosts: Record<string, {
     activities: 30, 
     transport: 15,
     currency: "GBP",
-    symbol: "£"
+    symbol: "£",
+    exchangeRate: 1.27
   },
   "Paris": { 
     accommodation: 130, 
@@ -35,7 +37,8 @@ const cityBaseCosts: Record<string, {
     activities: 25, 
     transport: 12,
     currency: "EUR",
-    symbol: "€"
+    symbol: "€",
+    exchangeRate: 1.08
   },
   "New York": { 
     accommodation: 200, 
@@ -43,7 +46,8 @@ const cityBaseCosts: Record<string, {
     activities: 40, 
     transport: 20,
     currency: "USD",
-    symbol: "$"
+    symbol: "$",
+    exchangeRate: 1
   },
   "Tokyo": { 
     accommodation: 15000, 
@@ -51,7 +55,8 @@ const cityBaseCosts: Record<string, {
     activities: 3000, 
     transport: 1000,
     currency: "JPY",
-    symbol: "¥"
+    symbol: "¥",
+    exchangeRate: 0.0067
   },
   "Sydney": { 
     accommodation: 200, 
@@ -59,7 +64,8 @@ const cityBaseCosts: Record<string, {
     activities: 40, 
     transport: 15,
     currency: "AUD",
-    symbol: "A$"
+    symbol: "A$",
+    exchangeRate: 0.65
   },
   "Dubai": { 
     accommodation: 500, 
@@ -67,7 +73,8 @@ const cityBaseCosts: Record<string, {
     activities: 200, 
     transport: 50,
     currency: "AED",
-    symbol: "د.إ"
+    symbol: "د.إ",
+    exchangeRate: 0.27
   },
   "Singapore": { 
     accommodation: 200, 
@@ -75,7 +82,8 @@ const cityBaseCosts: Record<string, {
     activities: 40, 
     transport: 10,
     currency: "SGD",
-    symbol: "S$"
+    symbol: "S$",
+    exchangeRate: 0.74
   },
   "Amsterdam": { 
     accommodation: 120, 
@@ -83,7 +91,8 @@ const cityBaseCosts: Record<string, {
     activities: 25, 
     transport: 10,
     currency: "EUR",
-    symbol: "€"
+    symbol: "€",
+    exchangeRate: 1.08
   },
   "Barcelona": { 
     accommodation: 100, 
@@ -91,7 +100,8 @@ const cityBaseCosts: Record<string, {
     activities: 20, 
     transport: 8,
     currency: "EUR",
-    symbol: "€"
+    symbol: "€",
+    exchangeRate: 1.08
   },
   "Berlin": { 
     accommodation: 90, 
@@ -99,7 +109,8 @@ const cityBaseCosts: Record<string, {
     activities: 20, 
     transport: 8,
     currency: "EUR",
-    symbol: "€"
+    symbol: "€",
+    exchangeRate: 1.08
   },
   "Bangkok": {
     accommodation: 2000,
@@ -107,7 +118,8 @@ const cityBaseCosts: Record<string, {
     activities: 800,
     transport: 200,
     currency: "THB",
-    symbol: "฿"
+    symbol: "฿",
+    exchangeRate: 0.028
   },
   "Seoul": {
     accommodation: 100000,
@@ -115,7 +127,8 @@ const cityBaseCosts: Record<string, {
     activities: 40000,
     transport: 10000,
     currency: "KRW",
-    symbol: "₩"
+    symbol: "₩",
+    exchangeRate: 0.00076
   },
   "Mumbai": {
     accommodation: 5000,
@@ -123,7 +136,8 @@ const cityBaseCosts: Record<string, {
     activities: 1500,
     transport: 500,
     currency: "INR",
-    symbol: "₹"
+    symbol: "₹",
+    exchangeRate: 0.012
   },
   "Istanbul": {
     accommodation: 800,
@@ -131,7 +145,8 @@ const cityBaseCosts: Record<string, {
     activities: 300,
     transport: 100,
     currency: "TRY",
-    symbol: "₺"
+    symbol: "₺",
+    exchangeRate: 0.031
   },
   "Mexico City": {
     accommodation: 1500,
@@ -139,7 +154,8 @@ const cityBaseCosts: Record<string, {
     activities: 500,
     transport: 150,
     currency: "MXN",
-    symbol: "$"
+    symbol: "$",
+    exchangeRate: 0.059
   }
 };
 
@@ -150,7 +166,8 @@ const defaultCosts = {
   activities: 20,
   transport: 10,
   currency: "USD",
-  symbol: "$"
+  symbol: "$",
+  exchangeRate: 1
 };
 
 const travelStyleMultipliers: Record<string, number> = {
@@ -161,8 +178,20 @@ const travelStyleMultipliers: Record<string, number> = {
   "Family": 1.4     // Family-friendly hotels, kid-friendly activities
 };
 
+// Format currency based on locale and currency code
+function formatCurrency(amount: number, currency: string, symbol: string): string {
+  // Special formatting for currencies with large denominations
+  if (currency === 'JPY' || currency === 'KRW') {
+    return `${symbol}${Math.round(amount).toLocaleString()}`;
+  }
+
+  // Format with 2 decimal places for most currencies
+  return `${symbol}${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+}
+
 export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRange }: BudgetEstimatorProps) {
   const [days, setDays] = useState(7);
+  const [showUSD, setShowUSD] = useState(false);
 
   // Update days when dateRange changes
   useEffect(() => {
@@ -186,6 +215,7 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
   };
 
   const totalCost = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
+  const totalUSD = baseCosts.exchangeRate ? (totalCost * baseCosts.exchangeRate) : totalCost;
 
   return (
     <Card className="w-full">
@@ -217,34 +247,41 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
                 <Bed className="h-4 w-4 text-muted-foreground" />
                 <span>Accommodation</span>
               </div>
-              <span className="font-medium">{baseCosts.symbol}{costs.accommodation}</span>
+              <span className="font-medium">{formatCurrency(costs.accommodation, baseCosts.currency, baseCosts.symbol)}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Utensils className="h-4 w-4 text-muted-foreground" />
                 <span>Food & Drinks</span>
               </div>
-              <span className="font-medium">{baseCosts.symbol}{costs.food}</span>
+              <span className="font-medium">{formatCurrency(costs.food, baseCosts.currency, baseCosts.symbol)}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <span>Activities</span>
               </div>
-              <span className="font-medium">{baseCosts.symbol}{costs.activities}</span>
+              <span className="font-medium">{formatCurrency(costs.activities, baseCosts.currency, baseCosts.symbol)}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Plane className="h-4 w-4 text-muted-foreground" />
                 <span>Local Transport</span>
               </div>
-              <span className="font-medium">{baseCosts.symbol}{costs.transport}</span>
+              <span className="font-medium">{formatCurrency(costs.transport, baseCosts.currency, baseCosts.symbol)}</span>
             </div>
 
             <div className="pt-2 mt-2 border-t">
               <div className="flex items-center justify-between font-semibold">
                 <span>Estimated Total</span>
-                <span className="text-lg">{baseCosts.symbol}{totalCost}</span>
+                <div className="text-right">
+                  <div className="text-lg">{formatCurrency(totalCost, baseCosts.currency, baseCosts.symbol)}</div>
+                  {baseCosts.currency !== 'USD' && (
+                    <div className="text-sm text-muted-foreground">
+                      ≈ ${Math.round(totalUSD).toLocaleString()} USD
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 *Estimates based on {travelStyle.toLowerCase()} travel style in {city}
