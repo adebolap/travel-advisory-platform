@@ -24,12 +24,6 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
 
-  // If user is already logged in, redirect to home
-  if (user) {
-    setLocation("/");
-    return null;
-  }
-
   // Login form
   const loginForm = useForm<Pick<InsertUser, "username" | "password">>({
     defaultValues: {
@@ -56,6 +50,13 @@ export default function AuthPage() {
   const onRegister = async (data: InsertUser) => {
     await registerMutation.mutateAsync(data);
   };
+
+  // Handle redirect after authentication
+  if (user) {
+    // Use effect to handle navigation after render
+    setTimeout(() => setLocation("/"), 0);
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex">
