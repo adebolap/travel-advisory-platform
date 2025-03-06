@@ -63,7 +63,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Welcome to Travel Companion</CardTitle>
+            <CardTitle>Welcome to Your Travel Buddy</CardTitle>
             <CardDescription>
               Sign in to access your personalized travel recommendations
             </CardDescription>
@@ -160,10 +160,17 @@ export default function AuthPage() {
       </div>
 
       {/* Hero Section */}
-      <div className="hidden lg:flex flex-1 bg-muted items-center justify-center p-8">
-        <div className="max-w-lg text-center">
+      <div className="hidden lg:flex flex-1 bg-muted items-center justify-center p-8 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center z-0"
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2000&auto=format')",
+            filter: 'brightness(0.6)'
+          }}
+        />
+        <div className="relative z-10 max-w-lg text-center text-white">
           <h1 className="text-4xl font-bold mb-4">Plan Your Perfect Journey</h1>
-          <p className="text-lg text-muted-foreground mb-6">
+          <p className="text-lg mb-6">
             Create an account to unlock personalized travel recommendations, save your favorite destinations,
             and get custom itineraries based on your preferences.
           </p>
