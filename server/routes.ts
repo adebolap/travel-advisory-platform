@@ -55,6 +55,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'shopping_mall'
       ];
 
+      console.log('Making API requests for place types:', placeTypes);
+
       // Make parallel requests for each place type
       const attractionsPromises = placeTypes.map(type => {
         const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=50000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`;
@@ -67,7 +69,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
       });
 
-      console.log('Making API requests for place types:', placeTypes);
       const responses = await Promise.all(attractionsPromises);
 
       // Combine and deduplicate attractions
