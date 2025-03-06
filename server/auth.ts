@@ -115,6 +115,38 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // Add quiz endpoints
+  app.post("/api/quiz/submit", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const quizResponse = await storage.createTravelQuizResponse({
+        userId: req.user.id,
+        responses: req.body.responses,
+        recommendedDestinations: req.body.recommendedDestinations || [],
+        recommendedActivities: req.body.recommendedActivities || []
+      });
+
+      // Update user preferences based on quiz responses
+      const updatedUser = await storage.updateUserPreferences(req.user.id, {
+        lastQuizDate: new Date(),
+        ...req.body.preferences
+      });
+
+      // Exclude password from response
+      const { password, ...userWithoutPassword } = updatedUser;
+
+      res.json({
+        quizResponse,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });

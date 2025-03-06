@@ -1,6 +1,7 @@
 import { users, searchPreferences, type User, type InsertUser, type SearchPreference, type InsertSearchPreference } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { travelQuizResponses, type TravelQuizResponse, type InsertTravelQuizResponse } from "@shared/schema";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -11,20 +12,26 @@ export interface IStorage {
   createSearchPreference(pref: InsertSearchPreference): Promise<SearchPreference>;
   getSearchPreferences(userId: number): Promise<SearchPreference[]>;
   sessionStore: session.Store;
+  createTravelQuizResponse(response: InsertTravelQuizResponse): Promise<TravelQuizResponse>;
+  updateUserPreferences(userId: number, preferences: Partial<User>): Promise<User>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private preferences: Map<number, SearchPreference>;
+  private quizResponses: Map<number, TravelQuizResponse>;
   private currentUserId: number;
   private currentPrefId: number;
+  private currentQuizId: number;
   public sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
     this.preferences = new Map();
+    this.quizResponses = new Map();
     this.currentUserId = 1;
     this.currentPrefId = 1;
+    this.currentQuizId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
     });
@@ -86,6 +93,30 @@ export class MemStorage implements IStorage {
     return Array.from(this.preferences.values()).filter(
       (pref) => pref.userId === userId
     );
+  }
+
+  async createTravelQuizResponse(response: InsertTravelQuizResponse): Promise<TravelQuizResponse> {
+    const id = this.currentQuizId++;
+    const quizResponse: TravelQuizResponse = {
+      id,
+      userId: response.userId,
+      quizDate: new Date(),
+      responses: response.responses,
+      recommendedDestinations: response.recommendedDestinations || [],
+      recommendedActivities: response.recommendedActivities || []
+    };
+    this.quizResponses.set(id, quizResponse);
+    return quizResponse;
+  }
+
+  async updateUserPreferences(userId: number, preferences: Partial<User>): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const updatedUser = { ...user, ...preferences };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
 }
 
