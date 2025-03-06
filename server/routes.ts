@@ -133,8 +133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get current month's date range
       const today = new Date();
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const startOfMonth = format(new Date(today.getFullYear(), today.getMonth(), 1), "yyyy-MM-dd'T'HH:mm:ss'Z'");
+      const endOfMonth = format(new Date(today.getFullYear(), today.getMonth() + 1, 0), "yyyy-MM-dd'T'HH:mm:ss'Z'");
 
       console.log(`Fetching events for ${city} for current month`);
 
@@ -144,8 +144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           params: {
             apikey: process.env.TICKETMASTER_API_KEY,
             city: city,
-            startDateTime: startOfMonth.toISOString(),
-            endDateTime: endOfMonth.toISOString(),
+            startDateTime: startOfMonth,
+            endDateTime: endOfMonth,
             size: 20,
             sort: 'date,asc'
           }
