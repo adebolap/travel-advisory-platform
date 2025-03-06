@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { premiumFeatures } from "@shared/schema";
 
 const currencies = {
   USD: { symbol: "$", rate: 1 },
@@ -13,21 +14,10 @@ const currencies = {
   AUD: { symbol: "A$", rate: 1.53 },
 };
 
-const features = [
-  "Personalized travel recommendations",
-  "Advanced trip planning tools",
-  "Real-time event updates",
-  "Currency conversion",
-  "Weather forecasts",
-  "Travel personality insights",
-  "Priority customer support",
-  "Ad-free experience"
-];
-
 export default function PricingPage() {
   const [currency, setCurrency] = useState<keyof typeof currencies>("USD");
   const { user } = useAuth();
-  
+
   const basePrice = 12;
   const price = Math.round(basePrice * currencies[currency].rate);
 
@@ -52,11 +42,11 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="container max-w-5xl py-16">
+    <div className="container max-w-6xl py-16">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
+        <h1 className="text-4xl font-bold mb-4">Choose Your Travel Experience</h1>
         <p className="text-xl text-muted-foreground">
-          Get access to all premium features for just {currencies[currency].symbol}{price}/year
+          Get access to premium features for just {currencies[currency].symbol}{price}/year
         </p>
       </div>
 
@@ -75,37 +65,64 @@ export default function PricingPage() {
         </Select>
       </div>
 
-      <Card className="relative overflow-hidden border-primary/20">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl">
-            {currencies[currency].symbol}{price}
-            <span className="text-xl text-muted-foreground">/year</span>
-          </CardTitle>
-          <CardDescription className="text-lg">
-            All premium features included
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4">
-            <ul className="grid gap-3 text-muted-foreground">
-              {features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-primary" />
-                  {feature}
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Basic Plan */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Basic Plan</CardTitle>
+            <CardDescription>Free forever</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-4 mb-6">
+              {Object.entries(premiumFeatures).map(([key, feature]) => (
+                <li key={key} className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <span>{feature.basic}</span>
                 </li>
               ))}
             </ul>
-            <Button
-              size="lg"
-              className="mt-6"
-              onClick={handleSubscribe}
-            >
-              {user ? "Subscribe Now" : "Sign up to Subscribe"}
+            <Button disabled className="w-full" variant="outline">
+              Current Plan
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Premium Plan */}
+        <Card className="relative overflow-hidden border-primary/20">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+          <CardHeader>
+            <CardTitle className="text-2xl">
+              Premium Plan
+              <span className="block text-xl text-muted-foreground">
+                {currencies[currency].symbol}{price}/year
+              </span>
+            </CardTitle>
+            <CardDescription>Unlock all premium features</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-4 mb-6">
+              {Object.entries(premiumFeatures).map(([key, feature]) => (
+                <li key={key} className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-primary mt-0.5" />
+                  <span>{feature.premium}</span>
+                </li>
+              ))}
+            </ul>
+            {user?.isSubscribed ? (
+              <Button disabled className="w-full">
+                Current Plan
+              </Button>
+            ) : (
+              <Button
+                className="w-full"
+                onClick={handleSubscribe}
+              >
+                {user ? "Upgrade Now" : "Sign up to Subscribe"}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
