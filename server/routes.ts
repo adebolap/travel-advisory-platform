@@ -125,48 +125,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced events API endpoint with Ticketmaster integration
   apiRouter.get("/api/events/:city", async (req, res) => {
     const { city } = req.params;
-    const { from, to, category } = req.query;
+    const { from, to } = req.query;
 
     if (!process.env.TICKETMASTER_API_KEY) {
       return res.status(500).json({ error: "Ticketmaster API key not configured" });
     }
 
     try {
-      // Format dates for Ticketmaster API
-      const startDate = from ? `${format(parseISO(from as string), "yyyy-MM-dd")}T00:00:00Z` : undefined;
-      const endDate = to ? `${format(parseISO(to as string), "yyyy-MM-dd")}T23:59:59Z` : undefined;
-
-      // Build Ticketmaster API query with better parameters
-      const params = new URLSearchParams({
-        apikey: process.env.TICKETMASTER_API_KEY,
-        keyword: city, // Using keyword for better search results
-        size: "100", // Get more events
-        sort: "date,asc",
-        locale: "*", // Include all locales
-        ...(startDate && { startDateTime: startDate }),
-        ...(endDate && { endDateTime: endDate }),
-        ...(category && { classificationName: category as string }),
-      });
-
       console.log(`Fetching events for ${city} from Ticketmaster API...`);
-      const apiUrl = `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`;
-      console.log(`API URL: ${apiUrl}`);
 
-      const response = await axios.get(apiUrl);
+      const response = await axios.get(
+        'https://app.ticketmaster.com/discovery/v2/events.json',
+        {
+          params: {
+            apikey: process.env.TICKETMASTER_API_KEY,
+            city: city,
+            startDateTime: from ? new Date(from as string).toISOString() : undefined,
+            endDateTime: to ? new Date(to as string).toISOString() : undefined,
+            sort: 'date,asc',
+            size: 20,
+            locale: "*"
+          }
+        }
+      );
 
       console.log(`Ticketmaster API response status: ${response.status}`);
-      console.log(`Response data:`, JSON.stringify(response.data, null, 2));
 
-      // Transform Ticketmaster events to our format, handling the _embedded structure
       const events = response.data._embedded?.events?.map((event: any) => ({
         id: event.id,
         name: event.name,
-        date: event.dates.start.dateTime || event.dates.start.localDate,
+        date: event.dates.start.localDate,
         type: event.classifications?.[0]?.segment?.name || "Other",
         description: event.description || event.info || `${event.name} in ${city}`,
         highlight: event.pleaseNote ? true : false,
         source: "Ticketmaster",
         url: event.url,
+        image: event.images?.[0]?.url,
         location: event._embedded?.venues?.[0]?.name,
         category: event.classifications?.[0]?.segment?.name?.toLowerCase(),
         price: event.priceRanges
@@ -175,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         culturalSignificance: event.pleaseNote || null,
       })) || [];
 
-      console.log(`Transformed events count: ${events.length}`);
+      console.log(`Found ${events.length} events in ${city}`);
       if (events.length === 0) {
         console.log('No events found in response data:', response.data);
       }

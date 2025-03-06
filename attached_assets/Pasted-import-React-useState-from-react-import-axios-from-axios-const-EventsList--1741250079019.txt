@@ -1,0 +1,96 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+
+const EventsList = () => {
+    const [city, setCity] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const fetchEvents = async () => {
+        if (!city) return;
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.get(
+                `http://localhost:5000/api/events`,
+                {
+                    params: { city, startDate, endDate }
+                }
+            );
+            setEvents(response.data);
+        } catch (err) {
+            setError('Failed to fetch events.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Discover Events in Your City</h1>
+            <div className="mb-4">
+                <input
+                    type="text"
+                    placeholder="Enter City Name"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="p-2 border rounded mb-2 w-full"
+                />
+                <input
+                    type="date"
+                    placeholder="Start Date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="p-2 border rounded mb-2 w-full"
+                />
+                <input
+                    type="date"
+                    placeholder="End Date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="p-2 border rounded mb-2 w-full"
+                />
+                <button
+                    onClick={fetchEvents}
+                    className="bg-blue-500 text-white p-2 rounded"
+                >
+                    Search Events
+                </button>
+            </div>
+
+            {loading && <p>Loading events...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {events.map((event, index) => (
+                    <div key={index} className="p-4 border rounded shadow-md">
+                        {event.image && (
+                            <img
+                                src={event.image}
+                                alt={event.name}
+                                className="w-full h-40 object-cover mb-2"
+                            />
+                        )}
+                        <h2 className="text-xl font-semibold">{event.name}</h2>
+                        <p><strong>Venue:</strong> {event.venue}, {event.location}</p>
+                        <p><strong>Date:</strong> {event.date}</p>
+                        <a
+                            href={event.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500"
+                        >
+                            More Info
+                        </a>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default EventsList;
