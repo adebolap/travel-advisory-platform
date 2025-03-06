@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Plane, Palmtree, Mountain, Beach, Coffee, Camera, Book, Map } from "lucide-react";
+import { Plane, Palmtree, Mountain, Coffee, Camera, Book, Map } from "lucide-react";
 
 interface QuizQuestion {
   id: string;
@@ -101,6 +101,60 @@ const quizQuestions: QuizQuestion[] = [
         description: "Taking classes and learning about local culture"
       }
     ]
+  },
+  {
+    id: "travel-planning",
+    question: "What's your preferred way to plan trips?",
+    illustration: <Map className="w-16 h-16 text-primary animate-pulse" />,
+    options: [
+      {
+        value: "spontaneous",
+        label: "Go with the Flow",
+        description: "Minimal planning, maximum flexibility"
+      },
+      {
+        value: "organized",
+        label: "Well Organized",
+        description: "Detailed itineraries and advance bookings"
+      },
+      {
+        value: "balanced",
+        label: "Balanced Approach",
+        description: "Mix of planned activities and free time"
+      },
+      {
+        value: "guided",
+        label: "Guided Experience",
+        description: "Professional tours and local guides"
+      }
+    ]
+  },
+  {
+    id: "travel-companions",
+    question: "Who do you prefer to travel with?",
+    illustration: <Coffee className="w-16 h-16 text-primary animate-bounce" />,
+    options: [
+      {
+        value: "solo",
+        label: "Solo Traveler",
+        description: "Independent exploration at your own pace"
+      },
+      {
+        value: "family",
+        label: "Family Time",
+        description: "Creating memories with loved ones"
+      },
+      {
+        value: "friends",
+        label: "Friend Group",
+        description: "Sharing adventures with friends"
+      },
+      {
+        value: "partner",
+        label: "Romantic Getaway",
+        description: "Quality time with your significant other"
+      }
+    ]
   }
 ];
 
@@ -119,8 +173,8 @@ export default function TravelQuiz() {
     },
     onSuccess: () => {
       toast({
-        title: "Quiz completed!",
-        description: "Your travel preferences have been saved.",
+        title: "Quiz completed! 🎉",
+        description: "Your travel preferences have been saved. Let's find your perfect destinations!",
       });
     },
     onError: (error: Error) => {
