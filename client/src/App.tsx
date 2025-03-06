@@ -14,6 +14,7 @@ const Explore = lazy(() => import("@/pages/explore"));
 const Events = lazy(() => import("@/pages/events"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Auth = lazy(() => import("@/pages/auth-page"));
+const TravelQuiz = lazy(() => import("@/pages/travel-quiz"));
 
 // Loading component
 function LoadingSpinner() {
@@ -36,6 +37,7 @@ export default function App() {
               <ProtectedRoute path="/" component={Home} />
               <ProtectedRoute path="/explore" component={Explore} />
               <ProtectedRoute path="/events" component={Events} />
+              <ProtectedRoute path="/quiz" component={TravelQuiz} />
               <Route component={NotFound} />
             </Switch>
           </Suspense>
