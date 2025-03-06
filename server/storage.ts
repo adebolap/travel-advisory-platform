@@ -14,6 +14,7 @@ export interface IStorage {
   sessionStore: session.Store;
   createTravelQuizResponse(response: InsertTravelQuizResponse): Promise<TravelQuizResponse>;
   updateUserPreferences(userId: number, preferences: Partial<User>): Promise<User>;
+  updateSubscriptionStatus(userId: number, isSubscribed: boolean, endDate?: Date): Promise<User>;
 }
 
 export class MemStorage implements IStorage {
@@ -62,7 +63,9 @@ export class MemStorage implements IStorage {
       travelWithKids: null,
       foodPreferences: null,
       accessibilityNeeds: null,
-      languagesSpoken: null
+      languagesSpoken: null,
+      isSubscribed: false,
+      subscriptionEndDate: null,
     };
     this.users.set(id, user);
     return user;
@@ -115,6 +118,20 @@ export class MemStorage implements IStorage {
       throw new Error('User not found');
     }
     const updatedUser = { ...user, ...preferences };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async updateSubscriptionStatus(userId: number, isSubscribed: boolean, endDate?: Date): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const updatedUser = { 
+      ...user, 
+      isSubscribed, 
+      subscriptionEndDate: endDate || null 
+    };
     this.users.set(userId, updatedUser);
     return updatedUser;
   }

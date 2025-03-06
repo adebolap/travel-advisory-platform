@@ -5,19 +5,60 @@ import { searchPreferenceSchema } from "@shared/schema";
 import { addMonths, format, isWithinInterval, parseISO } from "date-fns";
 import axios from "axios";
 import { createCheckoutSession } from "./payment";
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' });
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
 
   // Create Stripe checkout session
   apiRouter.post("/api/create-checkout-session", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
     try {
       const { currency } = req.body;
-      const session = await createCheckoutSession(currency);
+      const session = await createCheckoutSession(currency, req.user.id);
       res.json({ url: session.url });
     } catch (error: any) {
       console.error("Stripe checkout error:", error.message);
       res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  // Handle Stripe webhook
+  apiRouter.post("/api/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+
+    try {
+      const event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const userId = session.metadata.userId;
+
+        // Set subscription end date to 1 year from now
+        const subscriptionEndDate = new Date();
+        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+
+        await storage.updateSubscriptionStatus(
+          parseInt(userId),
+          true,
+          subscriptionEndDate
+        );
+      }
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error('Webhook Error:', err.message);
+      res.status(400).send(`Webhook Error: ${err.message}`);
     }
   });
 

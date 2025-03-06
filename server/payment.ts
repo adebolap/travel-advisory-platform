@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-export async function createCheckoutSession(currency: string) {
+export async function createCheckoutSession(currency: string, userId: number) {
   const yearlyPrice = Math.round(
     currency === "USD" ? 1200 : // $12.00
     currency === "EUR" ? 1104 : // €11.04
@@ -38,6 +38,9 @@ export async function createCheckoutSession(currency: string) {
     mode: "subscription",
     success_url: `${process.env.WEBSITE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.WEBSITE_URL}/pricing`,
+    metadata: {
+      userId: userId.toString(),
+    },
   });
 
   return session;

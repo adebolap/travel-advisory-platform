@@ -17,6 +17,8 @@ export const users = pgTable("users", {
   foodPreferences: text("food_preferences").array(),
   accessibilityNeeds: text("accessibility_needs").array(),
   languagesSpoken: text("languages_spoken").array(),
+  isSubscribed: boolean("is_subscribed").default(false),
+  subscriptionEndDate: timestamp("subscription_end_date"),
 });
 
 export const searchPreferences = pgTable("search_preferences", {
@@ -80,6 +82,8 @@ export const insertUserSchema = createInsertSchema(users)
     foodPreferences: z.array(z.string()).optional(),
     accessibilityNeeds: z.array(z.string()).optional(),
     languagesSpoken: z.array(z.string()).optional(),
+    isSubscribed: z.boolean().optional(),
+    subscriptionEndDate: z.date().optional()
   });
 
 export const searchPreferenceSchema = createInsertSchema(searchPreferences)
