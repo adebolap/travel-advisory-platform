@@ -80,8 +80,8 @@ export default function EventList({ city, dateRange }: EventListProps) {
   const [bookmarkedEvents, setBookmarkedEvents] = useState<number[]>([]);
 
   const { data: events, isLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events', city, dateRange?.from?.toISOString(), dateRange?.to?.toISOString(), selectedCategories],
-    enabled: !!city
+    queryKey: ['/api/events', city],
+    enabled: !!city,
   });
 
   const toggleCategory = (category: string) => {

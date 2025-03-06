@@ -125,14 +125,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced events API endpoint with Ticketmaster integration
   apiRouter.get("/api/events/:city", async (req, res) => {
     const { city } = req.params;
-    const { from, to } = req.query;
+    let { from, to } = req.query;
 
     if (!process.env.TICKETMASTER_API_KEY) {
       return res.status(500).json({ error: "Ticketmaster API key not configured" });
     }
 
     try {
-      console.log(`Fetching events for ${city} from Ticketmaster API...`);
+      // If no dates provided, use current month
+      const today = new Date();
+      if (!from) {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        from = startOfMonth.toISOString();
+      }
+      if (!to) {
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        to = endOfMonth.toISOString();
+      }
+
+      console.log(`Fetching events for ${city} from ${from} to ${to}`);
 
       const response = await axios.get(
         'https://app.ticketmaster.com/discovery/v2/events.json',
@@ -140,8 +151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           params: {
             apikey: process.env.TICKETMASTER_API_KEY,
             city: city,
-            startDateTime: from ? new Date(from as string).toISOString() : undefined,
-            endDateTime: to ? new Date(to as string).toISOString() : undefined,
+            startDateTime: from,
+            endDateTime: to,
             sort: 'date,asc',
             size: 20,
             locale: "*"
