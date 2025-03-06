@@ -106,13 +106,19 @@ function generateDefaultSuggestions(date: Date): ItineraryItem[] {
 }
 
 function categorizeAttraction(types: string[]): 'morning' | 'afternoon' | 'evening' {
+  // Enhanced categorization based on place types
   const timeMapping: Record<string, 'morning' | 'afternoon' | 'evening'> = {
     museum: 'morning',
     art_gallery: 'morning',
     park: 'morning',
+    church: 'morning',
+    temple: 'morning',
+    mosque: 'morning',
     tourist_attraction: 'afternoon',
     shopping_mall: 'afternoon',
     amusement_park: 'afternoon',
+    zoo: 'afternoon',
+    aquarium: 'afternoon',
     restaurant: 'evening',
     bar: 'evening',
     night_club: 'evening'
@@ -135,55 +141,86 @@ function generateAttractionSuggestions(attractions: Attraction[], date: Date): I
     evening: attractions.filter(a => categorizeAttraction(a.types) === 'evening')
   };
 
-  // Morning activities
+  // Morning activities - try to add 2 morning attractions if available
   if (categorizedAttractions.morning.length > 0) {
-    const morningAttraction = categorizedAttractions.morning[Math.floor(Math.random() * categorizedAttractions.morning.length)];
-    suggestions.push({
-      id: `morning-${date.getTime()}`,
-      time: "09:00",
-      activity: `Visit ${morningAttraction.name}`,
-      location: morningAttraction.location,
-      type: 'attraction'
+    const morningAttractions = categorizedAttractions.morning
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+
+    morningAttractions.forEach((attraction, index) => {
+      suggestions.push({
+        id: `morning-${index}-${date.getTime()}`,
+        time: index === 0 ? "09:00" : "10:30",
+        activity: `Visit ${attraction.name}`,
+        location: attraction.location,
+        type: 'attraction'
+      });
     });
   }
 
-  // Add lunch
+  // Lunch break
   suggestions.push({
     id: `lunch-${date.getTime()}`,
-    time: "12:00",
-    activity: "Lunch break at a local restaurant",
+    time: "12:30",
+    activity: "Lunch break",
     type: 'custom'
   });
 
-  // Afternoon activities
+  // Afternoon activities - try to add 2 afternoon attractions
   if (categorizedAttractions.afternoon.length > 0) {
-    const afternoonAttraction = categorizedAttractions.afternoon[Math.floor(Math.random() * categorizedAttractions.afternoon.length)];
-    suggestions.push({
-      id: `afternoon-${date.getTime()}`,
-      time: "14:00",
-      activity: `Explore ${afternoonAttraction.name}`,
-      location: afternoonAttraction.location,
-      type: 'attraction'
+    const afternoonAttractions = categorizedAttractions.afternoon
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+
+    afternoonAttractions.forEach((attraction, index) => {
+      suggestions.push({
+        id: `afternoon-${index}-${date.getTime()}`,
+        time: index === 0 ? "14:00" : "16:00",
+        activity: `Explore ${attraction.name}`,
+        location: attraction.location,
+        type: 'attraction'
+      });
     });
   }
 
   // Evening activities
   if (categorizedAttractions.evening.length > 0) {
-    const eveningAttraction = categorizedAttractions.evening[Math.floor(Math.random() * categorizedAttractions.evening.length)];
-    suggestions.push({
-      id: `evening-${date.getTime()}`,
-      time: "19:00",
-      activity: `Experience ${eveningAttraction.name}`,
-      location: eveningAttraction.location,
-      type: 'attraction'
-    });
-  } else {
-    suggestions.push({
-      id: `dinner-${date.getTime()}`,
-      time: "19:00",
-      activity: "Dinner at a local restaurant",
-      type: 'custom'
-    });
+    // Find a restaurant for dinner
+    const restaurant = categorizedAttractions.evening.find(a =>
+      a.types.includes('restaurant')
+    );
+
+    if (restaurant) {
+      suggestions.push({
+        id: `dinner-${date.getTime()}`,
+        time: "19:00",
+        activity: `Dinner at ${restaurant.name}`,
+        location: restaurant.location,
+        type: 'attraction'
+      });
+    } else {
+      suggestions.push({
+        id: `dinner-${date.getTime()}`,
+        time: "19:00",
+        activity: "Dinner at a local restaurant",
+        type: 'custom'
+      });
+    }
+
+    // Add an evening activity if available
+    const eveningAttraction = categorizedAttractions.evening.find(a =>
+      !a.types.includes('restaurant')
+    );
+
+    if (eveningAttraction) {
+      suggestions.push({
+        id: `evening-${date.getTime()}`,
+        time: "20:30",
+        activity: `Visit ${eveningAttraction.name}`,
+        location: eveningAttraction.location,
+        type: 'attraction'
+      });
+    }
   }
 
   return suggestions.sort((a, b) => a.time.localeCompare(b.time));
@@ -209,7 +246,7 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
         const currentDate = addDays(dateRange.from!, i);
         return {
           date: currentDate,
-          items: attractions?.length 
+          items: attractions?.length
             ? generateAttractionSuggestions(attractions, currentDate)
             : generateDefaultSuggestions(currentDate)
         };

@@ -59,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Make parallel requests for each place type
       const attractionsPromises = placeTypes.map(type => {
-        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=50000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en`;
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=50000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en&rankby=rating`;
         return axios.get(searchUrl)
           .then(response => {
             if (response.data.status === 'REQUEST_DENIED') {
@@ -96,6 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (attractions.length === 0) {
         console.log('No attractions found. API responses:', responses.map(r => r.data));
       }
+
+      // Sort attractions by rating to get the best places first
+      attractions.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
       res.json(attractions);
     } catch (error: any) {
