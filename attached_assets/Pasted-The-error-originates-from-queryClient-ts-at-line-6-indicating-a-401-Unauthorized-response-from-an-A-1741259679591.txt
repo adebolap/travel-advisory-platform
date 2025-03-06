@@ -1,0 +1,110 @@
+The error originates from queryClient.ts at line 6, indicating a 401 Unauthorized response from an API call.
+
+Solution:
+Add error logging to see what request is being sent and if the credentials are present:
+
+typescript
+Copy
+Edit
+// queryClient.ts
+async function throwIfResNotOk(res: Response) {
+    if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        console.error(`Error ${res.status}: ${text}`);
+        console.error('Request URL:', res.url);
+        console.error('Request Headers:', res.headers);
+        throw new Error(`${res.status}: ${text}`);
+    }
+}
+🔑 2. Check Authentication Credentials:
+Common Issues:
+Missing or invalid authentication headers.
+Incorrect username or password.
+Expired tokens.
+Fix: Ensure Headers Are Set Correctly:
+typescript
+Copy
+Edit
+async function apiRequest(endpoint: string, options = {}) {
+    const token = localStorage.getItem('authToken'); // Or wherever the token is stored
+
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    };
+
+    const res = await fetch(endpoint, {
+        ...options,
+        headers: {
+            ...headers,
+            ...(options.headers || {}),
+        },
+    });
+    await throwIfResNotOk(res);
+    return res.json();
+}
+🔍 3. Validate API Endpoint and Credentials:
+Debugging Steps:
+Verify API URL: Double-check the endpoint for typos or incorrect routes.
+Inspect Headers: Use browser dev tools or console.log to see what headers are being sent.
+Test Authentication Manually: Use tools like Postman or curl to verify credentials are correct.
+⚙️ 4. Handle Expired Tokens:
+Possible Scenario:
+If using JWT or similar tokens, they might be expired or invalid.
+
+Solution:
+Implement a check to refresh the token if expired.
+Redirect to login if authentication fails.
+typescript
+Copy
+Edit
+if (res.status === 401) {
+    console.warn('Unauthorized access - token might be invalid or expired.');
+    localStorage.removeItem('authToken'); // Clear stored token
+    window.location.href = '/login'; // Redirect to login page
+}
+🔄 5. Frontend Authentication Flow:
+Common Pitfall:
+If using a use-auth.tsx hook, ensure that the authentication mutation function is correctly passing credentials:
+
+tsx
+Copy
+Edit
+// use-auth.tsx
+const login = async (username: string, password: string) => {
+    try {
+        const response = await apiRequest('/api/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (response.token) {
+            localStorage.setItem('authToken', response.token);
+            return response;
+        } else {
+            throw new Error('Invalid login response');
+        }
+    } catch (err) {
+        console.error('Login failed:', err.message);
+        throw err;
+    }
+};
+🧠 6. Backend Validation (Optional):
+If You Control the API:
+Check server logs for failed authentication attempts.
+Verify that the backend is expecting the correct header format (Bearer token vs. Basic auth).
+🔧 7. Disable Vite Error Overlay (Temporary):
+To Prevent Popup Blocking:
+In vite.config.js, disable the overlay temporarily to continue debugging:
+
+js
+Copy
+Edit
+// vite.config.js
+export default {
+    server: {
+        hmr: {
+            overlay: false,
+        },
+    },
+};

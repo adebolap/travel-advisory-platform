@@ -5,7 +5,8 @@ import { setupAuth } from "./auth";
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Configure urlencoded properly for form submissions
+app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
   const start = Date.now();
