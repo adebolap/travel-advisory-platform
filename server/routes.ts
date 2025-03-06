@@ -4,9 +4,22 @@ import { storage } from "./storage";
 import { searchPreferenceSchema } from "@shared/schema";
 import { addMonths, format, isWithinInterval, parseISO } from "date-fns";
 import axios from "axios";
+import { createCheckoutSession } from "./payment";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
+
+  // Create Stripe checkout session
+  apiRouter.post("/api/create-checkout-session", async (req, res) => {
+    try {
+      const { currency } = req.body;
+      const session = await createCheckoutSession(currency);
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Stripe checkout error:", error.message);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
 
   // Google Places API endpoint for attractions
   apiRouter.get("/api/attractions/:city", async (req, res) => {
