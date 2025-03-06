@@ -19,85 +19,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`Fetching attractions for ${city} from Google Places API...`);
 
-      // First, get the geocode for the city
-      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+      const response = await axios.get(
+        'https://maps.googleapis.com/maps/api/place/textsearch/json',
+        {
+          params: {
+            query: `top attractions in ${city}`,
+            key: process.env.GOOGLE_PLACES_API_KEY,
+            language: 'en'
+          }
+        }
+      );
 
-      const geocodeResponse = await axios.get(geocodeUrl);
-      console.log('Geocode response:', geocodeResponse.data);
+      console.log('Places API response status:', response.status);
 
-      if (geocodeResponse.data.status === 'REQUEST_DENIED') {
-        console.error('API Key error:', geocodeResponse.data.error_message);
+      if (response.data.status === 'REQUEST_DENIED') {
+        console.error('API Key error:', response.data.error_message);
         return res.status(500).json({ 
           error: "Google API key error",
-          details: geocodeResponse.data.error_message 
+          details: response.data.error_message 
         });
       }
 
-      if (!geocodeResponse.data.results?.[0]?.geometry?.location) {
-        return res.status(404).json({ error: "City not found" });
-      }
+      const attractions = response.data.results.map((place: any) => ({
+        id: place.place_id,
+        name: place.name,
+        location: place.formatted_address,
+        rating: place.rating,
+        types: place.types,
+        photo: place.photos ? 
+          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${process.env.GOOGLE_PLACES_API_KEY}`
+          : null,
+        openNow: place.opening_hours?.open_now,
+        geometry: place.geometry.location
+      }));
 
-      const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
+      console.log(`Found ${attractions.length} attractions in ${city}`);
 
-      // Define place types to search for
-      const placeTypes = [
-        'tourist_attraction',
-        'museum',
-        'art_gallery',
-        'park',
-        'amusement_park',
-        'church',
-        'mosque',
-        'temple',
-        'zoo',
-        'aquarium',
-        'restaurant',
-        'shopping_mall'
-      ];
-
-      console.log('Making API requests for place types:', placeTypes);
-
-      // Make parallel requests for each place type
-      const attractionsPromises = placeTypes.map(type => {
-        const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=50000&type=${type}&key=${process.env.GOOGLE_PLACES_API_KEY}&language=en&rankby=rating`;
-        return axios.get(searchUrl)
-          .then(response => {
-            if (response.data.status === 'REQUEST_DENIED') {
-              throw new Error(response.data.error_message || 'Places API request denied');
-            }
-            return response;
-          });
-      });
-
-      const responses = await Promise.all(attractionsPromises);
-
-      // Combine and deduplicate attractions
-      const seenPlaceIds = new Set();
-      const attractions = responses.flatMap(response =>
-        (response.data.results || [])
-          .filter((place: any) => !seenPlaceIds.has(place.place_id))
-          .map((place: any) => {
-            seenPlaceIds.add(place.place_id);
-            return {
-              id: place.place_id,
-              name: place.name,
-              rating: place.rating,
-              userRatingsTotal: place.user_ratings_total,
-              location: place.vicinity,
-              types: place.types,
-              photo: place.photos?.[0]?.photo_reference,
-              openNow: place.opening_hours?.open_now,
-              geometry: place.geometry.location
-            };
-          })
-      );
-
-      console.log(`Found ${attractions.length} unique attractions in ${city}`);
-      if (attractions.length === 0) {
-        console.log('No attractions found. API responses:', responses.map(r => r.data));
-      }
-
-      // Sort attractions by rating to get the best places first
+      // Sort attractions by rating
       attractions.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
       res.json(attractions);
@@ -106,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Full error details:", error);
 
       if (error.response?.status === 404) {
-        res.json([]); // Return empty array if no events found
+        res.json([]); // Return empty array if no attractions found
       } else {
         res.status(500).json({
           error: "Failed to fetch attractions",
@@ -256,7 +214,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(preferences);
   });
 
-  // Mount API routes before the catchall route
   app.use("/", apiRouter);
 
   const httpServer = createServer(app);
