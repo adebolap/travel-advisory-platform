@@ -125,25 +125,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced events API endpoint with Ticketmaster integration
   apiRouter.get("/api/events/:city", async (req, res) => {
     const { city } = req.params;
-    let { from, to } = req.query;
 
     if (!process.env.TICKETMASTER_API_KEY) {
       return res.status(500).json({ error: "Ticketmaster API key not configured" });
     }
 
     try {
-      // If no dates provided, use current month
+      // Get current month's date range
       const today = new Date();
-      if (!from) {
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        from = startOfMonth.toISOString();
-      }
-      if (!to) {
-        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        to = endOfMonth.toISOString();
-      }
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-      console.log(`Fetching events for ${city} from ${from} to ${to}`);
+      console.log(`Fetching events for ${city} for current month`);
 
       const response = await axios.get(
         'https://app.ticketmaster.com/discovery/v2/events.json',
@@ -151,50 +144,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           params: {
             apikey: process.env.TICKETMASTER_API_KEY,
             city: city,
-            startDateTime: from,
-            endDateTime: to,
-            sort: 'date,asc',
+            startDateTime: startOfMonth.toISOString(),
+            endDateTime: endOfMonth.toISOString(),
             size: 20,
-            locale: "*"
+            sort: 'date,asc'
           }
         }
       );
 
-      console.log(`Ticketmaster API response status: ${response.status}`);
-
-      const events = response.data._embedded?.events?.map((event: any) => ({
-        id: event.id,
-        name: event.name,
-        date: event.dates.start.localDate,
-        type: event.classifications?.[0]?.segment?.name || "Other",
-        description: event.description || event.info || `${event.name} in ${city}`,
-        highlight: event.pleaseNote ? true : false,
-        source: "Ticketmaster",
-        url: event.url,
-        image: event.images?.[0]?.url,
-        location: event._embedded?.venues?.[0]?.name,
-        category: event.classifications?.[0]?.segment?.name?.toLowerCase(),
-        price: event.priceRanges
-          ? `$${event.priceRanges[0].min}-$${event.priceRanges[0].max}`
-          : "Price TBA",
-        culturalSignificance: event.pleaseNote || null,
-      })) || [];
-
-      console.log(`Found ${events.length} events in ${city}`);
-      if (events.length === 0) {
-        console.log('No events found in response data:', response.data);
+      if (!response.data._embedded?.events) {
+        console.log('No events found for', city);
+        return res.json([]);
       }
 
+      const events = response.data._embedded.events.map((event: any) => ({
+        id: event.id,
+        name: event.name,
+        url: event.url,
+        date: event.dates.start.localDate,
+        image: event.images?.[0]?.url,
+        venue: event._embedded?.venues?.[0]?.name,
+        location: event._embedded?.venues?.[0]?.city?.name,
+        price: event.priceRanges
+          ? `${event.priceRanges[0].min}-${event.priceRanges[0].max} ${event.priceRanges[0].currency}`
+          : 'Price TBA',
+        category: event.classifications?.[0]?.segment?.name || 'Other',
+        description: event.info || `${event.name} at ${event._embedded?.venues?.[0]?.name}`
+      }));
+
+      console.log(`Found ${events.length} events in ${city}`);
       res.json(events);
+
     } catch (error: any) {
-      console.error("Ticketmaster API error:", error.response?.data || error.message);
-      console.error("Full error details:", error);
+      console.error('Error fetching events:', error.response?.data || error.message);
 
       if (error.response?.status === 404) {
         res.json([]); // Return empty array if no events found
       } else {
-        res.status(500).json({
-          error: "Failed to fetch events",
+        res.status(500).json({ 
+          error: 'Failed to fetch events',
           details: error.response?.data?.message || error.message
         });
       }

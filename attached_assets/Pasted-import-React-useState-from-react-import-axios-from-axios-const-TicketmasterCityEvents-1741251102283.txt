@@ -1,0 +1,130 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+
+const TicketmasterCityEvents = () => {
+    const [city, setCity] = useState('');
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [availableCities, setAvailableCities] = useState([]);
+
+    const predefinedCities = [
+        'New York', 'London', 'Paris', 'Tokyo', 'Los Angeles',
+        'Dubai', 'Berlin', 'Rome', 'Sydney', 'Brussels',
+        'Istanbul', 'Mumbai', 'Cape Town', 'Rio de Janeiro', 'Toronto',
+        'Singapore', 'Bangkok', 'Moscow', 'Chicago', 'Mexico City'
+    ];
+
+    const checkCitiesForEvents = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const cityPromises = predefinedCities.map(async (city) => {
+                const response = await axios.get(
+                    `https://app.ticketmaster.com/discovery/v2/events.json`,
+                    {
+                        params: {
+                            apikey: '5rd3iUVYDe7G8OcAiM2wKtGmbCvEuukr',
+                            city: city,
+                            size: 1
+                        }
+                    }
+                );
+                const eventCount = response.data.page.totalElements;
+                return eventCount > 0 ? city : null;
+            });
+
+            const results = await Promise.all(cityPromises);
+            setAvailableCities(results.filter((city) => city !== null));
+        } catch (err) {
+            setError('Failed to fetch available cities.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchEvents = async () => {
+        if (!city) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await axios.get(
+                `https://app.ticketmaster.com/discovery/v2/events.json`,
+                {
+                    params: {
+                        apikey: '5rd3iUVYDe7G8OcAiM2wKtGmbCvEuukr',
+                        city: city,
+                        size: 10,
+                        sort: 'date,asc'
+                    }
+                }
+            );
+            setEvents(response.data._embedded?.events || []);
+        } catch (err) {
+            setError('Failed to fetch events for the selected city.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Events by City (Ticketmaster)</h1>
+            <button
+                onClick={checkCitiesForEvents}
+                className="bg-green-500 text-white p-2 rounded mb-4"
+            >
+                Check Available Cities
+            </button>
+            {loading && <p>Loading...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+
+            {availableCities.length > 0 && (
+                <div className="mb-4">
+                    <select
+                        onChange={(e) => setCity(e.target.value)}
+                        className="p-2 border rounded w-full mb-2"
+                    >
+                        <option value="">Select City</option>
+                        {availableCities.map((city, index) => (
+                            <option key={index} value={city}>{city}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={fetchEvents}
+                        className="bg-blue-500 text-white p-2 rounded"
+                    >
+                        Get Events
+                    </button>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {events.map((event, index) => (
+                    <div key={index} className="p-4 border rounded shadow-md">
+                        {event.images && event.images[0] && (
+                            <img
+                                src={event.images[0].url}
+                                alt={event.name}
+                                className="w-full h-40 object-cover mb-2"
+                            />
+                        )}
+                        <h2 className="text-xl font-semibold">{event.name}</h2>
+                        <p><strong>Date:</strong> {event.dates.start.localDate}</p>
+                        <p><strong>Venue:</strong> {event._embedded.venues[0].name}</p>
+                        <a
+                            href={event.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500"
+                        >
+                            More Info
+                        </a>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default TicketmasterCityEvents;
