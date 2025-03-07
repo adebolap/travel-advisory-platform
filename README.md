@@ -146,6 +146,25 @@ The application uses Drizzle ORM with PostgreSQL for data management. Key models
 - Search Preferences
 - Travel Quiz Responses
 
+## 🗺️ Roadmap
+
+### Planned Improvements
+
+#### UI/UX Enhancements
+- [ ] Simplified navigation with bottom bar for primary functions
+- [ ] Enhanced visual hierarchy for better content distinction
+- [ ] Improved onboarding experience with feature tutorials
+- [ ] Optimized mobile responsiveness
+- [ ] Enhanced personalization options
+- [ ] Streamlined content presentation
+
+#### Technical Improvements
+- [ ] Code modularization and organization
+- [ ] Comprehensive error handling system
+- [ ] Performance optimization
+- [ ] Enhanced security measures
+- [ ] Expanded test coverage
+
 ## 🤝 Contributing
 
 1. Fork the repository
