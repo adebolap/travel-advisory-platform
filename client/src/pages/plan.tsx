@@ -12,6 +12,8 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Layout } from "@/components/layout";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { popularCities } from "@shared/schema";
 
 interface TripPlan {
   id: string;
@@ -68,11 +70,23 @@ export default function PlanPage() {
                       <FormLabel>Where do you want to go?</FormLabel>
                       <FormControl>
                         <div className="flex gap-2">
-                          <Input
-                            placeholder="Enter destination..."
-                            {...field}
-                            className="flex-1"
-                          />
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose a destination..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {popularCities.map((city) => (
+                                <SelectItem key={city} value={city}>
+                                  {city}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <Button type="submit">
                             <Plus className="h-4 w-4" />
                             <span className="ml-2">Add Trip</span>
