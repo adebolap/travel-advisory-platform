@@ -16,8 +16,8 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const Auth = lazy(() => import("@/pages/auth-page"));
 const TravelQuiz = lazy(() => import("@/pages/travel-quiz"));
 const Pricing = lazy(() => import("@/pages/pricing"));
+const Plan = lazy(() => import("@/pages/plan"));
 
-// Loading component
 function LoadingSpinner() {
   return (
     <div className="min-h-[50vh] flex items-center justify-center">
@@ -37,6 +37,7 @@ function AppContent() {
           <ProtectedRoute path="/explore" component={Explore} />
           <ProtectedRoute path="/events" component={Events} />
           <ProtectedRoute path="/quiz" component={TravelQuiz} />
+          <ProtectedRoute path="/plan" component={Plan} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
