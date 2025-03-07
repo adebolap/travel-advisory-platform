@@ -28,20 +28,20 @@ function LoadingSpinner() {
 
 function AppContent() {
   return (
-    <Layout>
-      <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSpinner />}>
+      <Layout>
         <Switch>
           <Route path="/auth" component={Auth} />
           <Route path="/pricing" component={Pricing} />
-          <ProtectedRoute path="/" component={() => <Home />} />
-          <ProtectedRoute path="/explore" component={() => <Explore />} />
-          <ProtectedRoute path="/events" component={() => <Events />} />
-          <ProtectedRoute path="/quiz" component={() => <TravelQuiz />} />
+          <ProtectedRoute path="/" component={Home} />
+          <ProtectedRoute path="/explore" component={Explore} />
+          <ProtectedRoute path="/events" component={Events} />
+          <ProtectedRoute path="/quiz" component={TravelQuiz} />
           <Route component={NotFound} />
         </Switch>
-      </Suspense>
+      </Layout>
       <Toaster />
-    </Layout>
+    </Suspense>
   );
 }
 
