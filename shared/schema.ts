@@ -101,6 +101,42 @@ export const accommodationEnum = [
   "BnB",
 ] as const;
 
+export const cities = pgTable("cities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  name: text("name").notNull(),
+  country: text("country").notNull(),
+  visitDate: timestamp("visit_date").notNull(),
+  memories: text("memories"),
+  rating: integer("rating").notNull(),
+  isWishlist: boolean("is_wishlist").default(false),
+  photos: text("photos").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const popularCities = [
+  "Paris, France",
+  "Tokyo, Japan",
+  "New York City, USA",
+  "London, UK",
+  "Dubai, UAE",
+  "Singapore",
+  "Barcelona, Spain",
+  "Rome, Italy",
+  "Sydney, Australia",
+  "Cape Town, South Africa",
+  "Rio de Janeiro, Brazil",
+  "Amsterdam, Netherlands",
+  "Bangkok, Thailand",
+  "Istanbul, Turkey",
+  "Vancouver, Canada",
+  "Seoul, South Korea",
+  "Mumbai, India",
+  "Cairo, Egypt",
+  "Athens, Greece",
+  "Marrakech, Morocco"
+] as const;
+
 // Extended schemas for input validation
 export const insertUserSchema = createInsertSchema(users)
   .extend({
@@ -131,6 +167,16 @@ export const travelQuizResponseSchema = createInsertSchema(travelQuizResponses)
     quizDate: true,
   });
 
+export const insertCitySchema = createInsertSchema(cities)
+  .omit({
+    id: true,
+    createdAt: true,
+  })
+  .extend({
+    rating: z.number().min(1).max(5),
+    photos: z.array(z.string()).optional(),
+  });
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -138,6 +184,8 @@ export type SearchPreference = typeof searchPreferences.$inferSelect;
 export type InsertSearchPreference = z.infer<typeof searchPreferenceSchema>;
 export type TravelQuizResponse = typeof travelQuizResponses.$inferSelect;
 export type InsertTravelQuizResponse = z.infer<typeof travelQuizResponseSchema>;
+export type City = typeof cities.$inferSelect;
+export type InsertCity = z.infer<typeof insertCitySchema>;
 
 // Travel quiz question types
 export interface TravelQuizQuestion {

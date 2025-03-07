@@ -17,6 +17,7 @@ const Auth = lazy(() => import("@/pages/auth-page"));
 const TravelQuiz = lazy(() => import("@/pages/travel-quiz"));
 const Pricing = lazy(() => import("@/pages/pricing"));
 const Plan = lazy(() => import("@/pages/plan"));
+const Profile = lazy(() => import("@/pages/profile"));
 
 function LoadingSpinner() {
   return (
@@ -38,6 +39,7 @@ function AppContent() {
           <ProtectedRoute path="/events" component={Events} />
           <ProtectedRoute path="/quiz" component={TravelQuiz} />
           <ProtectedRoute path="/plan" component={Plan} />
+          <ProtectedRoute path="/profile" component={Profile} />
           <Route component={NotFound} />
         </Switch>
       </Layout>
