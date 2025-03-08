@@ -56,23 +56,18 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
 
   const { data: events, isLoading } = useQuery<Event[]>({
     queryKey: ['/api/events', city, formattedFrom, formattedTo],
-    enabled: !!city && !!formattedFrom && !!formattedTo,
+    enabled: Boolean(city) && Boolean(formattedFrom) && Boolean(formattedTo),
   });
 
   const groupedEvents = useMemo(() => {
-    if (!events) return new Map<string, Event[]>();
+    if (!events?.length) return new Map<string, Event[]>();
 
-    const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const filteredEvents = sortedEvents.filter(event => 
-      isWithinInterval(parseISO(event.date), {
-        start: effectiveDateRange.from!,
-        end: effectiveDateRange.to!
-      })
+    const sortedEvents = [...events].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
     const grouped = new Map<string, Event[]>();
-    filteredEvents.forEach(event => {
+    sortedEvents.forEach(event => {
       const dateKey = format(parseISO(event.date), 'yyyy-MM-dd');
       if (!grouped.has(dateKey)) {
         grouped.set(dateKey, []);
@@ -81,19 +76,13 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
     });
 
     return grouped;
-  }, [events, effectiveDateRange]);
-
-  const toggleDateExpansion = (date: string) => {
-    setExpandedDates(prev => 
-      prev.includes(date) ? prev.filter(d => d !== date) : [...prev, date]
-    );
-  };
+  }, [events]);
 
   if (isLoading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="p-6 text-center animate-pulse">
+          <Card key={i} className="p-6 animate-pulse">
             <Skeleton className="h-6 w-48 mb-2" />
             <Skeleton className="h-4 w-24" />
           </Card>
@@ -113,99 +102,79 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
     );
   }
 
-  const sortedDates = Array.from(groupedEvents.keys()).sort();
-
   return (
     <div className="space-y-4">
-      <AnimatePresence>
-        {sortedDates.map((dateKey) => {
-          const dateEvents = groupedEvents.get(dateKey)!;
-          return (
-            <motion.div
-              key={dateKey}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="overflow-hidden">
-                <CardHeader
-                  className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => toggleDateExpansion(dateKey)}
-                >
-                  <CardTitle className="text-lg font-semibold">
-                    {format(parseISO(dateKey), 'EEEE, MMMM d')}
-                  </CardTitle>
-                  <Button variant="ghost" size="icon">
-                    {expandedDates.includes(dateKey) ? <ChevronUp /> : <ChevronDown />}
-                  </Button>
-                </CardHeader>
-                {expandedDates.includes(dateKey) && (
-                  <CardContent className="pt-4">
-                    <div className="space-y-4">
-                      {dateEvents.map((event) => (
-                        <div
-                          key={event.id}
-                          className="p-4 rounded-lg border bg-card/50 hover:bg-card/80 transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-2">
-                              <h3 className="font-semibold">{event.name}</h3>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <MapPin className="h-4 w-4" />
-                                <span>{event.venue}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                <span>{format(parseISO(event.date), 'h:mm a')}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Ticket className="h-4 w-4" />
-                                <span>{event.price}</span>
-                              </div>
-                              {event.location && (
-                                <div className="text-sm text-muted-foreground mt-2">
-                                  <strong>Address:</strong> {event.location}
-                                </div>
-                              )}
-                            </div>
-                            <Badge 
-                              className={cn(
-                                "whitespace-nowrap",
-                                eventCategories[event.category as keyof typeof eventCategories]?.color || 
-                                eventCategories.other.color
-                              )}
-                            >
-                              {eventCategories[event.category as keyof typeof eventCategories]?.label || 
-                               eventCategories.other.label}
-                            </Badge>
-                          </div>
-                          {event.description && (
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              {event.description}
-                            </p>
-                          )}
-                          {event.url && (
-                            <Button
-                              variant="link"
-                              className="mt-2 p-0 h-auto text-primary"
-                              asChild
-                            >
-                              <a href={event.url} target="_blank" rel="noopener noreferrer">
-                                View Details
-                              </a>
-                            </Button>
-                          )}
+      {[...groupedEvents.entries()].map(([dateKey, dateEvents]) => (
+        <Card key={dateKey} className="overflow-hidden">
+          <CardHeader
+            className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => setExpandedDates(prev => 
+              prev.includes(dateKey) ? prev.filter(d => d !== dateKey) : [...prev, dateKey]
+            )}
+          >
+            <CardTitle className="text-lg">
+              {format(parseISO(dateKey), 'EEEE, MMMM d')}
+            </CardTitle>
+            <Button variant="ghost" size="icon">
+              {expandedDates.includes(dateKey) ? <ChevronUp /> : <ChevronDown />}
+            </Button>
+          </CardHeader>
+          {expandedDates.includes(dateKey) && (
+            <CardContent className="pt-4">
+              <div className="space-y-4">
+                {dateEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold">{event.name}</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span>{event.venue}</span>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>{format(parseISO(event.date), 'h:mm a')}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Ticket className="h-4 w-4" />
+                          <span>{event.price}</span>
+                        </div>
+                      </div>
+                      <Badge className={cn(
+                        "whitespace-nowrap",
+                        eventCategories[event.category as keyof typeof eventCategories]?.color ||
+                        eventCategories.other.color
+                      )}>
+                        {eventCategories[event.category as keyof typeof eventCategories]?.label ||
+                         eventCategories.other.label}
+                      </Badge>
                     </div>
-                  </CardContent>
-                )}
-              </Card>
-            </motion.div>
-          );
-        })}
-      </AnimatePresence>
+                    {event.description && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {event.description}
+                      </p>
+                    )}
+                    {event.url && (
+                      <Button
+                        variant="link"
+                        className="mt-2 p-0 h-auto text-primary"
+                        asChild
+                      >
+                        <a href={event.url} target="_blank" rel="noopener noreferrer">
+                          View Details
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      ))}
     </div>
   );
 }
