@@ -102,52 +102,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      const encodedCity = encodeURIComponent(city.trim());
       const response = await axios.get(
         `https://api.openweathermap.org/data/2.5/weather`,
         {
           params: {
-            q: city,
+            q: encodedCity,
             appid: API_KEY,
             units: 'metric'
           }
         }
       );
 
+      if (!response.data) {
+        throw new Error('No data received from weather API');
+      }
+
       res.json(response.data);
     } catch (error: any) {
-      res.status(500).json({
+      const errorMessage = error.response?.data?.message || error.message;
+      console.error(`Weather API error for ${city}:`, errorMessage);
+      res.status(error.response?.status || 500).json({
         error: "Failed to fetch weather data",
-        details: error.response?.data?.message || error.message
-      });
-    }
-  });
-
-  // Forecast API endpoint
-  apiRouter.get("/api/forecast/:city", async (req, res) => {
-    const { city } = req.params;
-    const API_KEY = process.env.WEATHER_API_KEY;
-
-    if (!API_KEY) {
-      return res.status(500).json({ error: "Weather API key not configured" });
-    }
-
-    try {
-      const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/forecast`,
-        {
-          params: {
-            q: city,
-            appid: API_KEY,
-            units: 'metric'
-          }
-        }
-      );
-
-      res.json(response.data);
-    } catch (error: any) {
-      res.status(500).json({
-        error: "Failed to fetch forecast data",
-        details: error.response?.data?.message || error.message
+        details: errorMessage
       });
     }
   });
@@ -157,25 +134,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { city } = req.query;
     const API_KEY = process.env.TICKETMASTER_API_KEY;
 
+    if (!city || typeof city !== 'string') {
+      return res.status(400).json({ error: "City parameter is required" });
+    }
+
     if (!API_KEY) {
       return res.status(500).json({ error: "Ticketmaster API key not configured" });
     }
 
     try {
+      const encodedCity = encodeURIComponent(city.trim());
       const response = await axios.get(
         'https://app.ticketmaster.com/discovery/v2/events.json',
         {
           params: {
             apikey: API_KEY,
-            city: city,
+            city: encodedCity,
             sort: 'date,asc',
-            size: 20
+            size: 20,
+            locale: '*'
           }
         }
       );
 
-      const events = response.data._embedded?.events || [];
-      res.json(events.map((event: any) => ({
+      // Handle case where no events are found
+      if (!response.data._embedded?.events) {
+        return res.json([]);
+      }
+
+      const events = response.data._embedded.events.map((event: any) => ({
         id: event.id,
         name: event.name,
         date: event.dates.start.dateTime,
@@ -186,112 +173,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Price TBA',
         url: event.url,
         location: event._embedded?.venues?.[0]?.address?.line1
-      })));
+      }));
+
+      res.json(events);
     } catch (error: any) {
-      res.status(500).json({
+      console.error(`Events API error for ${city}:`, error.message);
+      res.status(error.response?.status || 500).json({
         error: "Failed to fetch events",
         details: error.response?.data?.message || error.message
       });
     }
   });
 
-  // Attractions API endpoint (modified)
+  // Attractions API endpoint
   apiRouter.get("/api/attractions", async (req, res) => {
     const { city } = req.query;
     const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+
+    if (!city || typeof city !== 'string') {
+      return res.status(400).json({ error: "City parameter is required" });
+    }
 
     if (!API_KEY) {
       return res.status(500).json({ error: "Google Places API key not configured" });
     }
 
     try {
+      const encodedCity = encodeURIComponent(city.trim());
       const response = await axios.get(
         'https://maps.googleapis.com/maps/api/place/textsearch/json',
         {
           params: {
-            query: `tourist attractions in ${city}`,
+            query: `tourist attractions in ${encodedCity}`,
             key: API_KEY,
-            language: 'en'
+            language: 'en',
+            type: 'tourist_attraction'
           }
         }
       );
 
-      if (response.data.status === 'REQUEST_DENIED') {
-        throw new Error(response.data.error_message || 'API request denied');
+      if (response.data.status === 'ZERO_RESULTS') {
+        return res.json([]);
+      }
+
+      if (response.data.status !== 'OK') {
+        throw new Error(response.data.error_message || `API returned status: ${response.data.status}`);
       }
 
       const attractions = response.data.results.map((place: any) => ({
         id: place.place_id,
         name: place.name,
         location: place.formatted_address,
-        rating: place.rating,
-        types: place.types,
+        rating: place.rating || 0,
+        types: place.types || [],
         photo: place.photos ?
-          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}`
-          : null,
-        geometry: place.geometry.location
+          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` :
+          null,
+        geometry: place.geometry?.location || null
       }));
 
       res.json(attractions);
     } catch (error: any) {
-      res.status(500).json({
+      console.error(`Attractions API error for ${city}:`, error.message);
+      res.status(error.response?.status || 500).json({
         error: "Failed to fetch attractions",
         details: error.response?.data?.message || error.message
       });
     }
   });
-
-  // Google Places API endpoint for attractions (original)
-    apiRouter.get("/api/attractions/:city", async (req, res) => {
-    const { city } = req.params;
-
-    if (!process.env.GOOGLE_PLACES_API_KEY) {
-      return res.status(500).json({ error: "Google Places API key not configured" });
-    }
-
-    try {
-      const response = await axios.get(
-        'https://maps.googleapis.com/maps/api/place/textsearch/json',
-        {
-          params: {
-            query: `top attractions in ${city}`,
-            key: process.env.GOOGLE_PLACES_API_KEY,
-            language: 'en'
-          }
-        }
-      );
-
-      if (response.data.status === 'REQUEST_DENIED') {
-        return res.status(500).json({
-          error: "Google API key error",
-          details: response.data.error_message
-        });
-      }
-
-      const attractions = response.data.results.map((place: any) => ({
-        id: place.place_id,
-        name: place.name,
-        location: place.formatted_address,
-        rating: place.rating,
-        types: place.types,
-        photo: place.photos ?
-          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${process.env.GOOGLE_PLACES_API_KEY}`
-          : null,
-        openNow: place.opening_hours?.open_now,
-        geometry: place.geometry.location
-      }));
-
-      attractions.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-
-      res.json(attractions);
-    } catch (error: any) {
-      res.status(500).json({
-        error: "Failed to fetch attractions",
-        details: error.response?.data?.message || error.message
-      });
-    }
-  });
-
 
   app.use("/api", apiRouter);
 
