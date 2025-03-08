@@ -5,7 +5,8 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, insertUserSchema } from "@shared/schema";
+import { z } from "zod";
 
 declare global {
   namespace Express {
@@ -28,14 +29,11 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-// Track guest sessions and their start times
-const guestSessions = new Map<string, { startTime: number, promptShown: boolean }>();
-
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
-    saveUninitialized: true, // Changed to true to support guest sessions
+    saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
@@ -50,45 +48,6 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Middleware to track guest usage time
-  app.use((req, res, next) => {
-    const ip = req.ip || req.socket.remoteAddress;
-    if (!req.isAuthenticated() && ip) {
-      if (!guestSessions.has(ip)) {
-        guestSessions.set(ip, { startTime: Date.now(), promptShown: false });
-      }
-    }
-    next();
-  });
-
-  // Endpoint to check guest session status
-  app.get("/api/guest-status", (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress;
-    if (!ip) {
-      return res.json({ shouldPromptPremium: false });
-    }
-
-    const guestSession = guestSessions.get(ip);
-    if (!guestSession) {
-      return res.json({ shouldPromptPremium: false });
-    }
-
-    const usageTime = Date.now() - guestSession.startTime;
-    const hourInMs = 60 * 60 * 1000;
-    const shouldPromptPremium = usageTime >= hourInMs && !guestSession.promptShown;
-
-    if (shouldPromptPremium) {
-      guestSession.promptShown = true;
-      guestSessions.set(ip, guestSession);
-    }
-
-    res.json({ 
-      shouldPromptPremium,
-      usageTime,
-      sessionStarted: guestSession.startTime
-    });
-  });
-
   passport.use(
     new LocalStrategy(
       {
@@ -99,7 +58,7 @@ export function setupAuth(app: Express) {
         try {
           const user = await storage.getUserByUsername(username);
           if (!user || !(await comparePasswords(password, user.password))) {
-            return done(null, false, { message: "Authentication failed" });
+            return done(null, false, { message: "Invalid username or password" });
           }
           return done(null, user);
         } catch (err) {
@@ -119,46 +78,94 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req, res) => {
     try {
-      const { username, password } = req.body;
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required." });
+      // Validate request body against schema
+      const validatedData = insertUserSchema.parse(req.body);
+
+      // Check if username exists
+      const existingUsername = await storage.getUserByUsername(validatedData.username);
+      if (existingUsername) {
+        return res.status(409).json({ 
+          message: "Username already exists",
+          field: "username"
+        });
       }
 
-      if (password.length < 8) {
-        return res.status(400).json({ message: "Password must be at least 8 characters long." });
+      // Check if email exists (if your storage supports it)
+      if (validatedData.email) {
+        const existingEmail = await storage.getUserByEmail(validatedData.email);
+        if (existingEmail) {
+          return res.status(409).json({ 
+            message: "Email already registered",
+            field: "email"
+          });
+        }
       }
 
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Authentication failed" });
-      }
-
+      // Create user with hashed password
+      const hashedPassword = await hashPassword(validatedData.password);
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(password),
+        ...validatedData,
+        password: hashedPassword,
       });
 
+      // Log in the new user
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error('Login error after registration:', err);
+          return res.status(500).json({ message: "Registration successful but login failed" });
+        }
+
+        // Return user data without password
         const { password, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
       });
+
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ message: "Internal server error" });
+
+      // Handle Zod validation errors
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        });
+      }
+
+      // Handle other errors
+      res.status(500).json({ 
+        message: "Registration failed. Please try again later." 
+      });
     }
   });
 
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ message: "Authentication failed" });
+      if (err) {
+        console.error('Login error:', err);
+        return res.status(500).json({ 
+          message: "Login failed. Please try again later." 
+        });
       }
+
+      if (!user) {
+        return res.status(401).json({ 
+          message: "Invalid username or password" 
+        });
+      }
+
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error('Session creation error:', err);
+          return res.status(500).json({ 
+            message: "Login failed. Please try again." 
+          });
+        }
+
         const { password, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
       });
@@ -166,14 +173,27 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not logged in" });
+    }
+
     req.logout((err) => {
-      if (err) return next(err);
+      if (err) {
+        console.error('Logout error:', err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+
       req.session.destroy((err) => {
         if (err) {
           console.error("Session destruction error:", err);
           return res.status(500).json({ message: "Logout failed" });
         }
-        res.clearCookie("connect.sid", { path: '/' });
+        res.clearCookie("connect.sid", { 
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: 'lax'
+        });
         res.sendStatus(200);
       });
     });
@@ -185,5 +205,35 @@ export function setupAuth(app: Express) {
     }
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
+  });
+
+  // Add a route to check if a username is available
+  app.get("/api/check-username/:username", async (req, res) => {
+    try {
+      const { username } = req.params;
+      const existingUser = await storage.getUserByUsername(username);
+      res.json({ available: !existingUser });
+    } catch (error) {
+      console.error('Username check error:', error);
+      res.status(500).json({ message: "Could not check username availability" });
+    }
+  });
+
+  // Add a route to check if an email is available
+  app.get("/api/check-email/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      const existingUser = await storage.getUserByEmail(email);
+      res.json({ available: !existingUser });
+    } catch (error) {
+      console.error('Email check error:', error);
+      res.status(500).json({ message: "Could not check email availability" });
+    }
+  });
+
+  // Error handling middleware
+  app.use((err: Error, req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    console.error('Auth error:', err);
+    res.status(500).json({ message: "Internal server error" });
   });
 }

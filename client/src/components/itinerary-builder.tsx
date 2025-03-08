@@ -1,13 +1,25 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Clock, MapPin, GripVertical, Trash2, LayoutGrid, LayoutList, Plus } from "lucide-react";
+import { 
+  Clock, MapPin, GripVertical, Trash2, LayoutGrid, LayoutList, 
+  Plus, Shuffle, Calendar, Settings2, Save, Share2 
+} from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { format, addDays, differenceInDays } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { format, addDays, differenceInDays, parseISO, isSameDay } from "date-fns";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface ItineraryBuilderProps {
   city: string;
@@ -15,6 +27,7 @@ interface ItineraryBuilderProps {
   travelStyle?: 'adventure' | 'cultural' | 'relaxation' | 'family';
   intensity?: 'light' | 'moderate' | 'full';
   interests?: string[];
+  onSave?: (itinerary: DayPlan[]) => void;
 }
 
 interface ItineraryItem {
@@ -27,6 +40,10 @@ interface ItineraryItem {
   type: 'custom' | 'event' | 'attraction';
   description?: string;
   imageUrl?: string;
+  duration?: number; // in minutes
+  price?: string;
+  bookingUrl?: string;
+  tags?: string[];
 }
 
 interface DayPlan {
@@ -47,18 +64,72 @@ interface Attraction {
       lat: number;
       lng: number;
     }
-  }
+  };
+  price_level?: number;
+  opening_hours?: {
+    periods: Array<{
+      open: { time: string; day: number };
+      close: { time: string; day: number };
+    }>;
+  };
 }
 
-export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultural', intensity = 'moderate', interests = [] }: ItineraryBuilderProps) {
+export default function ItineraryBuilder({ 
+  city, 
+  dateRange, 
+  travelStyle = 'cultural', 
+  intensity = 'moderate', 
+  interests = [],
+  onSave 
+}: ItineraryBuilderProps) {
   const [itinerary, setItinerary] = useState<DayPlan[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Fetch attractions from API
-  const { data: attractions, isLoading: isLoadingAttractions } = useQuery<Attraction[]>({
+  // Fetch attractions from API with error handling
+  const { data: attractions, isLoading: isLoadingAttractions, error: attractionsError } = useQuery<Attraction[]>({
     queryKey: ['/api/attractions', city],
     enabled: !!city,
+    retry: 2,
+    onError: (error) => {
+      toast({
+        title: "Error loading attractions",
+        description: "Failed to load attractions. Please try again later.",
+        variant: "destructive",
+      });
+    },
   });
 
+  // Save itinerary mutation
+  const saveMutation = useMutation({
+    mutationFn: async (itinerary: DayPlan[]) => {
+      const response = await fetch('/api/itineraries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city, dateRange, itinerary }),
+      });
+      if (!response.ok) throw new Error('Failed to save itinerary');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Itinerary saved",
+        description: "Your itinerary has been saved successfully",
+      });
+      if (onSave) onSave(itinerary);
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to save",
+        description: "Could not save your itinerary. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Generate itinerary when inputs change
   useEffect(() => {
     if (dateRange?.from && dateRange?.to && attractions?.length) {
       const tripDuration = differenceInDays(dateRange.to, dateRange.from) + 1;
@@ -76,12 +147,34 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
     }
   }, [dateRange, city, attractions, intensity, travelStyle]);
 
+  // Memoize filtered attractions based on interests
+  const filteredAttractions = useMemo(() => {
+    if (!attractions) return [];
+    return attractions.filter(attraction => 
+      !interests.length || 
+      attraction.types.some(type => interests.includes(type.toLowerCase()))
+    );
+  }, [attractions, interests]);
+
   function generateDayAttractions(attractions: Attraction[], dayIndex: number, totalDays: number): Attraction[] {
-    const sortedAttractions = [...attractions].sort((a, b) => b.rating - a.rating);
+    // Sort by rating and filter by opening hours
+    const sortedAttractions = [...attractions]
+      .sort((a, b) => b.rating - a.rating)
+      .filter(attraction => isAttractionOpen(attraction, dayIndex));
+
     const attractionsPerDay = Math.ceil(sortedAttractions.length / totalDays);
     return sortedAttractions.slice(
       dayIndex * attractionsPerDay,
       (dayIndex + 1) * attractionsPerDay
+    );
+  }
+
+  function isAttractionOpen(attraction: Attraction, dayIndex: number): boolean {
+    if (!attraction.opening_hours?.periods) return true;
+
+    const dayOfWeek = (dayIndex % 7);
+    return attraction.opening_hours.periods.some(period => 
+      period.open.day === dayOfWeek
     );
   }
 
@@ -98,35 +191,49 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
         rating: attraction.rating,
         type: 'attraction',
         imageUrl: attraction.photo,
-        description: attraction.description || `Visit this highly rated attraction (${attraction.rating}/5). Known for: ${attraction.types.join(', ')}`
+        duration: (slot.end - slot.start) * 60,
+        price: attraction.price_level ? '💰'.repeat(attraction.price_level) : undefined,
+        description: attraction.description || 
+          `Visit this highly rated attraction (${attraction.rating}/5). Known for: ${attraction.types.join(', ')}`,
+        tags: attraction.types
       };
     });
   }
 
-  function generateTimeSlots(intensity: 'light' | 'moderate' | 'full'): { start: number; end: number }[] {
-    switch (intensity) {
-      case 'light':
-        return [
-          { start: 10, end: 12 },
-          { start: 14, end: 16 },
-          { start: 19, end: 21 }
-        ];
-      case 'full':
-        return [
-          { start: 8, end: 10 },
-          { start: 10, end: 12 },
-          { start: 14, end: 16 },
-          { start: 16, end: 18 },
-          { start: 19, end: 21 }
-        ];
-      default: // moderate
-        return [
-          { start: 9, end: 11 },
-          { start: 13, end: 15 },
-          { start: 15, end: 17 },
-          { start: 19, end: 21 }
-        ];
-    }
+  function handleReorderItems(dayIndex: number, items: ItineraryItem[]) {
+    setItinerary(current => 
+      current.map((day, i) => 
+        i === dayIndex ? { ...day, items } : day
+      )
+    );
+  }
+
+  function handleAddCustomActivity(dayIndex: number) {
+    const newItem: ItineraryItem = {
+      id: `custom-${Date.now()}`,
+      time: "12:00",
+      activity: "Custom Activity",
+      type: 'custom',
+      duration: 60
+    };
+
+    setItinerary(current => 
+      current.map((day, i) => 
+        i === dayIndex 
+          ? { ...day, items: [...day.items, newItem] }
+          : day
+      )
+    );
+  }
+
+  function handleDeleteActivity(dayIndex: number, itemId: string) {
+    setItinerary(current => 
+      current.map((day, i) => 
+        i === dayIndex 
+          ? { ...day, items: day.items.filter(item => item.id !== itemId) }
+          : day
+      )
+    );
   }
 
   if (isLoadingAttractions) {
@@ -146,13 +253,32 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
     );
   }
 
+  if (attractionsError) {
+    return (
+      <Card className="text-center p-6">
+        <CardTitle className="mb-2">Error Loading Attractions</CardTitle>
+        <CardDescription>
+          We encountered an error while loading attractions for {city}.
+          Please try again later.
+        </CardDescription>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => queryClient.invalidateQueries(['/api/attractions', city])}
+        >
+          Retry
+        </Button>
+      </Card>
+    );
+  }
+
   if (!attractions?.length) {
     return (
       <Card className="text-center p-6">
         <CardTitle className="mb-2">No Attractions Found</CardTitle>
-        <p className="text-muted-foreground">
+        <CardDescription>
           We couldn't find any attractions for {city}. Try selecting a different city.
-        </p>
+        </CardDescription>
       </Card>
     );
   }
@@ -160,8 +286,34 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Your Itinerary for {city}</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Your Itinerary for {city}</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {dateRange?.from && dateRange?.to ? (
+              `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d, yyyy')}`
+            ) : 'No dates selected'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+          >
+            {viewMode === 'list' ? <LayoutGrid className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => saveMutation.mutate(itinerary)}
+            disabled={saveMutation.isLoading}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save
+          </Button>
+        </div>
       </div>
+
       <AnimatePresence>
         {itinerary.map((day, dayIndex) => (
           <motion.div
@@ -172,27 +324,65 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
             transition={{ duration: 0.3 }}
           >
             <Card>
-              <CardHeader className="bg-primary/5">
-                <CardTitle className="text-lg">
-                  {format(day.date, 'EEEE, MMMM d')}
-                </CardTitle>
+              <CardHeader 
+                className={cn(
+                  "bg-primary/5",
+                  selectedDay === dayIndex && "bg-primary/10"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">
+                    {format(day.date, 'EEEE, MMMM d')}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleAddCustomActivity(dayIndex)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Activity
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-4">
+                <Reorder.Group
+                  axis="y"
+                  values={day.items}
+                  onReorder={(items) => handleReorderItems(dayIndex, items)}
+                  className="space-y-4"
+                >
                   {day.items.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="flex flex-col gap-2 p-4 bg-card rounded-lg border shadow-sm"
+                    <Reorder.Item
+                      key={item.id}
+                      value={item}
+                      className={cn(
+                        "flex flex-col gap-2 p-4 bg-card rounded-lg border shadow-sm",
+                        "hover:border-primary/50 transition-colors"
+                      )}
                     >
                       <div className="flex items-center gap-3">
+                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{item.time}</span>
                         <span className="flex-1 font-medium">{item.activity}</span>
-                        {item.rating && (
-                          <span className="text-sm text-muted-foreground">
-                            ★ {item.rating.toFixed(1)}
-                          </span>
-                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Settings2 className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteActivity(dayIndex, item.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       {item.address && (
                         <div className="flex items-start gap-3 text-sm text-muted-foreground">
@@ -205,9 +395,18 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
                           {item.description}
                         </p>
                       )}
-                    </div>
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2 ml-7">
+                          {item.tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </Reorder.Item>
                   ))}
-                </div>
+                </Reorder.Group>
               </CardContent>
             </Card>
           </motion.div>
