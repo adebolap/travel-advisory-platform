@@ -54,9 +54,17 @@ export function Navigation() {
                 </Link>
               )
             ) : (
-              <Link href="/auth">
-                <Button variant="default" size="sm">Sign In</Button>
-              </Link>
+              <>
+                <Link href="/pricing">
+                  <Button variant="outline" size="sm">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Upgrade to Premium
+                  </Button>
+                </Link>
+                <Link href="/auth">
+                  <Button variant="default" size="sm">Sign In</Button>
+                </Link>
+              </>
             )}
           </div>
         </div>

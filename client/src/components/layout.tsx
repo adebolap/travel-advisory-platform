@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { PremiumPrompt } from "@/components/premium-prompt";
 import { motion } from "framer-motion";
 
 interface LayoutProps {
@@ -31,6 +32,9 @@ export function Layout({ children, title, subtitle }: LayoutProps) {
           )}
         </motion.header>
       )}
+
+      {/* Premium prompt overlay */}
+      <PremiumPrompt />
 
       {/* Main content with animation */}
       <motion.main 

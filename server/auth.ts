@@ -28,11 +28,14 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Track guest sessions and their start times
+const guestSessions = new Map<string, { startTime: number, promptShown: boolean }>();
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Changed to true to support guest sessions
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
@@ -46,6 +49,45 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Middleware to track guest usage time
+  app.use((req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress;
+    if (!req.isAuthenticated() && ip) {
+      if (!guestSessions.has(ip)) {
+        guestSessions.set(ip, { startTime: Date.now(), promptShown: false });
+      }
+    }
+    next();
+  });
+
+  // Endpoint to check guest session status
+  app.get("/api/guest-status", (req, res) => {
+    const ip = req.ip || req.socket.remoteAddress;
+    if (!ip) {
+      return res.json({ shouldPromptPremium: false });
+    }
+
+    const guestSession = guestSessions.get(ip);
+    if (!guestSession) {
+      return res.json({ shouldPromptPremium: false });
+    }
+
+    const usageTime = Date.now() - guestSession.startTime;
+    const hourInMs = 60 * 60 * 1000;
+    const shouldPromptPremium = usageTime >= hourInMs && !guestSession.promptShown;
+
+    if (shouldPromptPremium) {
+      guestSession.promptShown = true;
+      guestSessions.set(ip, guestSession);
+    }
+
+    res.json({ 
+      shouldPromptPremium,
+      usageTime,
+      sessionStarted: guestSession.startTime
+    });
+  });
 
   passport.use(
     new LocalStrategy(
