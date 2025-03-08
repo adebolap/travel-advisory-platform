@@ -177,6 +177,44 @@ export const insertCitySchema = createInsertSchema(cities)
     photos: z.array(z.string()).optional(),
   });
 
+// Add achievement-related constants
+export const achievementTypes = {
+  citiesVisited: {
+    bronze: { count: 5, icon: "🌆", title: "City Explorer" },
+    silver: { count: 10, icon: "🏙️", title: "Urban Adventurer" },
+    gold: { count: 20, icon: "🌃", title: "Metropolis Master" }
+  },
+  countriesVisited: {
+    bronze: { count: 3, icon: "🗺️", title: "Globe Trotter" },
+    silver: { count: 5, icon: "🌍", title: "World Wanderer" },
+    gold: { count: 10, icon: "🌎", title: "Planet Pioneer" }
+  },
+  plansCreated: {
+    bronze: { count: 3, icon: "📝", title: "Trip Planner" },
+    silver: { count: 5, icon: "📋", title: "Journey Master" },
+    gold: { count: 10, icon: "📅", title: "Travel Strategist" }
+  },
+  ratings: {
+    bronze: { count: 5, icon: "⭐", title: "Review Rookie" },
+    silver: { count: 10, icon: "⭐⭐", title: "Feedback Pro" },
+    gold: { count: 20, icon: "⭐⭐⭐", title: "Rating Legend" }
+  }
+} as const;
+
+// Add achievements table
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  type: text("type").notNull(),
+  level: text("level").notNull(), // bronze, silver, gold
+  unlockedAt: timestamp("unlocked_at").defaultNow(),
+  progress: integer("progress").notNull().default(0),
+});
+
+// Add achievement types to the schema
+export type AchievementType = keyof typeof achievementTypes;
+export type AchievementLevel = keyof typeof achievementTypes.citiesVisited;
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

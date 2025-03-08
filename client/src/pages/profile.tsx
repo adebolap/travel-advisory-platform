@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Map, Globe, Star, Plus, Trash2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +17,8 @@ import {
 import { Layout } from "@/components/layout";
 import { insertCitySchema, popularCities, type InsertCity } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AchievementsGrid } from "@/components/achievements/achievements-grid";
+import type { AchievementType, AchievementLevel } from "@shared/schema";
 
 interface CityEntry {
   id: string;
@@ -34,6 +36,12 @@ export default function ProfilePage() {
   const form = useForm<InsertCity>({
     resolver: zodResolver(insertCitySchema),
   });
+  const [achievements, setAchievements] = useState<Array<{
+    type: AchievementType;
+    level: AchievementLevel;
+    progress: number;
+    isNew?: boolean;
+  }>>([]);
 
   const onSubmit = (data: InsertCity) => {
     setCities([
@@ -54,6 +62,28 @@ export default function ProfilePage() {
   // Calculate statistics
   const totalCities = cities.length;
   const totalCountries = new Set(cities.map((city) => city.country)).size;
+
+  useEffect(() => {
+    const newAchievements = [
+      {
+        type: "citiesVisited" as AchievementType,
+        level: "bronze" as AchievementLevel,
+        progress: cities.length,
+        isNew: cities.length === 5 // Example of when to show the "New!" badge
+      },
+      {
+        type: "countriesVisited" as AchievementType,
+        level: "bronze" as AchievementLevel,
+        progress: new Set(cities.map(city => city.country)).size
+      },
+      {
+        type: "ratings" as AchievementType,
+        level: "bronze" as AchievementLevel,
+        progress: cities.filter(city => city.rating > 0).length
+      }
+    ];
+    setAchievements(newAchievements);
+  }, [cities]);
 
   return (
     <Layout title="Travel Profile" subtitle="Track your adventures">
@@ -179,6 +209,16 @@ export default function ProfilePage() {
                 </Button>
               </form>
             </Form>
+          </CardContent>
+        </Card>
+
+        {/* Add Achievements Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Travel Achievements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AchievementsGrid achievements={achievements} />
           </CardContent>
         </Card>
 
