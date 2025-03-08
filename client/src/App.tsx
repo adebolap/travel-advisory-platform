@@ -2,7 +2,7 @@ import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { queryClient } from "@/lib/queryClient";
-import { Suspense, lazy, Component, ReactNode } from "react";
+import { Suspense, lazy } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -66,14 +66,20 @@ function AppContent() {
     <Suspense fallback={<LoadingSpinner />}>
       <Layout>
         <Switch>
+          {/* Public routes */}
           <Route path="/auth" component={Auth} />
           <Route path="/pricing" component={Pricing} />
+
+          {/* Guest accessible routes */}
           <ProtectedRoute path="/" component={Home} />
           <ProtectedRoute path="/explore" component={Explore} />
           <ProtectedRoute path="/events" component={Events} />
-          <ProtectedRoute path="/quiz" component={TravelQuiz} />
           <ProtectedRoute path="/plan" component={Plan} />
-          <ProtectedRoute path="/profile" component={Profile} />
+
+          {/* Auth required routes */}
+          <ProtectedRoute path="/profile" component={Profile} requireAuth={true} />
+          <ProtectedRoute path="/quiz" component={TravelQuiz} requireAuth={true} />
+
           <Route component={NotFound} />
         </Switch>
       </Layout>
