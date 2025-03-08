@@ -8,7 +8,7 @@ import { createCheckoutSession } from "./payment";
 import Stripe from 'stripe';
 import geoip from 'geoip-lite';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
@@ -16,7 +16,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User location endpoint
   apiRouter.get("/api/user-location", (req, res) => {
     try {
-      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const ip = req.ip || req.socket.remoteAddress;
       const geo = geoip.lookup(ip as string);
 
       if (!geo) {
@@ -291,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(preferences);
   });
 
-  app.use("/", apiRouter);
+  app.use("/api", apiRouter);
 
   const httpServer = createServer(app);
   return httpServer;
