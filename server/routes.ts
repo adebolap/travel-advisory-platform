@@ -98,25 +98,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const API_KEY = process.env.WEATHER_API_KEY;
 
     if (!API_KEY) {
-      console.error('Weather API key not configured');
       return res.status(500).json({ error: "Weather API key not configured" });
     }
 
     try {
-      console.log(`Fetching weather data for city: ${city}`);
       const encodedCity = encodeURIComponent(city.trim());
       const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`;
 
       const response = await axios.get(url);
-      console.log(`Weather API response status: ${response.status}`);
-
-      if (!response.data) {
-        throw new Error('No data received from weather API');
-      }
-
       res.json(response.data);
     } catch (error: any) {
-      console.error(`Weather API error for ${city}:`, error.response?.data || error.message);
+      console.error('Weather API error:', error.response?.data || error.message);
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch weather data",
         details: error.response?.data?.message || error.message
@@ -130,17 +122,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const API_KEY = process.env.TICKETMASTER_API_KEY;
 
     if (!city || typeof city !== 'string') {
-      console.error('City parameter missing or invalid');
       return res.status(400).json({ error: "City parameter is required" });
     }
 
     if (!API_KEY) {
-      console.error('Ticketmaster API key not configured');
       return res.status(500).json({ error: "Ticketmaster API key not configured" });
     }
 
     try {
-      console.log(`Fetching events for city: ${city}`);
       const encodedCity = encodeURIComponent(city.trim());
       const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
 
@@ -151,14 +140,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sort: 'date,asc',
           size: 20,
           locale: '*'
+        },
+        headers: {
+          'Accept': 'application/json'
         }
       });
 
-      console.log(`Events API response status: ${response.status}`);
-
-      // Handle case where no events are found
+      // If no events found, return empty array
       if (!response.data._embedded?.events) {
-        console.log(`No events found for ${city}`);
         return res.json([]);
       }
 
@@ -168,8 +157,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: event.dates.start.dateTime,
         venue: event._embedded?.venues?.[0]?.name || 'Venue TBA',
         category: event.classifications?.[0]?.segment?.name || 'Other',
-        price: event.priceRanges ?
-          `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` :
+        price: event.priceRanges ? 
+          `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` : 
           'Price TBA',
         url: event.url,
         location: event._embedded?.venues?.[0]?.address?.line1
@@ -177,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(events);
     } catch (error: any) {
-      console.error(`Events API error for ${city}:`, error.response?.data || error.message);
+      console.error('Events API error:', error.response?.data || error.message);
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch events",
         details: error.response?.data?.message || error.message
@@ -191,17 +180,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
     if (!city || typeof city !== 'string') {
-      console.error('City parameter missing or invalid');
       return res.status(400).json({ error: "City parameter is required" });
     }
 
     if (!API_KEY) {
-      console.error('Google Places API key not configured');
       return res.status(500).json({ error: "Google Places API key not configured" });
     }
 
     try {
-      console.log(`Fetching attractions for city: ${city}`);
       const encodedCity = encodeURIComponent(city.trim());
       const url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
 
@@ -211,13 +197,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           key: API_KEY,
           language: 'en',
           type: 'tourist_attraction'
+        },
+        headers: {
+          'Accept': 'application/json'
         }
       });
 
-      console.log(`Attractions API response status: ${response.status}`);
-
       if (response.data.status === 'ZERO_RESULTS') {
-        console.log(`No attractions found for ${city}`);
         return res.json([]);
       }
 
@@ -231,15 +217,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         location: place.formatted_address,
         rating: place.rating || 0,
         types: place.types || [],
-        photo: place.photos ?
-          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` :
+        photo: place.photos ? 
+          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` : 
           null,
         geometry: place.geometry?.location || null
       }));
 
       res.json(attractions);
     } catch (error: any) {
-      console.error(`Attractions API error for ${city}:`, error.response?.data || error.message);
+      console.error('Attractions API error:', error.response?.data || error.message);
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch attractions",
         details: error.response?.data?.message || error.message
@@ -247,8 +233,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Use the API router
   app.use("/api", apiRouter);
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
 }
