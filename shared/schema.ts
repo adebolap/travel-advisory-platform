@@ -217,6 +217,16 @@ export const popularCities = [
   "Victoria Falls, Zimbabwe"
 ] as const;
 
+// Add continent mapping for cities
+export const cityToContinentMap = {
+  "Europe 🇪🇺": ["France", "UK", "Spain", "Italy", "Netherlands", "Germany", "Austria", "Czech Republic", "Denmark", "Sweden", "Greece", "Belgium", "Portugal", "Switzerland", "Ireland", "Finland"],
+  "Middle East 🌅": ["UAE", "Qatar", "Oman", "Turkey", "Israel", "Jordan", "Saudi Arabia", "Bahrain", "Kuwait"],
+  "Asia 🌏": ["Japan", "South Korea", "Singapore", "Thailand", "Hong Kong", "India", "Indonesia", "China", "Vietnam", "Cambodia"],
+  "Americas 🌎": ["USA", "Canada", "Brazil", "Argentina", "Mexico", "Peru", "Cuba", "Colombia", "Chile"],
+  "Oceania 🏝️": ["Australia", "New Zealand", "French Polynesia", "Fiji"],
+  "Africa 🌍": ["South Africa", "Morocco", "Egypt", "Kenya", "Tanzania", "Zimbabwe"]
+} as const;
+
 // Extended schemas for input validation
 export const insertUserSchema = createInsertSchema(users)
   .extend({

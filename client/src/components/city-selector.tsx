@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, MapPin } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { popularCities } from "@shared/schema";
+import { popularCities, cityToContinentMap } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import geoip from 'geoip-lite';
 
 interface CitySelectorProps {
   value?: string;
@@ -16,6 +16,28 @@ interface CitySelectorProps {
 export function CitySelector({ value, onValueChange, placeholder = "Select a city..." }: CitySelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [userContinent, setUserContinent] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get user's IP and determine continent
+    fetch('https://api.ipify.org?format=json')
+      .then(response => response.json())
+      .then(data => {
+        const geo = geoip.lookup(data.ip);
+        if (geo) {
+          const continentMap: Record<string, string> = {
+            'EU': 'Europe 🇪🇺',
+            'AS': 'Asia 🌏',
+            'NA': 'Americas 🌎',
+            'SA': 'Americas 🌎',
+            'OC': 'Oceania 🏝️',
+            'AF': 'Africa 🌍'
+          };
+          setUserContinent(continentMap[geo.continent] || null);
+        }
+      })
+      .catch(() => setUserContinent(null));
+  }, []);
 
   // Sort cities and group by region
   const sortedCities = useMemo(() => {
@@ -29,22 +51,13 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
     };
 
     popularCities.forEach(city => {
-      if (city.includes("France") || city.includes("UK") || city.includes("Spain") || 
-          city.includes("Italy") || city.includes("Netherlands") || city.includes("Germany")) {
-        regions["Europe 🇪🇺"].push(city);
-      } else if (city.includes("UAE") || city.includes("Qatar") || city.includes("Oman") || 
-                city.includes("Turkey") || city.includes("Israel")) {
-        regions["Middle East 🌅"].push(city);
-      } else if (city.includes("Japan") || city.includes("Korea") || city.includes("Singapore") || 
-                city.includes("Thailand") || city.includes("China")) {
-        regions["Asia 🌏"].push(city);
-      } else if (city.includes("USA") || city.includes("Canada") || city.includes("Brazil") || 
-                city.includes("Mexico")) {
-        regions["Americas 🌎"].push(city);
-      } else if (city.includes("Australia") || city.includes("Zealand") || city.includes("Fiji")) {
-        regions["Oceania 🏝️"].push(city);
-      } else {
-        regions["Africa 🌍"].push(city);
+      const country = city.split(", ")[1];
+      // Find which region this country belongs to
+      for (const [region, countries] of Object.entries(cityToContinentMap)) {
+        if (countries.some(c => country.includes(c))) {
+          regions[region as keyof typeof regions].push(city);
+          break;
+        }
       }
     });
 
@@ -53,8 +66,20 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
       regions[region as keyof typeof regions].sort();
     });
 
+    // If user's continent is known, move it to the top
+    if (userContinent) {
+      const orderedRegions: typeof regions = {} as any;
+      orderedRegions[userContinent] = regions[userContinent];
+      Object.keys(regions).forEach(region => {
+        if (region !== userContinent) {
+          orderedRegions[region] = regions[region];
+        }
+      });
+      return orderedRegions;
+    }
+
     return regions;
-  }, []);
+  }, [userContinent]);
 
   const filteredCities = useMemo(() => {
     const searchLower = search.toLowerCase();
@@ -114,13 +139,18 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
                       onValueChange(currentValue);
                       setOpen(false);
                     }}
-                    className="cursor-pointer"
+                    className="cursor-pointer py-2 px-3 hover:bg-primary/10 transition-colors"
                   >
-                    <MapPin className={cn(
-                      "mr-2 h-4 w-4",
-                      value === city ? "text-primary" : "text-muted-foreground"
-                    )} />
-                    {city}
+                    <div className="flex items-center gap-2">
+                      <MapPin className={cn(
+                        "h-4 w-4",
+                        value === city ? "text-primary" : "text-muted-foreground"
+                      )} />
+                      <span className="flex-1">{city}</span>
+                      {userContinent && region === userContinent && (
+                        <span className="text-xs text-muted-foreground">Local</span>
+                      )}
+                    </div>
                   </CommandItem>
                 ))}
               </CommandGroup>
