@@ -114,27 +114,60 @@ export const cities = pgTable("cities", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Additional cities organized by regions
 export const popularCities = [
+  // Europe
   "Paris, France",
-  "Tokyo, Japan",
-  "New York City, USA",
   "London, UK",
-  "Dubai, UAE",
-  "Singapore",
   "Barcelona, Spain",
   "Rome, Italy",
-  "Sydney, Australia",
-  "Cape Town, South Africa",
-  "Rio de Janeiro, Brazil",
   "Amsterdam, Netherlands",
-  "Bangkok, Thailand",
-  "Istanbul, Turkey",
-  "Vancouver, Canada",
+  "Berlin, Germany",
+  "Vienna, Austria",
+  "Prague, Czech Republic",
+  "Copenhagen, Denmark",
+  "Stockholm, Sweden",
+  "Santorini, Greece",
+  "Venice, Italy",
+
+  // Asia
+  "Tokyo, Japan",
+  "Kyoto, Japan",
   "Seoul, South Korea",
+  "Singapore",
+  "Bangkok, Thailand",
+  "Hong Kong",
+  "Dubai, UAE",
   "Mumbai, India",
+  "Bali, Indonesia",
+  "Shanghai, China",
+  "Ho Chi Minh City, Vietnam",
+  "Hanoi, Vietnam",
+
+  // Americas
+  "New York City, USA",
+  "San Francisco, USA",
+  "Vancouver, Canada",
+  "Toronto, Canada",
+  "Rio de Janeiro, Brazil",
+  "Buenos Aires, Argentina",
+  "Mexico City, Mexico",
+  "Cusco, Peru",
+  "Havana, Cuba",
+
+  // Oceania
+  "Sydney, Australia",
+  "Melbourne, Australia",
+  "Auckland, New Zealand",
+  "Queenstown, New Zealand",
+  "Fiji Islands",
+
+  // Africa
+  "Cape Town, South Africa",
+  "Marrakech, Morocco",
   "Cairo, Egypt",
-  "Athens, Greece",
-  "Marrakech, Morocco"
+  "Nairobi, Kenya",
+  "Zanzibar, Tanzania"
 ] as const;
 
 // Extended schemas for input validation

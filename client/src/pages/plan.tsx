@@ -75,19 +75,26 @@ export default function PlanPage() {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="w-full">
+                              <SelectTrigger className="w-full transition-all hover:border-primary/80">
                                 <SelectValue placeholder="Choose a destination..." />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="max-h-[300px]">
                               {popularCities.map((city) => (
-                                <SelectItem key={city} value={city}>
+                                <SelectItem 
+                                  key={city} 
+                                  value={city}
+                                  className="transition-colors hover:bg-primary/10"
+                                >
                                   {city}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <Button type="submit">
+                          <Button 
+                            type="submit"
+                            className="transition-transform hover:scale-105 active:scale-95"
+                          >
                             <Plus className="h-4 w-4" />
                             <span className="ml-2">Add Trip</span>
                           </Button>
@@ -104,7 +111,11 @@ export default function PlanPage() {
                       <FormItem>
                         <FormLabel>When?</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input 
+                            type="date" 
+                            {...field} 
+                            className="transition-all hover:border-primary/80"
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -119,6 +130,7 @@ export default function PlanPage() {
                           <Input
                             placeholder="Add some notes..."
                             {...field}
+                            className="transition-all hover:border-primary/80"
                           />
                         </FormControl>
                       </FormItem>
@@ -135,7 +147,7 @@ export default function PlanPage() {
           {trips.map((trip) => (
             <Card
               key={trip.id}
-              className={`transition-colors ${
+              className={`transition-all duration-300 transform hover:scale-[1.02] ${
                 trip.isCompleted ? "bg-muted" : ""
               }`}
             >
@@ -160,6 +172,7 @@ export default function PlanPage() {
                     variant="outline"
                     size="icon"
                     onClick={() => toggleComplete(trip.id)}
+                    className="transition-transform hover:scale-110 active:scale-95"
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
@@ -167,6 +180,7 @@ export default function PlanPage() {
                     variant="outline"
                     size="icon"
                     onClick={() => deleteTrip(trip.id)}
+                    className="transition-transform hover:scale-110 active:scale-95 hover:bg-destructive hover:text-destructive-foreground"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
