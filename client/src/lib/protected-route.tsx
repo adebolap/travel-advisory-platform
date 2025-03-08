@@ -1,7 +1,6 @@
-import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
-import { motion } from "framer-motion";
+import { Route } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 export function ProtectedRoute({
   path,
@@ -12,38 +11,19 @@ export function ProtectedRoute({
   component: React.ComponentType;
   requireAuth?: boolean;
 }) {
-  const { user, isLoading, isGuest } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
 
-  if (isLoading) {
-    return (
-      <Route path={path}>
+  return (
+    <Route path={path}>
+      {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </Route>
-    );
-  }
-
-  // Only redirect to auth if the route requires authentication and user is not logged in
-  if (requireAuth && !user) {
-    return (
-      <Route path={path}>
-        <Redirect to="/auth" />
-      </Route>
-    );
-  }
-
-  // Allow access to both authenticated users and guests
-  return (
-    <Route path={path}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+      ) : requireAuth && !isAuthenticated ? (
+        window.location.href = "/auth"
+      ) : (
         <Component />
-      </motion.div>
+      )}
     </Route>
   );
 }

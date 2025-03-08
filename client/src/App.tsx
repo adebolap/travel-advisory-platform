@@ -3,11 +3,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { queryClient } from "@/lib/queryClient";
 import { Suspense, lazy } from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/hooks/use-auth";
-import { ProtectedRoute } from "@/lib/protected-route";
 import { Layout } from "@/components/layout";
-import { Button } from "@/components/ui/button";
 
 // Lazy load pages
 const Home = lazy(() => import("@/pages/home"));
@@ -29,56 +27,22 @@ function LoadingSpinner() {
   );
 }
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  handleRetry = () => {
-    this.setState({ hasError: false });
-    window.location.reload();
-  };
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-[50vh] flex flex-col items-center justify-center text-center">
-          <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-          <p className="text-xl font-semibold text-destructive">Oops! Something went wrong.</p>
-          <p className="text-sm text-muted-foreground mb-4">Please try reloading the page.</p>
-          <Button onClick={this.handleRetry} variant="outline">
-            Retry
-          </Button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 function AppContent() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Layout>
         <Switch>
-          {/* Public routes */}
+          {/* Public routes - no auth required */}
+          <Route path="/" component={Home} />
+          <Route path="/explore" component={Explore} />
+          <Route path="/events" component={Events} />
+          <Route path="/plan" component={Plan} />
+
+          {/* Auth routes - optional */}
           <Route path="/auth" component={Auth} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/quiz" component={TravelQuiz} />
           <Route path="/pricing" component={Pricing} />
-
-          {/* Guest accessible routes */}
-          <ProtectedRoute path="/" component={Home} />
-          <ProtectedRoute path="/explore" component={Explore} />
-          <ProtectedRoute path="/events" component={Events} />
-          <ProtectedRoute path="/plan" component={Plan} />
-
-          {/* Auth required routes */}
-          <ProtectedRoute path="/profile" component={Profile} requireAuth={true} />
-          <ProtectedRoute path="/quiz" component={TravelQuiz} requireAuth={true} />
 
           <Route component={NotFound} />
         </Switch>
@@ -92,11 +56,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ErrorBoundary>
-          <div className="min-h-screen bg-background text-foreground">
-            <AppContent />
-          </div>
-        </ErrorBoundary>
+        <div className="min-h-screen bg-background text-foreground">
+          <AppContent />
+        </div>
       </AuthProvider>
     </QueryClientProvider>
   );
