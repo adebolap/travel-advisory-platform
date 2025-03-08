@@ -41,7 +41,9 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
     };
 
     popularCities.forEach(city => {
-      const country = city.split(", ")[1];
+      const [_, country] = city.split(", ");
+      if (!country) return;
+
       // Find which region this country belongs to
       for (const [region, countries] of Object.entries(cityToContinentMap)) {
         if (countries.some(c => country.includes(c))) {
