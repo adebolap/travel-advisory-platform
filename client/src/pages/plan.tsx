@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Plus, Calendar, MapPin, Edit2, Trash2 } from "lucide-react";
+import { Plus, Calendar, MapPin, Edit2, Trash2, Plane, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -55,7 +55,13 @@ export default function PlanPage() {
     <Layout title="Travel Diary" subtitle="Plan your future adventures">
       <div className="space-y-8">
         {/* Add New Trip Form */}
-        <Card>
+        <Card className="overflow-hidden border-2 border-primary/20 bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <CardHeader className="border-b bg-muted/50">
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Plane className="h-6 w-6 text-primary animate-pulse" />
+              Plan Your Next Adventure
+            </CardTitle>
+          </CardHeader>
           <CardContent className="pt-6">
             <Form {...form}>
               <form
@@ -67,7 +73,10 @@ export default function PlanPage() {
                   name="destination"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Where do you want to go?</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-primary" />
+                        Where do you want to go?
+                      </FormLabel>
                       <FormControl>
                         <div className="flex gap-2">
                           <Select
@@ -75,7 +84,7 @@ export default function PlanPage() {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="w-full transition-all hover:border-primary/80">
+                              <SelectTrigger className="w-full transition-all hover:border-primary hover:shadow-md">
                                 <SelectValue placeholder="Choose a destination..." />
                               </SelectTrigger>
                             </FormControl>
@@ -84,16 +93,19 @@ export default function PlanPage() {
                                 <SelectItem 
                                   key={city} 
                                   value={city}
-                                  className="transition-colors hover:bg-primary/10"
+                                  className="transition-colors hover:bg-primary/10 cursor-pointer py-2 px-3"
                                 >
-                                  {city}
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-primary" />
+                                    {city}
+                                  </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                           <Button 
                             type="submit"
-                            className="transition-transform hover:scale-105 active:scale-95"
+                            className="transition-all hover:scale-105 active:scale-95 bg-primary/90 hover:bg-primary"
                           >
                             <Plus className="h-4 w-4" />
                             <span className="ml-2">Add Trip</span>
@@ -109,12 +121,15 @@ export default function PlanPage() {
                     name="date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>When?</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          When?
+                        </FormLabel>
                         <FormControl>
                           <Input 
                             type="date" 
                             {...field} 
-                            className="transition-all hover:border-primary/80"
+                            className="transition-all hover:border-primary hover:shadow-md focus:ring-2 focus:ring-primary/20"
                           />
                         </FormControl>
                       </FormItem>
@@ -125,12 +140,15 @@ export default function PlanPage() {
                     name="notes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Notes</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          <Edit2 className="h-4 w-4 text-primary" />
+                          Notes
+                        </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Add some notes..."
                             {...field}
-                            className="transition-all hover:border-primary/80"
+                            className="transition-all hover:border-primary hover:shadow-md focus:ring-2 focus:ring-primary/20"
                           />
                         </FormControl>
                       </FormItem>
@@ -147,23 +165,23 @@ export default function PlanPage() {
           {trips.map((trip) => (
             <Card
               key={trip.id}
-              className={`transition-all duration-300 transform hover:scale-[1.02] ${
-                trip.isCompleted ? "bg-muted" : ""
+              className={`transition-all duration-300 transform hover:scale-[1.02] border-2 ${
+                trip.isCompleted ? "bg-muted border-primary/20" : "border-primary/40"
               }`}
             >
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <h3 className="font-medium">{trip.destination}</h3>
+                    <MapPin className="h-5 w-5 text-primary animate-bounce" />
+                    <h3 className="font-medium text-lg">{trip.destination}</h3>
                   </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
+                  <div className="mt-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
+                      <Calendar className="h-4 w-4 text-primary" />
                       <span>{new Date(trip.date).toLocaleDateString()}</span>
                     </div>
                     {trip.notes && (
-                      <p className="mt-1 text-sm">{trip.notes}</p>
+                      <p className="mt-2 text-sm italic">{trip.notes}</p>
                     )}
                   </div>
                 </div>
@@ -172,7 +190,7 @@ export default function PlanPage() {
                     variant="outline"
                     size="icon"
                     onClick={() => toggleComplete(trip.id)}
-                    className="transition-transform hover:scale-110 active:scale-95"
+                    className="transition-transform hover:scale-110 active:scale-95 hover:border-primary hover:text-primary"
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
