@@ -2,7 +2,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
 
 export function ProtectedRoute({
   path,
@@ -13,15 +12,9 @@ export function ProtectedRoute({
   component: React.ComponentType;
   requireAuth?: boolean;
 }) {
-  const { user, isLoading, error } = useAuth();
+  const { user, isLoading, isGuest } = useAuth();
 
-  // Check guest session status
-  const { data: guestStatus, isLoading: guestLoading } = useQuery({
-    queryKey: ['/api/guest-status'],
-    refetchInterval: 60000, // Check every minute
-  });
-
-  if (isLoading || guestLoading) {
+  if (isLoading) {
     return (
       <Route path={path}>
         <div className="flex items-center justify-center min-h-screen">
@@ -31,8 +24,8 @@ export function ProtectedRoute({
     );
   }
 
-  // Handle auth-required routes
-  if (requireAuth && !user && !guestStatus) {
+  // Only redirect to auth if the route requires authentication and user is not logged in
+  if (requireAuth && !user) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />
@@ -40,7 +33,7 @@ export function ProtectedRoute({
     );
   }
 
-  // For non-auth-required routes, allow access or if guestStatus is true
+  // Allow access to both authenticated users and guests
   return (
     <Route path={path}>
       <motion.div

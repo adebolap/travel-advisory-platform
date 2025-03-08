@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import {
   useQuery,
   useMutation,
@@ -14,11 +14,10 @@ type AuthContextType = {
   isLoading: boolean;
   error: Error | null;
   isAuthenticated: boolean;
+  isGuest: boolean;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
-  refreshUser: () => Promise<void>;
-  checkAuth: () => boolean;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -28,55 +27,44 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [lastAuthCheck, setLastAuthCheck] = useState<number>(0);
+  const [isGuest, setIsGuest] = useState(true); // Default to guest mode
 
   const {
     data: user,
     error,
     isLoading,
-    refetch: refreshUserQuery,
   } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    staleTime: 1000 * 60 * 5, // Cache user data for 5 minutes
-    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/user");
+        if (response.status === 401) {
+          setIsGuest(true);
+          return null;
+        }
+        const data = await response.json();
+        setIsGuest(false);
+        return data;
+      } catch (error) {
+        setIsGuest(true);
+        return null;
+      }
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
-
-  // Function to refresh user data
-  const refreshUser = useCallback(async () => {
-    try {
-      await refreshUserQuery();
-    } catch (error) {
-      console.error("Failed to refresh user data:", error);
-    }
-  }, [refreshUserQuery]);
-
-  // Check if user is authenticated with timestamp
-  const checkAuth = useCallback(() => {
-    const now = Date.now();
-    if (now - lastAuthCheck > 30000) {
-      refreshUser();
-      setLastAuthCheck(now);
-    }
-    return !!user;
-  }, [user, lastAuthCheck, refreshUser]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      if (!credentials.username || !credentials.password) {
-        throw new Error("Username and password are required");
-      }
-
       const res = await apiRequest("POST", "/api/login", credentials);
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
         throw new Error(errorData?.message || "Login failed");
       }
-
       return res.json();
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      setIsGuest(false);
       toast({
         title: "Welcome back!",
         description: `Logged in as ${user.username}`,
@@ -94,22 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: InsertUser) => {
-      try {
-        insertUserSchema.parse(userData);
-      } catch (error) {
-        throw new Error("Invalid user data");
-      }
-
       const res = await apiRequest("POST", "/api/register", userData);
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
         throw new Error(errorData?.message || "Registration failed");
       }
-
       return res.json();
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      setIsGuest(false);
       toast({
         title: "Welcome!",
         description: "Account created successfully",
@@ -133,8 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     onSuccess: () => {
-      queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
+      setIsGuest(true);
       toast({
         title: "Logged out",
         description: "You have been logged out successfully",
@@ -147,36 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: "destructive",
       });
-      queryClient.setQueryData(["/api/user"], null);
     },
   });
-
-  useEffect(() => {
-    const handleFocus = () => {
-      refreshUser();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    const interval = setInterval(refreshUser, 1000 * 60 * 5);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      clearInterval(interval);
-    };
-  }, [refreshUser]);
 
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
+        user,
         isLoading,
         error,
         isAuthenticated: !!user,
+        isGuest,
         loginMutation,
         logoutMutation,
         registerMutation,
-        refreshUser,
-        checkAuth,
       }}
     >
       {children}
