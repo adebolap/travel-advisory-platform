@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sun, Cloud, CloudRain, Wind, Droplets, AlertTriangle, Snowflake } from "lucide-react";
+import { Sun, Cloud, CloudRain, Wind, Droplets, AlertTriangle, Snowflake, CloudLightning, Thermometer } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 interface WeatherData {
   weather: Array<{
@@ -23,6 +24,9 @@ interface WeatherData {
   name: string;
   sys: {
     country: string;
+  };
+  wind: {
+    speed: number;
   };
 }
 
@@ -49,35 +53,52 @@ export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplay
   });
 
   useEffect(() => {
-    if (weather && onWeatherUpdate) {
-      const temp = weather.main.temp;
-      let category = 'Mild';
+    if (weather) {
+      // Show alerts based on weather conditions
+      if (weather.main.temp >= 35) {
+        toast({
+          title: "Heat Alert",
+          description: "Very hot conditions. Stay hydrated and avoid direct sunlight.",
+          variant: "destructive",
+        });
+      } else if (weather.main.temp <= 0) {
+        toast({
+          title: "Cold Alert",
+          description: "Freezing conditions. Bundle up and stay warm.",
+          variant: "destructive",
+        });
+      }
 
-      if (temp <= 0) category = 'Freezing';
-      else if (temp <= 10) category = 'Cold';
-      else if (temp >= 30) category = 'Hot';
-      else if (temp >= 22) category = 'Warm';
+      if (onWeatherUpdate) {
+        const temp = weather.main.temp;
+        let category = 'Mild';
 
-      onWeatherUpdate(category);
+        if (temp <= 0) category = 'Freezing';
+        else if (temp <= 10) category = 'Cold';
+        else if (temp >= 30) category = 'Hot';
+        else if (temp >= 22) category = 'Warm';
+
+        onWeatherUpdate(category);
+      }
     }
-  }, [weather, onWeatherUpdate]);
+  }, [weather, onWeatherUpdate, toast]);
 
   const getWeatherIcon = (condition: string) => {
-    const iconProps = "h-8 w-8";
+    const iconClass = "h-10 w-10";
     switch (condition.toLowerCase()) {
       case 'clear':
-        return <Sun className={`${iconProps} text-yellow-500`} />;
+        return <Sun className={`${iconClass} text-yellow-500`} />;
       case 'clouds':
-        return <Cloud className={`${iconProps} text-slate-400`} />;
+        return <Cloud className={`${iconClass} text-slate-400`} />;
       case 'rain':
       case 'drizzle':
-        return <CloudRain className={`${iconProps} text-blue-400`} />;
+        return <CloudRain className={`${iconClass} text-blue-400`} />;
       case 'snow':
-        return <Snowflake className={`${iconProps} text-blue-200`} />;
+        return <Snowflake className={`${iconClass} text-blue-200`} />;
       case 'thunderstorm':
-        return <AlertTriangle className={`${iconProps} text-yellow-600`} />;
+        return <CloudLightning className={`${iconClass} text-yellow-600`} />;
       default:
-        return <Cloud className={`${iconProps} text-slate-300`} />;
+        return <Cloud className={`${iconClass} text-slate-300`} />;
     }
   };
 
@@ -132,11 +153,21 @@ export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplay
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {getWeatherIcon(weather.weather[0].main)}
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              {getWeatherIcon(weather.weather[0].main)}
+            </motion.div>
             <div>
-              <h3 className="text-lg font-medium">
-                {weather.name}, {weather.sys.country}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-medium">
+                  {weather.name}, {weather.sys.country}
+                </h3>
+                <Badge variant="outline" className="text-xs">
+                  {weather.weather[0].main}
+                </Badge>
+              </div>
               <div className="flex items-center gap-2">
                 <p className="text-3xl font-bold">
                   {Math.round(weather.main.temp)}°C
@@ -170,9 +201,9 @@ export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplay
           <div className="flex flex-col items-center p-3 bg-muted/50 rounded-lg">
             <Wind className="h-4 w-4 text-slate-500 mb-1" />
             <span className="text-sm font-medium">
-              {Math.round(weather.main.temp)}°C
+              {Math.round(weather.wind.speed * 3.6)} km/h
             </span>
-            <span className="text-xs text-muted-foreground">Current</span>
+            <span className="text-xs text-muted-foreground">Wind</span>
           </div>
         </div>
       </CardContent>
