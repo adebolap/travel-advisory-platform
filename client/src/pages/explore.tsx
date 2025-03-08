@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { DateRange } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
 import { Layout } from "@/components/layout";
 import { motion } from "framer-motion";
-import { Globe, Calendar, MapPin } from "lucide-react";
+import { Globe, Calendar, MapPin, Loader2 } from "lucide-react";
 
 export default function Explore() {
   const [city, setCity] = useState("");
@@ -20,7 +20,6 @@ export default function Explore() {
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [currentWeather, setCurrentWeather] = useState<string>("Mild");
 
-  // Mock interests for now - will be personalized later
   const interests = ["culture", "food", "nightlife", "shopping", "transport"];
 
   const handleWeatherUpdate = (weather: string) => {
@@ -31,6 +30,12 @@ export default function Explore() {
     if (city) {
       setSearchSubmitted(true);
     }
+  };
+
+  const handleClearSearch = () => {
+    setCity("");
+    setDateRange(undefined);
+    setSearchSubmitted(false);
   };
 
   return (
@@ -78,6 +83,13 @@ export default function Explore() {
                 />
               </div>
             </div>
+            <Button 
+              onClick={handleClearSearch}
+              variant="outline"
+              className="mt-4 w-full"
+            >
+              Clear Search
+            </Button>
           </CardContent>
         </Card>
 
@@ -90,34 +102,40 @@ export default function Explore() {
           >
             <div className="lg:col-span-2">
               <div className="space-y-6">
-                <WeatherDisplay 
-                  city={city}
-                  onWeatherUpdate={handleWeatherUpdate}
-                />
-                <TravelSuggestions 
-                  city={city}
-                  interests={interests}
-                />
-                <EventList 
-                  city={city}
-                  dateRange={dateRange}
-                />
-                <ItineraryBuilder
-                  city={city}
-                  dateRange={dateRange}
-                />
+                <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin mx-auto" />}>
+                  <WeatherDisplay 
+                    city={city}
+                    onWeatherUpdate={handleWeatherUpdate}
+                  />
+                  <TravelSuggestions 
+                    city={city}
+                    interests={interests}
+                  />
+                  <EventList 
+                    city={city}
+                    dateRange={dateRange}
+                  />
+                  <ItineraryBuilder
+                    city={city}
+                    dateRange={dateRange}
+                    includeTaxiLinks={true}
+                    includeRestaurantSuggestions={true}
+                  />
+                </Suspense>
               </div>
             </div>
             <div className="space-y-6">
-              <BudgetEstimator 
-                city={city} 
-                dateRange={dateRange}
-              />
-              <PackingListGenerator
-                city={city}
-                dateRange={dateRange}
-                currentWeather={currentWeather}
-              />
+              <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin mx-auto" />}>
+                <BudgetEstimator 
+                  city={city} 
+                  dateRange={dateRange}
+                />
+                <PackingListGenerator
+                  city={city}
+                  dateRange={dateRange}
+                  currentWeather={currentWeather}
+                />
+              </Suspense>
             </div>
           </motion.div>
         )}

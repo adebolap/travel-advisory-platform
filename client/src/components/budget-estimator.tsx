@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { DollarSign, Plane, Bed, Utensils, MapPin } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { differenceInDays } from "date-fns";
+import { motion } from "framer-motion";
 
 interface BudgetEstimatorProps {
   city: string;
@@ -12,284 +13,91 @@ interface BudgetEstimatorProps {
   dateRange?: DateRange;
 }
 
-// Real-world cost estimates based on city tiers and local currencies
-const cityBaseCosts: Record<string, {
-  accommodation: number,
-  food: number,
-  activities: number,
-  transport: number,
-  currency: string,
-  symbol: string,
-  exchangeRate?: number // Optional exchange rate to USD for comparison
-}> = {
-  "London": { 
-    accommodation: 150, 
-    food: 40, 
-    activities: 30, 
-    transport: 15,
-    currency: "GBP",
-    symbol: "£",
-    exchangeRate: 1.27
-  },
-  "Paris": { 
-    accommodation: 130, 
-    food: 35, 
-    activities: 25, 
-    transport: 12,
-    currency: "EUR",
-    symbol: "€",
-    exchangeRate: 1.08
-  },
-  "New York": { 
-    accommodation: 200, 
-    food: 50, 
-    activities: 40, 
-    transport: 20,
-    currency: "USD",
-    symbol: "$",
-    exchangeRate: 1
-  },
-  "Tokyo": { 
-    accommodation: 15000, 
-    food: 4000, 
-    activities: 3000, 
-    transport: 1000,
-    currency: "JPY",
-    symbol: "¥",
-    exchangeRate: 0.0067
-  },
-  "Sydney": { 
-    accommodation: 200, 
-    food: 50, 
-    activities: 40, 
-    transport: 15,
-    currency: "AUD",
-    symbol: "A$",
-    exchangeRate: 0.65
-  },
-  "Dubai": { 
-    accommodation: 500, 
-    food: 150, 
-    activities: 200, 
-    transport: 50,
-    currency: "AED",
-    symbol: "د.إ",
-    exchangeRate: 0.27
-  },
-  "Singapore": { 
-    accommodation: 200, 
-    food: 30, 
-    activities: 40, 
-    transport: 10,
-    currency: "SGD",
-    symbol: "S$",
-    exchangeRate: 0.74
-  },
-  "Amsterdam": { 
-    accommodation: 120, 
-    food: 35, 
-    activities: 25, 
-    transport: 10,
-    currency: "EUR",
-    symbol: "€",
-    exchangeRate: 1.08
-  },
-  "Barcelona": { 
-    accommodation: 100, 
-    food: 30, 
-    activities: 20, 
-    transport: 8,
-    currency: "EUR",
-    symbol: "€",
-    exchangeRate: 1.08
-  },
-  "Berlin": { 
-    accommodation: 90, 
-    food: 25, 
-    activities: 20, 
-    transport: 8,
-    currency: "EUR",
-    symbol: "€",
-    exchangeRate: 1.08
-  },
-  "Bangkok": {
-    accommodation: 2000,
-    food: 500,
-    activities: 800,
-    transport: 200,
-    currency: "THB",
-    symbol: "฿",
-    exchangeRate: 0.028
-  },
-  "Seoul": {
-    accommodation: 100000,
-    food: 30000,
-    activities: 40000,
-    transport: 10000,
-    currency: "KRW",
-    symbol: "₩",
-    exchangeRate: 0.00076
-  },
-  "Mumbai": {
-    accommodation: 5000,
-    food: 1000,
-    activities: 1500,
-    transport: 500,
-    currency: "INR",
-    symbol: "₹",
-    exchangeRate: 0.012
-  },
-  "Istanbul": {
-    accommodation: 800,
-    food: 200,
-    activities: 300,
-    transport: 100,
-    currency: "TRY",
-    symbol: "₺",
-    exchangeRate: 0.031
-  },
-  "Mexico City": {
-    accommodation: 1500,
-    food: 400,
-    activities: 500,
-    transport: 150,
-    currency: "MXN",
-    symbol: "$",
-    exchangeRate: 0.059
-  }
+const cityData = {
+  "London": { currency: "GBP", symbol: "£", rate: 1.27 },
+  "Paris": { currency: "EUR", symbol: "€", rate: 1.08 },
+  "New York": { currency: "USD", symbol: "$", rate: 1 },
+  "Tokyo": { currency: "JPY", symbol: "¥", rate: 0.0067 },
+  "Sydney": { currency: "AUD", symbol: "A$", rate: 0.65 }
 };
 
-// Default costs for cities not in our database (using USD)
-const defaultCosts = {
-  accommodation: 100,
-  food: 30,
-  activities: 20,
-  transport: 10,
-  currency: "USD",
-  symbol: "$",
-  exchangeRate: 1
+const travelStyleMultipliers = {
+  "Budget": 0.6,
+  "Cultural": 1.0,
+  "Luxury": 2.5,
+  "Adventure": 1.2,
+  "Family": 1.4
 };
 
-const travelStyleMultipliers: Record<string, number> = {
-  "Budget": 0.6,    // Hostels, street food, public transport
-  "Cultural": 1.0,  // Mid-range hotels, local restaurants, mixed transport
-  "Luxury": 2.5,    // Luxury hotels, fine dining, private transport
-  "Adventure": 1.2, // Mix of accommodation, activity-focused spending
-  "Family": 1.4     // Family-friendly hotels, kid-friendly activities
-};
-
-// Format currency based on locale and currency code
-function formatCurrency(amount: number, currency: string, symbol: string): string {
-  // Special formatting for currencies with large denominations
-  if (currency === 'JPY' || currency === 'KRW') {
-    return `${symbol}${Math.round(amount).toLocaleString()}`;
-  }
-
-  // Format with 2 decimal places for most currencies
+function formatCurrency(amount: number, symbol: string): string {
   return `${symbol}${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 }
 
 export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRange }: BudgetEstimatorProps) {
   const [days, setDays] = useState(7);
-  const [showUSD, setShowUSD] = useState(false);
 
-  // Update days when dateRange changes
   useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
-      const numberOfDays = differenceInDays(dateRange.to, dateRange.from) + 1;
-      setDays(numberOfDays);
+      setDays(differenceInDays(dateRange.to, dateRange.from) + 1);
     }
   }, [dateRange]);
 
-  // Get base costs for the city or use defaults
-  const baseCosts = cityBaseCosts[city] || defaultCosts;
-
-  // Apply travel style multiplier
+  const { currency, symbol, rate } = cityData[city] || { currency: "USD", symbol: "$", rate: 1 };
   const multiplier = travelStyleMultipliers[travelStyle] || 1.0;
 
   const costs = {
-    accommodation: Math.round(baseCosts.accommodation * multiplier * days),
-    food: Math.round(baseCosts.food * multiplier * days),
-    activities: Math.round(baseCosts.activities * multiplier * days),
-    transport: Math.round(baseCosts.transport * multiplier * days)
+    accommodation: 100 * multiplier * days,
+    food: 30 * multiplier * days,
+    activities: 20 * multiplier * days,
+    transport: 10 * multiplier * days
   };
 
   const totalCost = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
-  const totalUSD = baseCosts.exchangeRate ? (totalCost * baseCosts.exchangeRate) : totalCost;
+  const convertedCost = totalCost * rate;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Budget Estimate ({baseCosts.currency})
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="days">Duration (days)</Label>
-            <Input
-              id="days"
-              type="number"
-              min={1}
-              max={30}
-              value={days}
-              onChange={(e) => setDays(parseInt(e.target.value) || 1)}
-              className="w-full"
-              disabled={!!dateRange?.from && !!dateRange?.to}
-            />
-          </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Budget Estimate ({currency})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="days">Duration (days)</Label>
+              <Input
+                id="days"
+                type="number"
+                min={1}
+                max={30}
+                value={days}
+                onChange={(e) => setDays(parseInt(e.target.value) || 1)}
+                className="w-full"
+              />
+            </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bed className="h-4 w-4 text-muted-foreground" />
-                <span>Accommodation</span>
+            {Object.entries(costs).map(([key, value]) => (
+              <div key={key} className="flex items-center justify-between">
+                <span>{key}</span>
+                <span className="font-medium">{formatCurrency(value * rate, symbol)}</span>
               </div>
-              <span className="font-medium">{formatCurrency(costs.accommodation, baseCosts.currency, baseCosts.symbol)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Utensils className="h-4 w-4 text-muted-foreground" />
-                <span>Food & Drinks</span>
-              </div>
-              <span className="font-medium">{formatCurrency(costs.food, baseCosts.currency, baseCosts.symbol)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>Activities</span>
-              </div>
-              <span className="font-medium">{formatCurrency(costs.activities, baseCosts.currency, baseCosts.symbol)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Plane className="h-4 w-4 text-muted-foreground" />
-                <span>Local Transport</span>
-              </div>
-              <span className="font-medium">{formatCurrency(costs.transport, baseCosts.currency, baseCosts.symbol)}</span>
-            </div>
+            ))}
 
             <div className="pt-2 mt-2 border-t">
               <div className="flex items-center justify-between font-semibold">
                 <span>Estimated Total</span>
-                <div className="text-right">
-                  <div className="text-lg">{formatCurrency(totalCost, baseCosts.currency, baseCosts.symbol)}</div>
-                  {baseCosts.currency !== 'USD' && (
-                    <div className="text-sm text-muted-foreground">
-                      ≈ ${Math.round(totalUSD).toLocaleString()} USD
-                    </div>
-                  )}
-                </div>
+                <div className="text-lg">{formatCurrency(convertedCost, symbol)}</div>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                *Estimates based on {travelStyle.toLowerCase()} travel style in {city}
+                *Estimates for {travelStyle.toLowerCase()} travel style in {city}
               </p>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

@@ -31,11 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    staleTime: 1000 * 60 * 10, // Cache user data for 10 minutes
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      // Use form encoded content type as expected by passport-local
       const formData = new URLSearchParams();
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text);
+        throw new Error(text || 'Login failed, please try again.');
       }
 
       return res.json();
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Welcome back!",
         description: `Logged in as ${user.username}`,
+        variant: "default",
       });
     },
     onError: (error: Error) => {
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Welcome!",
         description: "Your account has been created successfully",
+        variant: "default",
       });
     },
     onError: (error: Error) => {
@@ -102,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Logged out",
         description: "You have been logged out successfully",
+        variant: "default",
       });
     },
     onError: (error: Error) => {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, MapPin, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TimelineItem {
   id: string;
@@ -50,41 +51,47 @@ export default function TimelineView({ items, onReorder }: TimelineViewProps) {
       {/* Timeline line */}
       <div className="absolute left-0 top-0 bottom-0 w-px bg-border" />
 
-      {items.map((item, index) => (
-        <div
-          key={item.id}
-          draggable
-          onDragStart={(e) => handleDragStart(e, item.id)}
-          onDragOver={(e) => handleDragOver(e, item.id)}
-          onDragEnd={handleDragEnd}
-          className={cn(
-            "relative flex gap-4 items-start group",
-            draggedItem === item.id && "opacity-50"
-          )}
-        >
-          {/* Timeline dot */}
-          <div className="absolute -left-[1.35rem] w-3 h-3 rounded-full bg-primary" />
+      <AnimatePresence>
+        {items.map((item) => (
+          <motion.div
+            key={item.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, item.id)}
+            onDragOver={(e) => handleDragOver(e, item.id)}
+            onDragEnd={handleDragEnd}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className={cn(
+              "relative flex gap-4 items-start group",
+              draggedItem === item.id && "opacity-50"
+            )}
+          >
+            {/* Timeline dot */}
+            <div className="absolute -left-[1.35rem] w-3 h-3 rounded-full bg-primary" />
 
-          <Card className="flex-1 cursor-move hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  {item.time}
-                </div>
-                {item.location && (
+            <Card className="flex-1 cursor-move hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {item.location}
+                    <Clock className="h-4 w-4" />
+                    {item.time}
                   </div>
-                )}
-              </div>
-              <p className="mt-1">{item.activity}</p>
-            </CardContent>
-          </Card>
-        </div>
-      ))}
+                  {item.location && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      {item.location}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-base font-medium text-foreground">{item.activity}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

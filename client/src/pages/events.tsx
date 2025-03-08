@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { DateRange } from "react-day-picker";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
 import EventList from "@/components/event-list";
 import CitySearch from "@/components/city-search";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 export default function Events() {
   const [city, setCity] = useState("");
@@ -13,7 +15,7 @@ export default function Events() {
 
   const handleCitySelect = (selectedCity: string) => {
     setCity(selectedCity);
-    setSearchSubmitted(true); // Automatically trigger search when city is selected
+    setSearchSubmitted(true);
   };
 
   const handleSearch = () => {
@@ -22,11 +24,17 @@ export default function Events() {
     }
   };
 
+  const handleClearSearch = () => {
+    setCity("");
+    setDateRange(undefined);
+    setSearchSubmitted(false);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8">Discover Events</h1>
 
-      <Card className="mb-8">
+      <Card className="mb-8 shadow-lg">
         <CardContent className="p-6">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -39,6 +47,7 @@ export default function Events() {
                   onClick={handleSearch}
                   disabled={!city}
                   variant="secondary"
+                  className="bg-primary text-white hover:bg-primary/90 transition"
                 >
                   Update
                 </Button>
@@ -52,11 +61,26 @@ export default function Events() {
               />
             </div>
           </div>
+          <Button 
+            onClick={handleClearSearch}
+            variant="outline"
+            className="mt-4 w-full"
+          >
+            Clear Search
+          </Button>
         </CardContent>
       </Card>
 
       {searchSubmitted && city && (
-        <EventList city={city} />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin mx-auto" />}>
+            <EventList city={city} />
+          </Suspense>
+        </motion.div>
       )}
     </div>
   );

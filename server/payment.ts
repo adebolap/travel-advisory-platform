@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { storage } from "./storage";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("Missing Stripe secret key");
@@ -42,6 +43,9 @@ export async function createCheckoutSession(currency: string, userId: number) {
       userId: userId.toString(),
     },
   });
+
+  // Update the user's subscription status in the database
+  await storage.updateUserSubscriptionStatus(userId, true);
 
   return session;
 }

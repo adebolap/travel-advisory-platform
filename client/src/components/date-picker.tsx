@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { DateRange } from "react-day-picker";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface DatePickerProps {
   dateRange: DateRange | undefined;
@@ -34,18 +35,17 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant={"outline"}
+            variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal hover:border-primary transition-colors",
               !dateRange && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
             {dateRange?.from ? (
               dateRange.to ? (
                 <>
-                  {format(dateRange.from, "LLL dd, y")} -{" "}
-                  {format(dateRange.to, "LLL dd, y")}
+                  {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
                 </>
               ) : (
                 format(dateRange.from, "LLL dd, y")
@@ -55,31 +55,43 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <div className="space-y-3">
-            <Calendar
-              mode="range"
-              selected={tempRange}
-              onSelect={handleSelect}
-              numberOfMonths={2}
-              initialFocus
-            />
-            <div className="flex justify-end gap-2 p-3 border-t">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setTempRange(dateRange);
-                  setIsOpen(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleConfirm}>
-                Confirm Dates
-              </Button>
-            </div>
-          </div>
-        </PopoverContent>
+        <AnimatePresence>
+          {isOpen && (
+            <PopoverContent
+              as={motion.div}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="w-auto p-0"
+              align="start"
+            >
+              <div className="space-y-3">
+                <Calendar
+                  mode="range"
+                  selected={tempRange}
+                  onSelect={handleSelect}
+                  numberOfMonths={2}
+                  initialFocus
+                />
+                <div className="flex justify-end gap-2 p-3 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setTempRange(dateRange);
+                      setIsOpen(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleConfirm} className="bg-primary text-primary-foreground">
+                    Confirm Dates
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          )}
+        </AnimatePresence>
       </Popover>
     </div>
   );

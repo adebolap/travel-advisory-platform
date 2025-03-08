@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check } from "lucide-react";
+import { Check, Star, Info, BadgeCheck, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { premiumFeatures } from "@shared/schema";
+import { motion } from "framer-motion";
 
 const currencies = {
   USD: { symbol: "$", rate: 1 },
@@ -66,10 +67,13 @@ export default function PricingPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Basic Plan */}
-        <Card>
+        <Card className="relative overflow-hidden border-2 border-primary/20">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
           <CardHeader>
-            <CardTitle className="text-2xl">Basic Plan</CardTitle>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              Basic Plan
+              <Star className="h-5 w-5 text-yellow-500" />
+            </CardTitle>
             <CardDescription>Free forever</CardDescription>
           </CardHeader>
           <CardContent>
@@ -87,17 +91,17 @@ export default function PricingPage() {
           </CardContent>
         </Card>
 
-        {/* Premium Plan */}
-        <Card className="relative overflow-hidden border-primary/20">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+        <Card className="relative overflow-hidden border-2 border-primary/40">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
           <CardHeader>
-            <CardTitle className="text-2xl">
+            <CardTitle className="text-2xl flex items-center gap-2">
               Premium Plan
+              <BadgeCheck className="h-5 w-5 text-primary" />
               <span className="block text-xl text-muted-foreground">
                 {currencies[currency].symbol}{price}/year
               </span>
             </CardTitle>
-            <CardDescription>Unlock all premium features</CardDescription>
+            <CardDescription>Unlock all premium features and save 20% annually!</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-4 mb-6">
@@ -114,7 +118,7 @@ export default function PricingPage() {
               </Button>
             ) : (
               <Button
-                className="w-full"
+                className="w-full transition-all hover:scale-105 active:scale-95 bg-primary/90 hover:bg-primary"
                 onClick={handleSubscribe}
               >
                 {user ? "Upgrade Now" : "Sign up to Subscribe"}

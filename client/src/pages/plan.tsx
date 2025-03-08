@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/form";
 import { Layout } from "@/components/layout";
 import { CitySelector } from "@/components/city-selector";
-import type { InsertCity } from "@shared/schema";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
+import { motion } from "framer-motion";
 
 interface TripPlan {
   id: string;
@@ -25,6 +26,8 @@ interface TripPlan {
 
 export default function PlanPage() {
   const [trips, setTrips] = useState<TripPlan[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tripToDelete, setTripToDelete] = useState<TripPlan | null>(null);
   const form = useForm<Omit<TripPlan, "id" | "isCompleted">>();
 
   const onSubmit = (data: Omit<TripPlan, "id" | "isCompleted">) => {
@@ -47,14 +50,22 @@ export default function PlanPage() {
     );
   };
 
-  const deleteTrip = (id: string) => {
-    setTrips(trips.filter((trip) => trip.id !== id));
+  const confirmDeleteTrip = (trip: TripPlan) => {
+    setTripToDelete(trip);
+    setIsModalOpen(true);
+  };
+
+  const deleteTrip = () => {
+    if (tripToDelete) {
+      setTrips(trips.filter((trip) => trip.id !== tripToDelete.id));
+      setIsModalOpen(false);
+      setTripToDelete(null);
+    }
   };
 
   return (
     <Layout title="Travel Diary" subtitle="Plan your future adventures">
       <div className="space-y-8">
-        {/* Add New Trip Form */}
         <Card className="overflow-hidden border-2 border-primary/20 bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <CardHeader className="border-b bg-muted/50">
             <CardTitle className="flex items-center gap-2 text-2xl">
@@ -64,10 +75,7 @@ export default function PlanPage() {
           </CardHeader>
           <CardContent className="pt-6">
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="destination"
@@ -75,7 +83,7 @@ export default function PlanPage() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-primary" />
-                        Where do you want to go?
+                        Destination
                       </FormLabel>
                       <FormControl>
                         <CitySelector
@@ -98,10 +106,10 @@ export default function PlanPage() {
                           When?
                         </FormLabel>
                         <FormControl>
-                          <Input 
-                            type="date" 
-                            {...field} 
-                            className="transition-all hover:border-primary hover:shadow-md focus:ring-2 focus:ring-primary/20"
+                          <Input
+                            type="date"
+                            {...field}
+                            className="hover:border-primary hover:shadow-md focus:ring-primary/20"
                           />
                         </FormControl>
                       </FormItem>
@@ -120,17 +128,14 @@ export default function PlanPage() {
                           <Input
                             placeholder="Add some notes..."
                             {...field}
-                            className="transition-all hover:border-primary hover:shadow-md focus:ring-2 focus:ring-primary/20"
+                            className="hover:border-primary hover:shadow-md focus:ring-primary/20"
                           />
                         </FormControl>
                       </FormItem>
                     )}
                   />
                 </div>
-                <Button 
-                  type="submit" 
-                  className="w-full transition-all hover:scale-105 active:scale-95 bg-primary/90 hover:bg-primary"
-                >
+                <Button type="submit" className="w-full bg-primary/90 hover:bg-primary">
                   <Plus className="h-4 w-4 mr-2" />
                   Add to Travel Plans
                 </Button>
@@ -139,53 +144,55 @@ export default function PlanPage() {
           </CardContent>
         </Card>
 
-        {/* Trip List */}
-        <div className="grid gap-4">
-          {trips.map((trip) => (
-            <Card
-              key={trip.id}
-              className={`transition-all duration-300 transform hover:scale-[1.02] border-2 ${
-                trip.isCompleted ? "bg-muted border-primary/20" : "border-primary/40"
-              }`}
-            >
+        {trips.map((trip) => (
+          <motion.div
+            key={trip.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="border-2 border-primary/40 bg-muted">
               <CardContent className="flex items-center justify-between p-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                <div>
+                  <h3 className="font-medium text-lg flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-primary animate-bounce" />
-                    <h3 className="font-medium text-lg">{trip.destination}</h3>
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span>{new Date(trip.date).toLocaleDateString()}</span>
-                    </div>
-                    {trip.notes && (
-                      <p className="mt-2 text-sm italic">{trip.notes}</p>
-                    )}
-                  </div>
+                    {trip.destination}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 text-primary" /> {new Date(trip.date).toLocaleDateString()}
+                  </p>
+                  {trip.notes && <p className="text-sm italic mt-2">{trip.notes}</p>}
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => toggleComplete(trip.id)}
-                    className="transition-transform hover:scale-110 active:scale-95 hover:border-primary hover:text-primary"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => deleteTrip(trip.id)}
-                    className="transition-transform hover:scale-110 active:scale-95 hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={() => confirmDeleteTrip(trip)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </motion.div>
+        ))}
+
+        <Modal open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Delete Trip</ModalTitle>
+            </ModalHeader>
+            <p>Are you sure you want to delete this trip?</p>
+            <ModalFooter>
+              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={deleteTrip}>
+                Confirm Delete
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </div>
     </Layout>
   );

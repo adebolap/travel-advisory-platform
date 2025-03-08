@@ -36,6 +36,8 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   };
@@ -55,7 +57,7 @@ export function setupAuth(app: Express) {
         try {
           const user = await storage.getUserByUsername(username);
           if (!user || !(await comparePasswords(password, user.password))) {
-            return done(null, false, { message: "Invalid username or password" });
+            return done(null, false, { message: "Authentication failed" });
           }
           return done(null, user);
         } catch (err) {
@@ -75,27 +77,35 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Authentication routes
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required." });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long." });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+        return res.status(400).json({ message: "Authentication failed" });
       }
 
       const user = await storage.createUser({
         ...req.body,
-        password: await hashPassword(req.body.password),
+        password: await hashPassword(password),
       });
 
       req.login(user, (err) => {
         if (err) return next(err);
-        // Exclude password from response
         const { password, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
-      next(error);
+      console.error('Registration error:', error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -103,11 +113,10 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err, user, info) => {
       if (err) return next(err);
       if (!user) {
-        return res.status(401).json({ message: info?.message || "Authentication failed" });
+        return res.status(401).json({ message: "Authentication failed" });
       }
       req.login(user, (err) => {
         if (err) return next(err);
-        // Exclude password from response
         const { password, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
       });
@@ -117,47 +126,21 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destruction error:", err);
+          return res.status(500).json({ message: "Logout failed" });
+        }
+        res.clearCookie("connect.sid", { path: '/' });
+        res.sendStatus(200);
+      });
     });
-  });
-
-  // Add quiz endpoints
-  app.post("/api/quiz/submit", async (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const quizResponse = await storage.createTravelQuizResponse({
-        userId: req.user.id,
-        responses: req.body.responses,
-        recommendedDestinations: req.body.recommendedDestinations || [],
-        recommendedActivities: req.body.recommendedActivities || []
-      });
-
-      // Update user preferences based on quiz responses
-      const updatedUser = await storage.updateUserPreferences(req.user.id, {
-        lastQuizDate: new Date(),
-        ...req.body.preferences
-      });
-
-      // Exclude password from response
-      const { password, ...userWithoutPassword } = updatedUser;
-
-      res.json({
-        quizResponse,
-        user: userWithoutPassword
-      });
-    } catch (error) {
-      next(error);
-    }
   });
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    // Exclude password from response
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });

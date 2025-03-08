@@ -4,33 +4,70 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Vibrant Color Palette for a Younger Audience */
+    --background: 230 50% 98%; /* Soft pastel background */
+    --foreground: 220 15% 20%; /* Dark, easy-to-read text */
+    --card: 0 0% 100%; /* White cards for clarity */
+    --card-foreground: 220 15% 20%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+
+    /* Bright & Playful Colors */
+    --primary: 340 82% 52%; /* Bright pink */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 45 90% 55%; /* Vivid yellow */
+    --secondary-foreground: 0 0% 20%;
+    --accent: 200 80% 45%; /* Cool cyan */
+    --accent-foreground: 0 0% 100%;
+    --muted: 210 20% 95%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+
+    /* Destructive & Attention Colors */
+    --destructive: 0 84.2% 60.2%; /* Strong red */
+    --destructive-foreground: 0 0% 100%;
+
+    /* UI Elements */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --radius: 0.75rem;
+    --radius: 1rem;
+
+    /* Shadows and Transitions */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition-fast: 150ms ease-in-out;
+    --transition-medium: 300ms ease-in-out;
   }
 
   * {
-    @apply border-border;
+    @apply border-border transition-all;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+
+  /* Reusable Component Styles */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-md hover:bg-primary/80 transition-fast;
+  }
+
+  .card {
+    @apply bg-card text-card-foreground p-6 rounded-lg shadow-md hover:shadow-lg transition-medium;
+  }
+
+  .input {
+    @apply border border-input rounded-md p-2 bg-white text-foreground shadow-sm focus:ring-2 focus:ring-primary;
+  }
+
+  /* Add playful animation */
+  @keyframes pop {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .btn-primary:hover {
+    animation: pop 0.3s ease-in-out;
   }
 }
