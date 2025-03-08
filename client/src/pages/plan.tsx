@@ -12,8 +12,8 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Layout } from "@/components/layout";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { popularCities } from "@shared/schema";
+import { CitySelector } from "@/components/city-selector";
+import type { InsertCity } from "@shared/schema";
 
 interface TripPlan {
   id: string;
@@ -78,39 +78,11 @@ export default function PlanPage() {
                         Where do you want to go?
                       </FormLabel>
                       <FormControl>
-                        <div className="flex gap-2">
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="w-full transition-all hover:border-primary hover:shadow-md">
-                                <SelectValue placeholder="Choose a destination..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-[300px]">
-                              {popularCities.map((city) => (
-                                <SelectItem 
-                                  key={city} 
-                                  value={city}
-                                  className="transition-colors hover:bg-primary/10 cursor-pointer py-2 px-3"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-primary" />
-                                    {city}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button 
-                            type="submit"
-                            className="transition-all hover:scale-105 active:scale-95 bg-primary/90 hover:bg-primary"
-                          >
-                            <Plus className="h-4 w-4" />
-                            <span className="ml-2">Add Trip</span>
-                          </Button>
-                        </div>
+                        <CitySelector
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Choose your destination..."
+                        />
                       </FormControl>
                     </FormItem>
                   )}
@@ -155,6 +127,13 @@ export default function PlanPage() {
                     )}
                   />
                 </div>
+                <Button 
+                  type="submit" 
+                  className="w-full transition-all hover:scale-105 active:scale-95 bg-primary/90 hover:bg-primary"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add to Travel Plans
+                </Button>
               </form>
             </Form>
           </CardContent>
