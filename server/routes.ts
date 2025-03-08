@@ -6,12 +6,42 @@ import { addMonths, format, isWithinInterval, parseISO } from "date-fns";
 import axios from "axios";
 import { createCheckoutSession } from "./payment";
 import Stripe from 'stripe';
+import geoip from 'geoip-lite';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' });
 
-
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
+
+  // User location endpoint
+  apiRouter.get("/api/user-location", (req, res) => {
+    try {
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const geo = geoip.lookup(ip as string);
+
+      if (!geo) {
+        return res.json({ continent: null });
+      }
+
+      const continentMap: Record<string, string> = {
+        'EU': 'Europe 🇪🇺',
+        'AS': 'Asia 🌏',
+        'NA': 'Americas 🌎',
+        'SA': 'Americas 🌎',
+        'OC': 'Oceania 🏝️',
+        'AF': 'Africa 🌍'
+      };
+
+      res.json({ 
+        continent: continentMap[geo.continent] || null,
+        country: geo.country
+      });
+    } catch (error) {
+      console.error('Error detecting location:', error);
+      res.json({ continent: null });
+    }
+  });
+
 
   // Create Stripe checkout session
   apiRouter.post("/api/create-checkout-session", async (req, res) => {

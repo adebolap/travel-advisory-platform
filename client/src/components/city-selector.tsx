@@ -5,7 +5,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { popularCities, cityToContinentMap } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import geoip from 'geoip-lite';
 
 interface CitySelectorProps {
   value?: string;
@@ -19,21 +18,12 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
   const [userContinent, setUserContinent] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get user's IP and determine continent
-    fetch('https://api.ipify.org?format=json')
+    // Fetch user's continent from the server
+    fetch('/api/user-location')
       .then(response => response.json())
       .then(data => {
-        const geo = geoip.lookup(data.ip);
-        if (geo) {
-          const continentMap: Record<string, string> = {
-            'EU': 'Europe 🇪🇺',
-            'AS': 'Asia 🌏',
-            'NA': 'Americas 🌎',
-            'SA': 'Americas 🌎',
-            'OC': 'Oceania 🏝️',
-            'AF': 'Africa 🌍'
-          };
-          setUserContinent(continentMap[geo.continent] || null);
+        if (data.continent) {
+          setUserContinent(data.continent);
         }
       })
       .catch(() => setUserContinent(null));
@@ -69,10 +59,10 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
     // If user's continent is known, move it to the top
     if (userContinent) {
       const orderedRegions: typeof regions = {} as any;
-      orderedRegions[userContinent] = regions[userContinent];
+      orderedRegions[userContinent] = regions[userContinent as keyof typeof regions];
       Object.keys(regions).forEach(region => {
         if (region !== userContinent) {
-          orderedRegions[region] = regions[region];
+          orderedRegions[region as keyof typeof regions] = regions[region as keyof typeof regions];
         }
       });
       return orderedRegions;
