@@ -94,7 +94,7 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
+      <PopoverContent className="w-[300px] p-0" align="start">
         <Command>
           <CommandInput 
             placeholder="Search cities..." 
@@ -103,27 +103,29 @@ export function CitySelector({ value, onValueChange, placeholder = "Select a cit
             className="border-none focus:ring-0"
           />
           <CommandEmpty>No cities found.</CommandEmpty>
-          {Object.entries(filteredCities).map(([region, cities]) => (
-            <CommandGroup key={region} heading={region}>
-              {cities.map(city => (
-                <CommandItem
-                  key={city}
-                  value={city}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue);
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <MapPin className={cn(
-                    "mr-2 h-4 w-4",
-                    value === city ? "text-primary" : "text-muted-foreground"
-                  )} />
-                  {city}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          ))}
+          <div className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
+            {Object.entries(filteredCities).map(([region, cities]) => (
+              <CommandGroup key={region} heading={region}>
+                {cities.map(city => (
+                  <CommandItem
+                    key={city}
+                    value={city}
+                    onSelect={(currentValue) => {
+                      onValueChange(currentValue);
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <MapPin className={cn(
+                      "mr-2 h-4 w-4",
+                      value === city ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    {city}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
+          </div>
         </Command>
       </PopoverContent>
     </Popover>
