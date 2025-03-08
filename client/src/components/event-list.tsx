@@ -50,9 +50,13 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
     };
   }, [dateRange]);
 
+  // Format dates for API query
+  const formattedFrom = effectiveDateRange.from ? format(effectiveDateRange.from, 'yyyy-MM-dd') : undefined;
+  const formattedTo = effectiveDateRange.to ? format(effectiveDateRange.to, 'yyyy-MM-dd') : undefined;
+
   const { data: events, isLoading } = useQuery<Event[]>({
-    queryKey: [`/api/events/${city}`, effectiveDateRange.from, effectiveDateRange.to],
-    enabled: !!city,
+    queryKey: ['/api/events', city, formattedFrom, formattedTo],
+    enabled: !!city && !!formattedFrom && !!formattedTo,
   });
 
   const groupedEvents = useMemo(() => {
@@ -95,6 +99,17 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
           </Card>
         ))}
       </div>
+    );
+  }
+
+  if (!events?.length) {
+    return (
+      <Card className="p-6 text-center">
+        <CardTitle className="text-lg mb-2">No Events Found</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          There are no events scheduled in {city} for the selected dates.
+        </p>
+      </Card>
     );
   }
 

@@ -41,6 +41,7 @@ interface Attraction {
   rating: number;
   types: string[];
   photo?: string;
+  description?: string;
   geometry: {
     location: {
       lat: number;
@@ -52,9 +53,9 @@ interface Attraction {
 export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultural', intensity = 'moderate', interests = [] }: ItineraryBuilderProps) {
   const [itinerary, setItinerary] = useState<DayPlan[]>([]);
 
-  // Fetch attractions from Google Places API
-  const { data: attractions } = useQuery<Attraction[]>({
-    queryKey: [`/api/attractions/${city}`],
+  // Fetch attractions from API
+  const { data: attractions, isLoading: isLoadingAttractions } = useQuery<Attraction[]>({
+    queryKey: ['/api/attractions', city],
     enabled: !!city,
   });
 
@@ -76,7 +77,6 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
   }, [dateRange, city, attractions, intensity, travelStyle]);
 
   function generateDayAttractions(attractions: Attraction[], dayIndex: number, totalDays: number): Attraction[] {
-    // Sort attractions by rating and distribute them across days
     const sortedAttractions = [...attractions].sort((a, b) => b.rating - a.rating);
     const attractionsPerDay = Math.ceil(sortedAttractions.length / totalDays);
     return sortedAttractions.slice(
@@ -98,7 +98,7 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
         rating: attraction.rating,
         type: 'attraction',
         imageUrl: attraction.photo,
-        description: `Visit this highly rated attraction (${attraction.rating}/5). Known for: ${attraction.types.join(', ')}`
+        description: attraction.description || `Visit this highly rated attraction (${attraction.rating}/5). Known for: ${attraction.types.join(', ')}`
       };
     });
   }
@@ -127,6 +127,34 @@ export default function ItineraryBuilder({ city, dateRange, travelStyle = 'cultu
           { start: 19, end: 21 }
         ];
     }
+  }
+
+  if (isLoadingAttractions) {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-24 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!attractions?.length) {
+    return (
+      <Card className="text-center p-6">
+        <CardTitle className="mb-2">No Attractions Found</CardTitle>
+        <p className="text-muted-foreground">
+          We couldn't find any attractions for {city}. Try selecting a different city.
+        </p>
+      </Card>
+    );
   }
 
   return (
