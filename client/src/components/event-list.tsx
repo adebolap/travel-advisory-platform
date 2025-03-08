@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Ticket, ChevronDown, ChevronUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, parseISO, isWithinInterval } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from "date-fns";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface Event {
   id: number;
@@ -39,8 +40,18 @@ const eventCategories = {
 export default function EventList({ city, dateRange, compact = false }: EventListProps) {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
 
+  // Create default date range if none provided (current month)
+  const effectiveDateRange = useMemo(() => {
+    if (dateRange?.from && dateRange?.to) return dateRange;
+    const today = new Date();
+    return {
+      from: startOfMonth(today),
+      to: endOfMonth(today)
+    };
+  }, [dateRange]);
+
   const { data: events, isLoading } = useQuery<Event[]>({
-    queryKey: [`/api/events/${city}`],
+    queryKey: [`/api/events/${city}`, effectiveDateRange.from, effectiveDateRange.to],
     enabled: !!city,
   });
 
@@ -49,12 +60,12 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
 
     const sortedEvents = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const filteredEvents = dateRange?.from && dateRange?.to
-      ? sortedEvents.filter(event => isWithinInterval(parseISO(event.date), {
-          start: dateRange.from!,
-          end: dateRange.to!
-        }))
-      : sortedEvents;
+    const filteredEvents = sortedEvents.filter(event => 
+      isWithinInterval(parseISO(event.date), {
+        start: effectiveDateRange.from!,
+        end: effectiveDateRange.to!
+      })
+    );
 
     const grouped = new Map<string, Event[]>();
     filteredEvents.forEach(event => {
@@ -66,10 +77,12 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
     });
 
     return grouped;
-  }, [events, dateRange]);
+  }, [events, effectiveDateRange]);
 
   const toggleDateExpansion = (date: string) => {
-    setExpandedDates(prev => prev.includes(date) ? prev.filter(d => d !== date) : [...prev, date]);
+    setExpandedDates(prev => 
+      prev.includes(date) ? prev.filter(d => d !== date) : [...prev, date]
+    );
   };
 
   if (isLoading) {
@@ -112,6 +125,67 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
                     {expandedDates.includes(dateKey) ? <ChevronUp /> : <ChevronDown />}
                   </Button>
                 </CardHeader>
+                {expandedDates.includes(dateKey) && (
+                  <CardContent className="pt-4">
+                    <div className="space-y-4">
+                      {dateEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="p-4 rounded-lg border bg-card/50 hover:bg-card/80 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-2">
+                              <h3 className="font-semibold">{event.name}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <MapPin className="h-4 w-4" />
+                                <span>{event.venue}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                <span>{format(parseISO(event.date), 'h:mm a')}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Ticket className="h-4 w-4" />
+                                <span>{event.price}</span>
+                              </div>
+                              {event.location && (
+                                <div className="text-sm text-muted-foreground mt-2">
+                                  <strong>Address:</strong> {event.location}
+                                </div>
+                              )}
+                            </div>
+                            <Badge 
+                              className={cn(
+                                "whitespace-nowrap",
+                                eventCategories[event.category as keyof typeof eventCategories]?.color || 
+                                eventCategories.other.color
+                              )}
+                            >
+                              {eventCategories[event.category as keyof typeof eventCategories]?.label || 
+                               eventCategories.other.label}
+                            </Badge>
+                          </div>
+                          {event.description && (
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              {event.description}
+                            </p>
+                          )}
+                          {event.url && (
+                            <Button
+                              variant="link"
+                              className="mt-2 p-0 h-auto text-primary"
+                              asChild
+                            >
+                              <a href={event.url} target="_blank" rel="noopener noreferrer">
+                                View Details
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             </motion.div>
           );
