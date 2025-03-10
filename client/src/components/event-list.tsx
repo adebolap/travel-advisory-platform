@@ -5,7 +5,6 @@ import { AlertCircle, Calendar, MapPin, Ticket } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import type { DateRange } from "react-day-picker";
 
 interface Event {
   id: string;
@@ -16,47 +15,24 @@ interface Event {
   price: string;
   category: string;
   url: string;
-  image: string;
 }
 
 interface EventListProps {
   city: string;
-  dateRange?: DateRange;
 }
 
-export default function EventList({ city, dateRange }: EventListProps) {
+export default function EventList({ city }: EventListProps) {
   const { data: events, isLoading, error, refetch } = useQuery<Event[]>({
-    queryKey: ['events', city, dateRange?.from, dateRange?.to],
+    queryKey: ['events', city],
     queryFn: async () => {
-      // Construct query parameters
-      const params = new URLSearchParams();
-
-      // Ensure city is properly trimmed and encoded
-      if (!city?.trim()) {
-        throw new Error('City parameter is required');
-      }
-      params.append('city', city.trim());
-
-      // Add date range if provided
-      if (dateRange?.from) {
-        params.append('from', format(dateRange.from, 'yyyy-MM-dd'));
-      }
-      if (dateRange?.to) {
-        params.append('to', format(dateRange.to, 'yyyy-MM-dd'));
-      }
-
-      console.log('Fetching events with params:', params.toString());
-
-      const response = await fetch(`/api/events?${params.toString()}`);
+      const params = new URLSearchParams({ city: city.trim() });
+      const response = await fetch(`/api/events?${params}`);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch events' }));
-        throw new Error(errorData.details || errorData.message || 'Failed to fetch events');
+        throw new Error('Failed to fetch events');
       }
       return response.json();
     },
     enabled: Boolean(city?.trim()),
-    retry: 1,
-    refetchOnWindowFocus: false,
   });
 
   if (isLoading) {
@@ -101,7 +77,7 @@ export default function EventList({ city, dateRange }: EventListProps) {
         </CardHeader>
         <CardContent className="text-center py-6">
           <p className="text-muted-foreground">
-            No events found for {city} during the selected dates.
+            No events found for {city}.
           </p>
         </CardContent>
       </Card>
@@ -117,7 +93,7 @@ export default function EventList({ city, dateRange }: EventListProps) {
         {events.map((event) => (
           <div
             key={event.id}
-            className="p-4 rounded-lg border bg-card transition-colors hover:bg-accent/50"
+            className="p-4 rounded-lg border bg-card hover:bg-accent/50"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-2">
