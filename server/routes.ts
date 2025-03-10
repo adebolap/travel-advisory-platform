@@ -128,6 +128,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forecast API endpoint
+  apiRouter.get("/api/forecast/:city", async (req, res) => {
+    const { city } = req.params;
+    const API_KEY = process.env.WEATHER_API_KEY;
+
+    if (!API_KEY) {
+      return res.status(500).json({ error: "Weather API key not configured" });
+    }
+
+    try {
+      const encodedCity = encodeURIComponent(city.trim());
+      const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodedCity}&appid=${API_KEY}&units=metric`;
+
+      const response = await axios.get(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      res.json(response.data);
+    } catch (error: any) {
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message;
+
+      console.error('Forecast API error:', {
+        status,
+        message,
+        city
+      });
+
+      res.status(status).json({
+        error: "Failed to fetch forecast data",
+        details: message
+      });
+    }
+  });
+
   // Events API endpoint
   apiRouter.get("/api/events", async (req, res) => {
     const { city } = req.query;
@@ -171,8 +209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: event.dates.start.dateTime,
         venue: event._embedded?.venues?.[0]?.name || 'Venue TBA',
         category: event.classifications?.[0]?.segment?.name || 'Other',
-        price: event.priceRanges ? 
-          `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` : 
+        price: event.priceRanges ?
+          `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` :
           'Price TBA',
         url: event.url,
         location: event._embedded?.venues?.[0]?.address?.line1
@@ -241,8 +279,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         location: place.formatted_address,
         rating: place.rating || 0,
         types: place.types || [],
-        photo: place.photos ? 
-          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` : 
+        photo: place.photos ?
+          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` :
           null,
         geometry: place.geometry?.location || null
       }));
