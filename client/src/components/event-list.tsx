@@ -40,6 +40,8 @@ export default function EventList({ city, dateRange }: EventListProps) {
         params.append('to', format(dateRange.to, 'yyyy-MM-dd'));
       }
 
+      console.log('Fetching events with params:', params.toString());
+
       const response = await fetch(`/api/events?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -47,7 +49,7 @@ export default function EventList({ city, dateRange }: EventListProps) {
       }
       return response.json();
     },
-    enabled: Boolean(city),
+    enabled: Boolean(city?.trim()),
     retry: 1,
     refetchOnWindowFocus: false,
   });

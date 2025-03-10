@@ -172,32 +172,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     if (!city || typeof city !== 'string') {
       console.error('Events API: Missing city parameter');
-      return res.status(400).json({ error: "City parameter is required" });
+      return res.status(400).json({ 
+        error: "City parameter is required",
+        details: "Please provide a valid city name"
+      });
     }
 
     const API_KEY = process.env.TICKETMASTER_API_KEY;
     if (!API_KEY) {
       console.error('Events API: Missing API key');
-      return res.status(500).json({ error: "Ticketmaster API key not configured" });
+      return res.status(500).json({ 
+        error: "API configuration error",
+        details: "Ticketmaster API key not configured"
+      });
     }
 
     try {
       console.log(`Fetching events for city: ${city}, from: ${from}, to: ${to}`);
       const encodedCity = encodeURIComponent(city.trim());
+
+      const params: Record<string, string> = {
+        apikey: API_KEY,
+        keyword: encodedCity, // Use keyword instead of city for better results
+        sort: 'date,asc',
+        size: '20',
+        locale: '*'
+      };
+
+      // Add date parameters if provided
+      if (typeof from === 'string') {
+        params.startDateTime = `${from}T00:00:00Z`;
+      }
+      if (typeof to === 'string') {
+        params.endDateTime = `${to}T23:59:59Z`;
+      }
+
       const response = await axios.get(
         'https://app.ticketmaster.com/discovery/v2/events.json',
         {
-          params: {
-            apikey: API_KEY,
-            city: encodedCity,
-            startDateTime: from ? `${from}T00:00:00Z` : undefined,
-            endDateTime: to ? `${to}T23:59:59Z` : undefined,
-            sort: 'date,asc',
-            size: 20,
-            locale: '*'
-          },
+          params,
           headers: {
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -243,13 +259,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     if (!city || typeof city !== 'string') {
       console.error('Attractions API: Missing city parameter');
-      return res.status(400).json({ error: "City parameter is required" });
+      return res.status(400).json({ 
+        error: "City parameter is required",
+        details: "Please provide a valid city name"
+      });
     }
 
     const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
     if (!API_KEY) {
       console.error('Attractions API: Missing API key');
-      return res.status(500).json({ error: "Google Places API key not configured" });
+      return res.status(500).json({ 
+        error: "API configuration error",
+        details: "Google Places API key not configured"
+      });
     }
 
     try {
@@ -266,7 +288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             radius: 5000
           },
           headers: {
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           }
         }
       );
