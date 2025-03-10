@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
 
-  // User location endpoint
+  // User location endpoint with proper continent mapping
   apiRouter.get("/api/user-location", (req, res) => {
     try {
       const ip = req.ip || req.socket.remoteAddress;
@@ -21,6 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ continent: null });
       }
 
+      // Proper continent mapping with emojis
       const continentMap: Record<string, string> = {
         'EU': 'Europe 🇪🇺',
         'AS': 'Asia 🌏',
@@ -166,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Events API endpoint
+  // Events API endpoint with improved error handling
   apiRouter.get("/api/events", async (req, res) => {
     const { city, from, to } = req.query;
 
@@ -189,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Fetching events for city: ${city}, from: ${from}, to: ${to}`);
       const encodedCity = encodeURIComponent(city.trim());
 
-      const params: Record<string, string> = {
+      const params = {
         apikey: API_KEY,
         keyword: encodedCity,
         sort: 'date,asc',
@@ -251,11 +252,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Attractions API endpoint
+  // Attractions API endpoint with improved error handling
   apiRouter.get("/api/attractions", async (req, res) => {
     const { city } = req.query;
 
-    if (!city || typeof city !== 'string') {
+    if (!city || typeof city !== 'string' || !city.trim()) {
       return res.status(400).json({ 
         error: "City parameter is required",
         details: "Please provide a valid city name"
@@ -283,10 +284,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             language: 'en',
             type: 'tourist_attraction|point_of_interest|museum',
             radius: 5000
-          },
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
           }
         }
       );
@@ -329,7 +326,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Use the API router
   app.use(apiRouter);
 
   return createServer(app);
