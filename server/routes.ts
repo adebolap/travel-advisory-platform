@@ -189,7 +189,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             city: encodedCity,
             sort: 'date,asc',
             size: 20,
-            locale: '*'
+            locale: '*',
+            countryCode: 'BE', // Add country code for better results
+            includeSpellcheck: true // Enable spell check for better matching
           },
           headers: {
             'Accept': 'application/json',
@@ -213,23 +215,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` :
           'Price TBA',
         url: event.url,
-        location: event._embedded?.venues?.[0]?.address?.line1
+        location: event._embedded?.venues?.[0]?.address?.line1,
+        image: event.images?.[0]?.url // Add image URL
       }));
 
       res.json(events);
     } catch (error: any) {
-      const status = error.response?.status || 500;
-      const message = error.response?.data?.message || error.message;
-
       console.error('Events API error:', {
-        status,
-        message,
+        message: error.response?.data?.message || error.message,
         city
       });
-
-      res.status(status).json({
+      res.status(error.response?.status || 500).json({
         error: "Failed to fetch events",
-        details: message
+        details: error.response?.data?.message || error.message
       });
     }
   });
@@ -256,7 +254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             query: `tourist attractions in ${encodedCity}`,
             key: API_KEY,
             language: 'en',
-            type: 'tourist_attraction'
+            type: 'tourist_attraction|point_of_interest|museum',
+            radius: 5000 // Add radius parameter
           },
           headers: {
             'Accept': 'application/json',
@@ -282,23 +281,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         photo: place.photos ?
           `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` :
           null,
-        geometry: place.geometry?.location || null
+        geometry: place.geometry?.location || null,
+        open_now: place.opening_hours?.open_now,
+        price_level: place.price_level
       }));
 
       res.json(attractions);
     } catch (error: any) {
-      const status = error.response?.status || 500;
-      const message = error.response?.data?.message || error.message;
-
       console.error('Attractions API error:', {
-        status,
-        message,
+        message: error.response?.data?.message || error.message,
         city
       });
-
-      res.status(status).json({
+      res.status(error.response?.status || 500).json({
         error: "Failed to fetch attractions",
-        details: message
+        details: error.response?.data?.message || error.message
       });
     }
   });
