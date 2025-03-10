@@ -6,6 +6,7 @@ import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 // Lazy load pages
 const Home = lazy(() => import("@/pages/home"));
@@ -32,17 +33,17 @@ function AppContent() {
     <Suspense fallback={<LoadingSpinner />}>
       <Layout>
         <Switch>
-          {/* Public routes - no auth required */}
+          {/* Public routes */}
           <Route path="/" component={Home} />
           <Route path="/explore" component={Explore} />
           <Route path="/events" component={Events} />
-          <Route path="/plan" component={Plan} />
-
-          {/* Auth routes - optional */}
           <Route path="/auth" component={Auth} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/quiz" component={TravelQuiz} />
           <Route path="/pricing" component={Pricing} />
+
+          {/* Protected routes */}
+          <ProtectedRoute path="/profile" component={Profile} requireAuth />
+          <ProtectedRoute path="/quiz" component={TravelQuiz} requireAuth />
+          <ProtectedRoute path="/plan" component={Plan} requireAuth />
 
           <Route component={NotFound} />
         </Switch>
@@ -56,7 +57,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen bg-background text-foreground antialiased">
           <AppContent />
         </div>
       </AuthProvider>

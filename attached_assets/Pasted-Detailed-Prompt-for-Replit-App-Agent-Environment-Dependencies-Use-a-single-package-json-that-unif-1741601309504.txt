@@ -1,0 +1,95 @@
+Detailed Prompt for Replit App Agent
+Environment & Dependencies
+
+Use a single package.json that unifies all dependencies. Key libraries include:
+React + React DOM (version ^18.2.0 recommended for stability).
+Framer Motion for animations.
+@radix-ui components (accordion, switch, tabs, etc.).
+Tailwind CSS, class-variance-authority (cva), and lucide-react for UI styling and icons.
+passport + passport-local + express-session for authentication.
+axios for HTTP requests (both server and client).
+@tanstack/react-query for data fetching and caching.
+Project Structure
+
+server/ folder with:
+index.ts (main server entry).
+auth.ts (passport + session logic).
+storage.ts (in-memory or DB storage).
+payment.ts (Stripe integration).
+routes.ts (express routes).
+vite.ts (Vite-based dev server integration).
+client/ folder with:
+src/ for React code.
+hooks/ (use-auth, use-toast, use-mobile, use-premium).
+components/ui/ (e.g. city-search, tabs, table, etc.).
+pages/ (auth-page, plan, events, etc.).
+index.html + main.tsx for app bootstrap.
+Auth & Security
+
+setupAuth(app: Express) from auth.ts:
+Uses express-session, passport, and LocalStrategy for authentication (username + password).
+Ensures sessionOptions.cookie sets httpOnly, sameSite, and secure = true in production.
+Hash & compare passwords via scrypt (64-byte).
+Provides register, login, logout, and user-check endpoints (/api/register, /api/login, /api/logout, /api/user).
+ProtectedRoute
+
+Updated in client/src/lib/protected-route.tsx to:
+Display a loading spinner (via Loader2) while useAuth().isLoading.
+If user is not authenticated, it returns <Redirect to="/auth" />.
+Smooth transition using a motion.div.
+Toast System
+
+Overhauled the use-toast.ts to avoid hooks being called outside React components:
+Only calls hooks (useState, useEffect) inside the exported useToast() function.
+The toast(...) function is a plain JS function that dispatches to a global in-memory state.
+Mapped to UI in toaster.tsx.
+UI Components
+
+Accordion: Extended for accessibility (aria-expanded, keyboard, etc.) & improved styling.
+CitySearch:
+Basic approach: If local data is needed, group by continent.
+Real-time approach: Use an external API (GeoDB, etc.) with axios for dynamic city data.
+Debounce or limit calls in production to avoid spamming the API.
+Scrollable dropdown with max-h-[300px] & custom scrollbars.
+Tabs, Table, Switch, Slider, Toggle, Tooltip:
+All using @radix-ui + Tailwind classes for consistent styling.
+Potential improvements for animations (Framer Motion).
+Plan / Profile / TravelQuiz pages:
+Overhauls & fixes (like “Invalid hook call”) by ensuring only one React version, following correct usage of hooks.
+Vite + Replit
+
+vite.ts adjustments:
+Ensure allowedHosts = "all" or an array with your domain (e.g. replit.dev subdomain).
+Possibly set usePolling: true in watchers if file changes aren’t recognized in Replit.
+Convert to “middlewareMode: 'html'” for dev server usage with Express.
+Stripe Payment
+
+payment.ts for subscription checkout sessions (12 USD example).
+Webhook in routes.ts to handle checkout.session.completed events → sets isSubscribed = true with end date +1 year.
+Add environment variables: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
+In-Memory Storage
+
+MemStorage class in storage.ts maintains:
+Map<number, User> for users,
+Map<number, SearchPreference> for preferences,
+Map<number, TravelQuizResponse> for quiz data.
+This is suitable for dev / ephemeral usage. Real production needs a DB.
+Check for “Invalid Hook Call”
+
+Ensures single React version (react & react-dom both ^18.2.0).
+Freed from external custom bundling or an extra older React instance.
+For Replit:
+Add environment variables in Replit “Secrets”:
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+VITE_RAPIDAPI_KEY
+Use npm run dev for local dev with Vite & Express integrated.
+Production: npm run build && npm run start for building + serving the dist.
+That’s it – this single consolidated prompt should set up your Replit environment to apply all the changes from the conversation, ensuring:
+
+A unified React version
+Overhauled UI components
+Proper Auth, Payment, and Route handling
+Toast system working without invalid hooks
+Vite dev server / static server synergy
+Follow these steps, and your Replit-based app will reflect all the improvements and updates from the beginning of our chat.

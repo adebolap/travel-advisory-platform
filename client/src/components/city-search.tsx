@@ -1,210 +1,295 @@
-import { Input } from "@/components/ui/input";
-import { useState, useRef, useEffect } from "react";
-import { Search, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FixedSizeList as List } from "react-window";
-
-interface CitySearchProps {
-  onCitySelect: (city: string) => void;
-}
-
-// Fallback popular cities if API fails
-const popularCities = [
-  "Amsterdam", "Antwerp", "Barcelona", "Berlin", "Brussels",
-  "Copenhagen", "Dubai", "Dublin", "Edinburgh", "Florence",
-  "Geneva", "Hamburg", "Istanbul", "London", "Madrid",
-  "Milan", "Munich", "New York", "Oslo", "Paris",
-  "Prague", "Rome", "Singapore", "Stockholm", "Sydney",
-  "Tokyo", "Venice", "Vienna", "Zurich"
-].sort();
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Search, MapPin, Loader2 } from "lucide-react";
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { popularCities, cityToContinentMap } from "@shared/schema";
+import { cn } from "@/lib/utils";
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface City {
   id: string;
   name: string;
   country: string;
+  region?: string;
+  population?: number;
+  isRecent?: boolean;
 }
 
-export default function CitySearch({ onCitySelect }: CitySearchProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-  const [cities, setCities] = useState<City[]>([]);
+interface CitySelectorProps {
+  value?: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+type RegionMap = Record<string, City[]>;
+
+// Mapping for continent names to the region keys used in the UI.
+const continentKeyMap: Record<string, string> = {
+  Europe: "Europe 🇪🇺",
+  "Middle East": "Middle East 🌅",
+  Asia: "Asia 🌏",
+  Americas: "Americas 🌎",
+  Oceania: "Oceania 🏝️",
+  Africa: "Africa 🌍",
+};
+
+export function CitySelector({ 
+  value, 
+  onValueChange, 
+  placeholder = "Select a city...",
+  disabled = false 
+}: CitySelectorProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [userContinent, setUserContinent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<List>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [recentSelections, setRecentSelections] = useState<City[]>(() => {
+    try {
+      const saved = localStorage.getItem('recentCities');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
-  // Fetch cities from API when search term changes
+  // Fetch user's continent.
   useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    if (searchTerm.length < 2) {
-      setCities([]);
-      return;
-    }
-
-    debounceTimerRef.current = setTimeout(async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`https://wft-geo-db.p.rapidapi.com/v1/geo/cities?namePrefix=${encodeURIComponent(searchTerm)}&limit=20`, {
-          headers: {
-            'x-rapidapi-host': 'wft-geo-db.p.rapidapi.com',
-            'x-rapidapi-key': '13728fb9e5mshd1e9e62b966a4ddp18af58jsndfb3d5e9d681'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch cities');
+    setIsLoading(true);
+    fetch('/api/user-location')
+      .then(response => response.json())
+      .then(data => {
+        if (data.continent) {
+          setUserContinent(continentKeyMap[data.continent] || data.continent);
         }
-
-        const data = await response.json();
-        setCities(data.data.map((city: any) => ({
-          id: city.id,
-          name: city.name,
-          country: city.country
-        })));
-      } catch (err) {
-        console.error('Error fetching cities:', err);
-        setError('Failed to fetch cities. Showing popular cities instead.');
-        // Use fallback cities
-        setCities(popularCities.map(city => ({
-          id: city,
-          name: city,
-          country: ''
-        })));
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300);
-
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [searchTerm]);
-
-  const handleCitySelect = (city: City) => {
-    setSearchTerm(city.name);
-    onCitySelect(city.name);
-    setIsDropdownVisible(false);
-    inputRef.current?.blur();
-  };
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current && 
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current && 
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownVisible(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+      })
+      .catch(error => {
+        console.error("Failed to fetch user location:", error);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  // Display either API results or fallback to filtered popular cities
-  const displayCities = cities.length > 0 
-    ? cities 
-    : popularCities
-        .filter(city => city.toLowerCase().includes(searchTerm.toLowerCase()))
-        .map(city => ({ id: city, name: city, country: '' }));
+  // Persist recent selections to localStorage.
+  useEffect(() => {
+    try {
+      localStorage.setItem('recentCities', JSON.stringify(recentSelections));
+    } catch (error) {
+      console.warn('Failed to save recent cities:', error);
+    }
+  }, [recentSelections]);
 
-  // Row renderer for virtualized list
-  const CityRow = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const city = displayCities[index];
-    return (
-      <button
-        key={city.id}
-        style={style}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          handleCitySelect(city);
-        }}
-        className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors focus:bg-accent focus:text-accent-foreground focus:outline-none"
-      >
-        <div className="flex flex-col">
-          <span>{city.name}</span>
-          {city.country && (
-            <span className="text-xs text-muted-foreground">{city.country}</span>
-          )}
-        </div>
-      </button>
-    );
+  // Helper to determine region for a given country.
+  const getContinentForCountry = (country: string): string => {
+    if (!country) return "Other 🌐";
+    for (const [continent, countries] of Object.entries(cityToContinentMap)) {
+      if (countries.some(c => country.includes(c))) {
+        return continentKeyMap[continent] || continent;
+      }
+    }
+    return "Other 🌐";
   };
 
+  // Convert static city data to City objects.
+  const staticCities = useMemo<City[]>(() => {
+    return popularCities.map(cityString => {
+      const [cityName, country] = cityString.split(", ");
+      return {
+        id: cityString,
+        name: cityString,
+        country: country || "",
+        region: country ? getContinentForCountry(country) : "Other 🌐"
+      };
+    });
+  }, []);
+
+  // Group cities by region.
+  const sortedCities = useMemo<RegionMap>(() => {
+    const regions: RegionMap = {
+      ...(recentSelections.length > 0 ? { "Recent Selections ⭐": recentSelections } : {}),
+      "Europe 🇪🇺": [],
+      "Middle East 🌅": [],
+      "Asia 🌏": [],
+      "Americas 🌎": [],
+      "Oceania 🏝️": [],
+      "Africa 🌍": [],
+      "Other 🌐": []
+    };
+
+    staticCities.forEach(city => {
+      if (city.region && regions[city.region]) {
+        regions[city.region].push(city);
+      } else {
+        regions["Other 🌐"].push(city);
+      }
+    });
+
+    // Sort cities alphabetically within each region.
+    Object.keys(regions).forEach(region => {
+      if (region !== "Recent Selections ⭐") {
+        regions[region].sort((a, b) => a.name.localeCompare(b.name));
+      }
+    });
+
+    // Prioritize the user's continent region.
+    if (userContinent) {
+      const orderedRegions: RegionMap = { 
+        ...(regions["Recent Selections ⭐"] ? { "Recent Selections ⭐": regions["Recent Selections ⭐"] } : {}),
+        ...(regions[userContinent] ? { [userContinent]: regions[userContinent] } : {})
+      };
+      Object.keys(regions).forEach(region => {
+        if (region !== userContinent && region !== "Recent Selections ⭐" && regions[region].length > 0) {
+          orderedRegions[region] = regions[region];
+        }
+      });
+      return orderedRegions;
+    }
+    return regions;
+  }, [userContinent, recentSelections, staticCities]);
+
+  // Filter cities based on the search input.
+  const filteredCities = useMemo<RegionMap>(() => {
+    if (!search.trim()) return sortedCities;
+    const searchLower = search.toLowerCase();
+    return Object.fromEntries(
+      Object.entries(sortedCities).map(([region, cities]) => [
+        region,
+        cities.filter(city => city.name.toLowerCase().includes(searchLower))
+      ]).filter(([_, cities]) => cities.length > 0)
+    );
+  }, [sortedCities, search]);
+
+  // Prepare a flattened list of items for virtualization.
+  const flattenedItems = useMemo(() => {
+    const items: Array<{ type: 'header' | 'item', value: City | string }> = [];
+    Object.entries(filteredCities).forEach(([region, cities]) => {
+      if (cities.length > 0) {
+        items.push({ type: 'header', value: region });
+        cities.forEach(city => {
+          items.push({ type: 'item', value: city });
+        });
+      }
+    });
+    return items;
+  }, [filteredCities]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: flattenedItems.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => flattenedItems[index].type === 'header' ? 30 : 40,
+    overscan: 10,
+  });
+
   return (
-    <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          placeholder="Search for a city..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setIsDropdownVisible(true);
-          }}
-          onFocus={() => setIsDropdownVisible(true)}
-          className="pl-9"
-          autoComplete="off"
-          aria-expanded={isDropdownVisible}
-          aria-controls="city-dropdown"
-          aria-autocomplete="list"
-        />
-        <AnimatePresence>
-          {isDropdownVisible && (
-            <motion.div
-              ref={dropdownRef}
-              id="city-dropdown"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="absolute z-10 w-full mt-1 bg-background border border-input rounded-md shadow-lg"
-              style={{ maxHeight: '300px' }}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center p-4">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  <span>Loading cities...</span>
-                </div>
-              ) : error ? (
-                <div className="p-4 text-sm text-muted-foreground">
-                  {error}
-                </div>
-              ) : displayCities.length === 0 ? (
-                <div className="p-4 text-sm text-muted-foreground">
-                  No cities found. Try a different search term.
-                </div>
-              ) : (
-                <List
-                  ref={listRef}
-                  height={Math.min(300, displayCities.length * 50)}
-                  width="100%"
-                  itemCount={displayCities.length}
-                  itemSize={50}
-                  overscanCount={5}
-                >
-                  {CityRow}
-                </List>
-              )}
-            </motion.div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className={cn(
+            "w-full justify-between transition-colors",
+            value ? "text-foreground" : "text-muted-foreground",
+            !disabled && "hover:border-primary focus:ring-1 focus:ring-primary/20"
           )}
-        </AnimatePresence>
-      </div>
-    </div>
+        >
+          {value ? (
+            <div className="flex items-center gap-2 truncate">
+              <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
+              <span className="truncate">{value}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 flex-shrink-0" />
+              {isLoading ? "Loading locations..." : placeholder}
+              {isLoading && <Loader2 className="ml-2 h-3 w-3 animate-spin" />}
+            </div>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput 
+            placeholder="Search cities..." 
+            value={search}
+            onValueChange={setSearch}
+            className="border-none focus:ring-0"
+          />
+          <CommandList className="max-h-[300px] overflow-hidden" ref={parentRef}>
+            <div
+              style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                width: '100%',
+                position: 'relative',
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const item = flattenedItems[virtualRow.index];
+                const style = {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                };
+
+                if (item.type === 'header') {
+                  return (
+                    <CommandGroup 
+                      key={virtualRow.index} 
+                      heading={item.value as string}
+                      style={style}
+                    />
+                  );
+                }
+
+                const city = item.value as City;
+                return (
+                  <CommandItem
+                    key={virtualRow.index}
+                    value={city.name}
+                    onSelect={() => {
+                      onValueChange(city.name);
+                      setOpen(false);
+                      // Update recent selections.
+                      setRecentSelections(prev => {
+                        const newRecent = prev.filter(c => c.id !== city.id);
+                        return [{ ...city, isRecent: true }, ...newRecent].slice(0, 5);
+                      });
+                    }}
+                    style={style}
+                    className="cursor-pointer py-2 px-3 hover:bg-primary/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <MapPin className={cn(
+                        "h-4 w-4",
+                        value === city.name ? "text-primary" : "text-muted-foreground"
+                      )} />
+                      <div className="flex-1 truncate">
+                        <div className="truncate">{city.name}</div>
+                        {city.population && (
+                          <div className="text-xs text-muted-foreground">
+                            Pop: {city.population.toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                      {userContinent && city.region === userContinent && (
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Local</span>
+                      )}
+                      {city.isRecent && (
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Recent</span>
+                      )}
+                    </div>
+                  </CommandItem>
+                );
+              })}
+            </div>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -1,87 +1,149 @@
-import { useState, Suspense } from "react";
-import { DateRange } from "react-day-picker";
-import { Card, CardContent } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Calendar, MapPin, Ticket } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/date-picker";
-import EventList from "@/components/event-list";
-import CitySearch from "@/components/city-search";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import type { DateRange } from "react-day-picker";
 
-export default function Events() {
-  const [city, setCity] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange>();
-  const [searchSubmitted, setSearchSubmitted] = useState(false);
+interface Event {
+  id: string;
+  name: string;
+  date: string;
+  venue: string;
+  location: string;
+  price: string;
+  category: string;
+  url: string;
+  image: string;
+}
 
-  const handleCitySelect = (selectedCity: string) => {
-    setCity(selectedCity);
-    setSearchSubmitted(true);
-  };
+interface EventListProps {
+  city: string;
+  dateRange?: DateRange;
+}
 
-  const handleSearch = () => {
-    if (city) {
-      setSearchSubmitted(true);
-    }
-  };
+export default function EventList({ city, dateRange }: EventListProps) {
+  const { data: events, isLoading, error, refetch } = useQuery<Event[]>({
+    queryKey: ['events', city, dateRange?.from, dateRange?.to],
+    queryFn: async () => {
+      // Construct query parameters
+      const params = new URLSearchParams({
+        city: city.trim()
+      });
+      if (dateRange?.from) {
+        params.append('from', format(dateRange.from, 'yyyy-MM-dd'));
+      }
+      if (dateRange?.to) {
+        params.append('to', format(dateRange.to, 'yyyy-MM-dd'));
+      }
+      const response = await fetch(`/api/events?${params.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to fetch events');
+      }
+      return response.json();
+    },
+    enabled: Boolean(city),
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-  const handleClearSearch = () => {
-    setCity("");
-    setDateRange(undefined);
-    setSearchSubmitted(false);
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8">Discover Events</h1>
-
-      <Card className="mb-8 shadow-lg">
+  if (isLoading) {
+    return (
+      <Card>
         <CardContent className="p-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">City</label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <CitySearch onCitySelect={handleCitySelect} />
-                </div>
-                <Button 
-                  onClick={handleSearch}
-                  disabled={!city}
-                  variant="secondary"
-                  className="bg-primary text-white hover:bg-primary/90 transition"
-                >
-                  Update
-                </Button>
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
               </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Event Dates</label>
-              <DatePicker 
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-              />
-            </div>
+            ))}
           </div>
-          <Button 
-            onClick={handleClearSearch}
-            variant="outline"
-            className="mt-4 w-full"
-          >
-            Clear Search
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+          <CardTitle className="text-lg">Unable to Load Events</CardTitle>
+          <p className="text-sm text-muted-foreground mb-4">
+            {error instanceof Error ? error.message : 'Failed to load events'}
+          </p>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            Try Again
           </Button>
         </CardContent>
       </Card>
+    );
+  }
 
-      {searchSubmitted && city && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Suspense fallback={<Loader2 className="h-6 w-6 animate-spin mx-auto" />}>
-            <EventList city={city} />
-          </Suspense>
-        </motion.div>
-      )}
-    </div>
+  if (!events?.length) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Events</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-6">
+          <p className="text-muted-foreground">
+            No events found for {city} during the selected dates.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Upcoming Events</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {events.map((event) => (
+          <div
+            key={event.id}
+            className="p-4 rounded-lg border bg-card transition-colors hover:bg-accent/50"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-2">
+                <h3 className="font-semibold line-clamp-2">{event.name}</h3>
+                <div className="flex flex-wrap gap-y-2 gap-x-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{format(parseISO(event.date), 'PPp')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span className="truncate max-w-[200px]">{event.venue}</span>
+                  </div>
+                  {event.price && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Ticket className="h-4 w-4" />
+                      <span>{event.price}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Badge>{event.category}</Badge>
+            </div>
+            {event.url && (
+              <div className="mt-4 flex justify-end">
+                <Button variant="outline" size="sm" className="text-sm" asChild>
+                  <a href={event.url} target="_blank" rel="noopener noreferrer">
+                    View Details
+                  </a>
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
