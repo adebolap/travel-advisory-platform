@@ -3,6 +3,9 @@ import { DateRange } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
+import TravelSuggestions from "@/components/travel-suggestions";
+import BudgetEstimator from "@/components/budget-estimator";
+import ItineraryBuilder from "@/components/itinerary-builder";
 import { CitySelector } from "@/components/city-selector";
 import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
@@ -14,6 +17,13 @@ export default function Explore() {
   const [city, setCity] = useState("");
   const [dateRange, setDateRange] = useState<DateRange>();
   const [searchSubmitted, setSearchSubmitted] = useState(false);
+  const [currentWeather, setCurrentWeather] = useState<string>("Mild");
+
+  const interests = ["culture", "food", "nightlife", "shopping", "transport"];
+
+  const handleWeatherUpdate = (weather: string) => {
+    setCurrentWeather(weather);
+  };
 
   const handleSearch = () => {
     if (city?.trim()) {
@@ -30,7 +40,6 @@ export default function Explore() {
   return (
     <Layout title="Explore & Discover" subtitle="Find your next adventure">
       <div className="space-y-6">
-        {/* Search Form */}
         <Card className="border-2 border-primary/20">
           <CardHeader className="border-b bg-muted/50">
             <CardTitle className="flex items-center gap-2 text-2xl">
@@ -82,17 +91,36 @@ export default function Explore() {
           </CardContent>
         </Card>
 
-        {/* Search Results */}
         {searchSubmitted && city && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="grid lg:grid-cols-2 gap-6"
+            className="grid lg:grid-cols-3 gap-6"
           >
+            <div className="lg:col-span-2 space-y-6">
+              <WeatherDisplay 
+                city={city}
+                onWeatherUpdate={handleWeatherUpdate}
+              />
+              <TravelSuggestions 
+                city={city}
+                interests={interests}
+              />
+              <EventList 
+                city={city}
+                dateRange={dateRange}
+              />
+              <ItineraryBuilder
+                city={city}
+                dateRange={dateRange}
+              />
+            </div>
             <div className="space-y-6">
-              <WeatherDisplay city={city} />
-              <EventList city={city} />
+              <BudgetEstimator 
+                city={city} 
+                dateRange={dateRange}
+              />
             </div>
           </motion.div>
         )}
