@@ -171,7 +171,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { city, from, to } = req.query;
 
     if (!city || typeof city !== 'string') {
-      console.error('Events API: Missing city parameter');
       return res.status(400).json({ 
         error: "City parameter is required",
         details: "Please provide a valid city name"
@@ -180,7 +179,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const API_KEY = process.env.TICKETMASTER_API_KEY;
     if (!API_KEY) {
-      console.error('Events API: Missing API key');
       return res.status(500).json({ 
         error: "API configuration error",
         details: "Ticketmaster API key not configured"
@@ -193,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const params: Record<string, string> = {
         apikey: API_KEY,
-        keyword: encodedCity, // Use keyword instead of city for better results
+        keyword: encodedCity,
         sort: 'date,asc',
         size: '20',
         locale: '*'
@@ -258,7 +256,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { city } = req.query;
 
     if (!city || typeof city !== 'string') {
-      console.error('Attractions API: Missing city parameter');
       return res.status(400).json({ 
         error: "City parameter is required",
         details: "Please provide a valid city name"
@@ -267,7 +264,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
     if (!API_KEY) {
-      console.error('Attractions API: Missing API key');
       return res.status(500).json({ 
         error: "API configuration error",
         details: "Google Places API key not configured"
@@ -277,6 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`Fetching attractions for city: ${city}`);
       const encodedCity = encodeURIComponent(city.trim());
+
       const response = await axios.get(
         'https://maps.googleapis.com/maps/api/place/textsearch/json',
         {
