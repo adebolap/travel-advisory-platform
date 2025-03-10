@@ -113,13 +113,9 @@ export default function Explore() {
                   />
                   <EventList 
                     city={city}
-                    dateRange={dateRange}
                   />
                   <ItineraryBuilder
                     city={city}
-                    dateRange={dateRange}
-                    includeTaxiLinks={true}
-                    includeRestaurantSuggestions={true}
                   />
                 </Suspense>
               </div>
