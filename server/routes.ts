@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
 
-  // User location endpoint with proper continent mapping
+  // User location endpoint
   apiRouter.get("/api/user-location", (req, res) => {
     try {
       const ip = req.ip || req.socket.remoteAddress;
@@ -21,7 +21,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ continent: null });
       }
 
-      // Proper continent mapping with emojis
       const continentMap: Record<string, string> = {
         'EU': 'Europe 🇪🇺',
         'AS': 'Asia 🌏',
@@ -104,13 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const encodedCity = encodeURIComponent(city.trim());
       const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`;
 
-      const response = await axios.get(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
+      const response = await axios.get(url);
       res.json(response.data);
     } catch (error: any) {
       const status = error.response?.status || 500;
@@ -129,45 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Forecast API endpoint
-  apiRouter.get("/api/forecast/:city", async (req, res) => {
-    const { city } = req.params;
-    const API_KEY = process.env.WEATHER_API_KEY;
-
-    if (!API_KEY) {
-      return res.status(500).json({ error: "Weather API key not configured" });
-    }
-
-    try {
-      const encodedCity = encodeURIComponent(city.trim());
-      const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodedCity}&appid=${API_KEY}&units=metric`;
-
-      const response = await axios.get(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      res.json(response.data);
-    } catch (error: any) {
-      const status = error.response?.status || 500;
-      const message = error.response?.data?.message || error.message;
-
-      console.error('Forecast API error:', {
-        status,
-        message,
-        city
-      });
-
-      res.status(status).json({
-        error: "Failed to fetch forecast data",
-        details: message
-      });
-    }
-  });
-
-  // Events API endpoint with improved error handling
+  // Events API endpoint
   apiRouter.get("/api/events", async (req, res) => {
     const { city, from, to } = req.query;
 
@@ -198,7 +153,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         locale: '*'
       };
 
-      // Add date parameters if provided
       if (typeof from === 'string') {
         params.startDateTime = `${from}T00:00:00Z`;
       }
@@ -208,16 +162,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const response = await axios.get(
         'https://app.ticketmaster.com/discovery/v2/events.json',
-        {
-          params,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        }
+        { params }
       );
 
-      // If no events found, return empty array
       if (!response.data._embedded?.events) {
         console.log(`No events found for ${city}`);
         return res.json([]);
@@ -252,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Attractions API endpoint with improved error handling
+  // Attractions API endpoint
   apiRouter.get("/api/attractions", async (req, res) => {
     const { city } = req.query;
 
