@@ -16,7 +16,7 @@ export default function Explore() {
   const [searchSubmitted, setSearchSubmitted] = useState(false);
 
   const handleSearch = () => {
-    if (city) {
+    if (city?.trim()) {
       setSearchSubmitted(true);
     }
   };
@@ -30,6 +30,7 @@ export default function Explore() {
   return (
     <Layout title="Explore & Discover" subtitle="Find your next adventure">
       <div className="space-y-6">
+        {/* Search Form */}
         <Card className="border-2 border-primary/20">
           <CardHeader className="border-b bg-muted/50">
             <CardTitle className="flex items-center gap-2 text-2xl">
@@ -54,7 +55,7 @@ export default function Explore() {
                   </div>
                   <Button 
                     onClick={handleSearch}
-                    disabled={!city}
+                    disabled={!city?.trim()}
                   >
                     Explore
                   </Button>
@@ -81,6 +82,7 @@ export default function Explore() {
           </CardContent>
         </Card>
 
+        {/* Search Results */}
         {searchSubmitted && city && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
