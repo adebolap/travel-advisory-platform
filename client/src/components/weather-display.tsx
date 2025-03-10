@@ -29,7 +29,7 @@ interface WeatherData {
 
 interface WeatherDisplayProps {
   city: string;
-  onWeatherUpdate?: (weather: string) => void;
+  onWeatherUpdate?: (weather: string, temp?: number, condition?: string) => void;
 }
 
 export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplayProps) {
@@ -44,7 +44,22 @@ export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplay
         const errorData = await response.json().catch(() => ({ message: 'Failed to fetch weather data' }));
         throw new Error(errorData.details || errorData.message || 'Failed to fetch weather data');
       }
-      return response.json();
+
+      const data = await response.json();
+
+      // Update parent component with weather info
+      if (onWeatherUpdate) {
+        const temp = data.main.temp;
+        let weatherCategory = 'Mild';
+        if (temp <= 0) weatherCategory = 'Freezing';
+        else if (temp <= 10) weatherCategory = 'Cold';
+        else if (temp >= 30) weatherCategory = 'Hot';
+        else if (temp >= 22) weatherCategory = 'Warm';
+
+        onWeatherUpdate(weatherCategory, temp, data.weather[0].main);
+      }
+
+      return data;
     },
     enabled: Boolean(city?.trim()),
     retry: 1,

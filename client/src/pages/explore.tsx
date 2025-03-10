@@ -6,6 +6,7 @@ import { DatePicker } from "@/components/date-picker";
 import TravelSuggestions from "@/components/travel-suggestions";
 import BudgetEstimator from "@/components/budget-estimator";
 import ItineraryBuilder from "@/components/itinerary-builder";
+import WeatherRecommendations from "@/components/weather-recommendations";
 import { CitySelector } from "@/components/city-selector";
 import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
@@ -18,11 +19,15 @@ export default function Explore() {
   const [dateRange, setDateRange] = useState<DateRange>();
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [currentWeather, setCurrentWeather] = useState<string>("Mild");
+  const [temperature, setTemperature] = useState<number>();
+  const [weatherCondition, setWeatherCondition] = useState<string>();
 
   const interests = ["culture", "food", "nightlife", "shopping", "transport"];
 
-  const handleWeatherUpdate = (weather: string) => {
+  const handleWeatherUpdate = (weather: string, temp?: number, condition?: string) => {
     setCurrentWeather(weather);
+    setTemperature(temp);
+    setWeatherCondition(condition);
   };
 
   const handleSearch = () => {
@@ -35,6 +40,9 @@ export default function Explore() {
     setCity("");
     setDateRange(undefined);
     setSearchSubmitted(false);
+    setCurrentWeather("Mild");
+    setTemperature(undefined);
+    setWeatherCondition(undefined);
   };
 
   return (
@@ -102,6 +110,12 @@ export default function Explore() {
               <WeatherDisplay 
                 city={city}
                 onWeatherUpdate={handleWeatherUpdate}
+              />
+              <WeatherRecommendations 
+                city={city}
+                currentWeather={currentWeather}
+                temperature={temperature}
+                weatherCondition={weatherCondition}
               />
               <TravelSuggestions 
                 city={city}
