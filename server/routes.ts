@@ -1,8 +1,6 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { searchPreferenceSchema } from "@shared/schema";
-import { format } from "date-fns";
 import axios from "axios";
 import { createCheckoutSession } from "./payment";
 import Stripe from 'stripe';
@@ -105,10 +103,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const encodedCity = encodeURIComponent(city.trim());
       const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`;
 
-      const response = await axios.get(url);
+      const response = await axios.get(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        validateStatus: function (status) {
+          return status < 500; // Handle only server errors
+        }
+      });
+
+      if (response.status !== 200) {
+        throw new Error(response.data.message || 'Failed to fetch weather data');
+      }
+
       res.json(response.data);
     } catch (error: any) {
-      console.error('Weather API error:', error.response?.data || error.message);
+      console.error('Weather API error:', error.message);
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch weather data",
         details: error.response?.data?.message || error.message
@@ -134,6 +145,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
 
       const response = await axios.get(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
         params: {
           apikey: API_KEY,
           city: encodedCity,
@@ -141,12 +156,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           size: 20,
           locale: '*'
         },
-        headers: {
-          'Accept': 'application/json'
+        validateStatus: function (status) {
+          return status < 500;
         }
       });
 
-      // If no events found, return empty array
+      if (response.status !== 200) {
+        throw new Error(response.data.message || 'Failed to fetch events');
+      }
+
+      // Handle empty results
       if (!response.data._embedded?.events) {
         return res.json([]);
       }
@@ -166,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(events);
     } catch (error: any) {
-      console.error('Events API error:', error.response?.data || error.message);
+      console.error('Events API error:', error.message);
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch events",
         details: error.response?.data?.message || error.message
@@ -192,14 +211,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
 
       const response = await axios.get(url, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
         params: {
           query: `tourist attractions in ${encodedCity}`,
           key: API_KEY,
           language: 'en',
           type: 'tourist_attraction'
         },
-        headers: {
-          'Accept': 'application/json'
+        validateStatus: function (status) {
+          return status < 500;
         }
       });
 
@@ -225,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(attractions);
     } catch (error: any) {
-      console.error('Attractions API error:', error.response?.data || error.message);
+      console.error('Attractions API error:', error.message);
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch attractions",
         details: error.response?.data?.message || error.message
