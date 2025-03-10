@@ -1,10 +1,19 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Search, MapPin } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { popularCities } from "@shared/schema";
 import { cn } from "@/lib/utils";
+
+// Extended list of cities including more European cities
+const cities = [
+  "Amsterdam", "Antwerp", "Barcelona", "Berlin", "Brussels",
+  "Copenhagen", "Dubai", "Dublin", "Edinburgh", "Florence",
+  "Geneva", "Hamburg", "Istanbul", "London", "Madrid",
+  "Milan", "Munich", "New York", "Oslo", "Paris",
+  "Prague", "Rome", "Singapore", "Stockholm", "Sydney",
+  "Tokyo", "Venice", "Vienna", "Zurich"
+].sort();
 
 interface CitySelectorProps {
   value?: string;
@@ -22,9 +31,11 @@ export function CitySelector({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const filteredCities = popularCities.filter(city => 
-    city.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCities = search.length > 0
+    ? cities.filter(city => 
+        city.toLowerCase().includes(search.toLowerCase())
+      )
+    : cities;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
