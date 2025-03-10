@@ -107,22 +107,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
-        },
-        validateStatus: function (status) {
-          return status < 500; // Handle only server errors
         }
       });
 
-      if (response.status !== 200) {
-        throw new Error(response.data.message || 'Failed to fetch weather data');
-      }
-
       res.json(response.data);
     } catch (error: any) {
-      console.error('Weather API error:', error.message);
-      res.status(error.response?.status || 500).json({
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message;
+
+      console.error('Weather API error:', {
+        status,
+        message,
+        city
+      });
+
+      res.status(status).json({
         error: "Failed to fetch weather data",
-        details: error.response?.data?.message || error.message
+        details: message
       });
     }
   });
@@ -142,30 +143,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const encodedCity = encodeURIComponent(city.trim());
-      const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
-
-      const response = await axios.get(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        params: {
-          apikey: API_KEY,
-          city: encodedCity,
-          sort: 'date,asc',
-          size: 20,
-          locale: '*'
-        },
-        validateStatus: function (status) {
-          return status < 500;
+      const response = await axios.get(
+        'https://app.ticketmaster.com/discovery/v2/events.json',
+        {
+          params: {
+            apikey: API_KEY,
+            city: encodedCity,
+            sort: 'date,asc',
+            size: 20,
+            locale: '*'
+          },
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
-      if (response.status !== 200) {
-        throw new Error(response.data.message || 'Failed to fetch events');
-      }
-
-      // Handle empty results
+      // Handle case where no events are found
       if (!response.data._embedded?.events) {
         return res.json([]);
       }
@@ -185,10 +180,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(events);
     } catch (error: any) {
-      console.error('Events API error:', error.message);
-      res.status(error.response?.status || 500).json({
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message;
+
+      console.error('Events API error:', {
+        status,
+        message,
+        city
+      });
+
+      res.status(status).json({
         error: "Failed to fetch events",
-        details: error.response?.data?.message || error.message
+        details: message
       });
     }
   });
@@ -208,23 +211,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const encodedCity = encodeURIComponent(city.trim());
-      const url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
-
-      const response = await axios.get(url, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        params: {
-          query: `tourist attractions in ${encodedCity}`,
-          key: API_KEY,
-          language: 'en',
-          type: 'tourist_attraction'
-        },
-        validateStatus: function (status) {
-          return status < 500;
+      const response = await axios.get(
+        'https://maps.googleapis.com/maps/api/place/textsearch/json',
+        {
+          params: {
+            query: `tourist attractions in ${encodedCity}`,
+            key: API_KEY,
+            language: 'en',
+            type: 'tourist_attraction'
+          },
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       if (response.data.status === 'ZERO_RESULTS') {
         return res.json([]);
@@ -248,16 +249,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(attractions);
     } catch (error: any) {
-      console.error('Attractions API error:', error.message);
-      res.status(error.response?.status || 500).json({
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || error.message;
+
+      console.error('Attractions API error:', {
+        status,
+        message,
+        city
+      });
+
+      res.status(status).json({
         error: "Failed to fetch attractions",
-        details: error.response?.data?.message || error.message
+        details: message
       });
     }
   });
 
   // Use the API router
-  app.use("/api", apiRouter);
+  app.use(apiRouter);
 
   return createServer(app);
 }
