@@ -168,13 +168,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Events API endpoint
   apiRouter.get("/api/events", async (req, res) => {
-    const { city } = req.query;
-    const API_KEY = process.env.TICKETMASTER_API_KEY;
+    const { city, from, to } = req.query;
 
     if (!city || typeof city !== 'string') {
       return res.status(400).json({ error: "City parameter is required" });
     }
 
+    const API_KEY = process.env.TICKETMASTER_API_KEY;
     if (!API_KEY) {
       return res.status(500).json({ error: "Ticketmaster API key not configured" });
     }
@@ -187,15 +187,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           params: {
             apikey: API_KEY,
             city: encodedCity,
+            startDateTime: from ? `${from}T00:00:00Z` : undefined,
+            endDateTime: to ? `${to}T23:59:59Z` : undefined,
             sort: 'date,asc',
             size: 20,
             locale: '*',
-            countryCode: 'BE', // Add country code for better results
-            includeSpellcheck: true // Enable spell check for better matching
-          },
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            countryCode: 'BE'
           }
         }
       );
@@ -208,15 +205,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const events = response.data._embedded.events.map((event: any) => ({
         id: event.id,
         name: event.name,
-        date: event.dates.start.dateTime,
+        date: event.dates.start.dateTime || event.dates.start.localDate,
         venue: event._embedded?.venues?.[0]?.name || 'Venue TBA',
+        location: event._embedded?.venues?.[0]?.address?.line1,
         category: event.classifications?.[0]?.segment?.name || 'Other',
         price: event.priceRanges ?
           `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` :
           'Price TBA',
         url: event.url,
-        location: event._embedded?.venues?.[0]?.address?.line1,
-        image: event.images?.[0]?.url // Add image URL
+        image: event.images?.[0]?.url
       }));
 
       res.json(events);
@@ -225,6 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: error.response?.data?.message || error.message,
         city
       });
+
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch events",
         details: error.response?.data?.message || error.message
