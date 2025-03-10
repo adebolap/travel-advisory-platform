@@ -2,7 +2,6 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import axios from "axios";
-import { createCheckoutSession } from "./payment";
 import Stripe from 'stripe';
 import geoip from 'geoip-lite';
 
@@ -40,91 +39,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Weather API endpoint - Removed as per intention.
+  // apiRouter.get("/api/weather/:city", async (req, res) => {
+  //   const { city } = req.params;
+  //   const API_KEY = process.env.WEATHER_API_KEY;
 
-  // Create Stripe checkout session
-  apiRouter.post("/api/create-checkout-session", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  //   if (!API_KEY) {
+  //     return res.status(500).json({ error: "Weather API key not configured" });
+  //   }
 
-    try {
-      const { currency } = req.body;
-      const session = await createCheckoutSession(currency, req.user.id);
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error("Stripe checkout error:", error.message);
-      res.status(500).json({ error: "Failed to create checkout session" });
-    }
-  });
-
-  // Handle Stripe webhook
-  apiRouter.post("/api/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-
-    try {
-      const event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        const userId = session.metadata.userId;
-
-        // Set subscription end date to 1 year from now
-        const subscriptionEndDate = new Date();
-        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
-
-        await storage.updateSubscriptionStatus(
-          parseInt(userId),
-          true,
-          subscriptionEndDate
-        );
-      }
-
-      res.json({ received: true });
-    } catch (err) {
-      console.error('Webhook Error:', err.message);
-      res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-  });
-
-  // Weather API endpoint
-  apiRouter.get("/api/weather/:city", async (req, res) => {
-    const { city } = req.params;
-    const API_KEY = process.env.WEATHER_API_KEY;
-
-    if (!API_KEY) {
-      return res.status(500).json({ error: "Weather API key not configured" });
-    }
-
-    try {
-      const encodedCity = encodeURIComponent(city.trim());
-      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`;
-
-      const response = await axios.get(url);
-      res.json(response.data);
-    } catch (error: any) {
-      const status = error.response?.status || 500;
-      const message = error.response?.data?.message || error.message;
-
-      console.error('Weather API error:', {
-        status,
-        message,
-        city
-      });
-
-      res.status(status).json({
-        error: "Failed to fetch weather data",
-        details: message
-      });
-    }
-  });
+  //   try {
+  //     const encodedCity = encodeURIComponent(city.trim());
+  //     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`;
+  //     const response = await axios.get(url);
+  //     res.json(response.data);
+  //   } catch (error: any) {
+  //     res.status(error.response?.status || 500).json({
+  //       error: "Failed to fetch weather data",
+  //       details: error.response?.data?.message || error.message
+  //     });
+  //   }
+  // });
 
   // Events API endpoint
   apiRouter.get("/api/events", async (req, res) => {
-    const { city, from, to } = req.query;
+    const { city } = req.query;
 
     if (!city || typeof city !== 'string' || !city.trim()) {
       return res.status(400).json({ 
@@ -142,9 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      console.log(`Fetching events for city: ${city}, from: ${from}, to: ${to}`);
       const encodedCity = encodeURIComponent(city.trim());
-
       const params = {
         apikey: API_KEY,
         keyword: encodedCity,
@@ -153,20 +90,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         locale: '*'
       };
 
-      if (typeof from === 'string') {
-        params.startDateTime = `${from}T00:00:00Z`;
-      }
-      if (typeof to === 'string') {
-        params.endDateTime = `${to}T23:59:59Z`;
-      }
-
       const response = await axios.get(
         'https://app.ticketmaster.com/discovery/v2/events.json',
         { params }
       );
 
       if (!response.data._embedded?.events) {
-        console.log(`No events found for ${city}`);
         return res.json([]);
       }
 
@@ -186,12 +115,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(events);
     } catch (error: any) {
-      console.error('Events API error:', {
-        message: error.response?.data?.message || error.message,
-        city,
-        status: error.response?.status
-      });
-
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch events",
         details: error.response?.data?.message || error.message
@@ -219,9 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      console.log(`Fetching attractions for city: ${city}`);
       const encodedCity = encodeURIComponent(city.trim());
-
       const response = await axios.get(
         'https://maps.googleapis.com/maps/api/place/textsearch/json',
         {
@@ -229,14 +150,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             query: `tourist attractions in ${encodedCity}`,
             key: API_KEY,
             language: 'en',
-            type: 'tourist_attraction|point_of_interest|museum',
-            radius: 5000
+            type: 'tourist_attraction'
           }
         }
       );
 
       if (response.data.status === 'ZERO_RESULTS') {
-        console.log(`No attractions found for ${city}`);
         return res.json([]);
       }
 
@@ -253,19 +172,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         photo: place.photos ? 
           `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` : 
           null,
-        geometry: place.geometry?.location || null,
-        open_now: place.opening_hours?.open_now,
-        price_level: place.price_level
+        geometry: place.geometry?.location || null
       }));
 
       res.json(attractions);
     } catch (error: any) {
-      console.error('Attractions API error:', {
-        message: error.response?.data?.message || error.message,
-        city,
-        status: error.response?.status
-      });
-
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch attractions",
         details: error.response?.data?.message || error.message
@@ -273,7 +184,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.use(apiRouter);
+  //Removed Stripe checkout and webhook handling as per intention
+  // apiRouter.post("/api/create-checkout-session", async (req, res) => { ... });
+  // apiRouter.post("/api/webhook", express.raw({ type: 'application/json' }), async (req, res) => { ... });
 
+
+  app.use(apiRouter);
   return createServer(app);
 }
