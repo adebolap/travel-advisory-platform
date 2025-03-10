@@ -25,14 +25,20 @@ export default function EventList({ city }: EventListProps) {
   const { data: events, isLoading, error, refetch } = useQuery<Event[]>({
     queryKey: ['events', city],
     queryFn: async () => {
+      if (!city?.trim()) {
+        throw new Error('City parameter is required');
+      }
       const params = new URLSearchParams({ city: city.trim() });
       const response = await fetch(`/api/events?${params}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch events');
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to fetch events');
       }
       return response.json();
     },
     enabled: Boolean(city?.trim()),
+    retry: 1,
+    refetchOnWindowFocus: false
   });
 
   if (isLoading) {
