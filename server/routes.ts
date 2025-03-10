@@ -170,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/api/events", async (req, res) => {
     const { city, from, to } = req.query;
 
-    if (!city || typeof city !== 'string') {
+    if (!city || typeof city !== 'string' || !city.trim()) {
       return res.status(400).json({ 
         error: "City parameter is required",
         details: "Please provide a valid city name"

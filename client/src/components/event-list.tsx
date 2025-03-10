@@ -29,10 +29,15 @@ export default function EventList({ city, dateRange }: EventListProps) {
     queryKey: ['events', city, dateRange?.from, dateRange?.to],
     queryFn: async () => {
       // Construct query parameters
-      const params = new URLSearchParams({
-        city: city.trim()
-      });
+      const params = new URLSearchParams();
 
+      // Ensure city is properly trimmed and encoded
+      if (!city?.trim()) {
+        throw new Error('City parameter is required');
+      }
+      params.append('city', city.trim());
+
+      // Add date range if provided
       if (dateRange?.from) {
         params.append('from', format(dateRange.from, 'yyyy-MM-dd'));
       }
@@ -44,8 +49,8 @@ export default function EventList({ city, dateRange }: EventListProps) {
 
       const response = await fetch(`/api/events?${params.toString()}`);
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to fetch events');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch events' }));
+        throw new Error(errorData.details || errorData.message || 'Failed to fetch events');
       }
       return response.json();
     },
@@ -134,9 +139,7 @@ export default function EventList({ city, dateRange }: EventListProps) {
                   )}
                 </div>
               </div>
-              <Badge>
-                {event.category}
-              </Badge>
+              <Badge>{event.category}</Badge>
             </div>
             {event.url && (
               <div className="mt-4 flex justify-end">
