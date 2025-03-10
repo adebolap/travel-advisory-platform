@@ -171,15 +171,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { city, from, to } = req.query;
 
     if (!city || typeof city !== 'string') {
+      console.error('Events API: Missing city parameter');
       return res.status(400).json({ error: "City parameter is required" });
     }
 
     const API_KEY = process.env.TICKETMASTER_API_KEY;
     if (!API_KEY) {
+      console.error('Events API: Missing API key');
       return res.status(500).json({ error: "Ticketmaster API key not configured" });
     }
 
     try {
+      console.log(`Fetching events for city: ${city}, from: ${from}, to: ${to}`);
       const encodedCity = encodeURIComponent(city.trim());
       const response = await axios.get(
         'https://app.ticketmaster.com/discovery/v2/events.json',
@@ -191,14 +194,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             endDateTime: to ? `${to}T23:59:59Z` : undefined,
             sort: 'date,asc',
             size: 20,
-            locale: '*',
-            countryCode: 'BE'
+            locale: '*'
+          },
+          headers: {
+            'Accept': 'application/json'
           }
         }
       );
 
-      // Handle case where no events are found
+      // If no events found, return empty array
       if (!response.data._embedded?.events) {
+        console.log(`No events found for ${city}`);
         return res.json([]);
       }
 
@@ -209,8 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         venue: event._embedded?.venues?.[0]?.name || 'Venue TBA',
         location: event._embedded?.venues?.[0]?.address?.line1,
         category: event.classifications?.[0]?.segment?.name || 'Other',
-        price: event.priceRanges ?
-          `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` :
+        price: event.priceRanges ? 
+          `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` : 
           'Price TBA',
         url: event.url,
         image: event.images?.[0]?.url
@@ -220,7 +226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Events API error:', {
         message: error.response?.data?.message || error.message,
-        city
+        city,
+        status: error.response?.status
       });
 
       res.status(error.response?.status || 500).json({
@@ -233,17 +240,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Attractions API endpoint
   apiRouter.get("/api/attractions", async (req, res) => {
     const { city } = req.query;
-    const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
     if (!city || typeof city !== 'string') {
+      console.error('Attractions API: Missing city parameter');
       return res.status(400).json({ error: "City parameter is required" });
     }
 
+    const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
     if (!API_KEY) {
+      console.error('Attractions API: Missing API key');
       return res.status(500).json({ error: "Google Places API key not configured" });
     }
 
     try {
+      console.log(`Fetching attractions for city: ${city}`);
       const encodedCity = encodeURIComponent(city.trim());
       const response = await axios.get(
         'https://maps.googleapis.com/maps/api/place/textsearch/json',
@@ -253,16 +263,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             key: API_KEY,
             language: 'en',
             type: 'tourist_attraction|point_of_interest|museum',
-            radius: 5000 // Add radius parameter
+            radius: 5000
           },
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'application/json'
           }
         }
       );
 
       if (response.data.status === 'ZERO_RESULTS') {
+        console.log(`No attractions found for ${city}`);
         return res.json([]);
       }
 
@@ -276,8 +286,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         location: place.formatted_address,
         rating: place.rating || 0,
         types: place.types || [],
-        photo: place.photos ?
-          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` :
+        photo: place.photos ? 
+          `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${API_KEY}` : 
           null,
         geometry: place.geometry?.location || null,
         open_now: place.opening_hours?.open_now,
@@ -288,8 +298,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Attractions API error:', {
         message: error.response?.data?.message || error.message,
-        city
+        city,
+        status: error.response?.status
       });
+
       res.status(error.response?.status || 500).json({
         error: "Failed to fetch attractions",
         details: error.response?.data?.message || error.message
