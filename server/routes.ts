@@ -7,6 +7,44 @@ import geoip from 'geoip-lite';
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
 
+  // Weather API endpoint
+  apiRouter.get("/api/weather/:city", async (req, res) => {
+    const { city } = req.params;
+    const API_KEY = process.env.WEATHER_API_KEY;
+
+    if (!city || !city.trim()) {
+      return res.status(400).json({ 
+        error: "City parameter is required",
+        details: "Please provide a valid city name"
+      });
+    }
+
+    if (!API_KEY) {
+      return res.status(500).json({ 
+        error: "API configuration error",
+        details: "Weather API key not configured"
+      });
+    }
+
+    try {
+      const encodedCity = encodeURIComponent(city.trim());
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`,
+        {
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+      res.json(response.data);
+    } catch (error: any) {
+      res.status(error.response?.status || 500).json({
+        error: "Failed to fetch weather data",
+        details: error.response?.data?.message || error.message
+      });
+    }
+  });
+
   // User location endpoint
   apiRouter.get("/api/user-location", (req, res) => {
     try {
@@ -23,15 +61,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Events API endpoint
   apiRouter.get("/api/events", async (req, res) => {
     const { city } = req.query;
+    const API_KEY = process.env.TICKETMASTER_API_KEY;
 
-    if (!city || typeof city !== 'string') {
+    if (!city || typeof city !== 'string' || !city.trim()) {
       return res.status(400).json({ 
         error: "City parameter is required",
         details: "Please provide a valid city name"
       });
     }
 
-    const API_KEY = process.env.TICKETMASTER_API_KEY;
     if (!API_KEY) {
       return res.status(500).json({ 
         error: "API configuration error",
@@ -50,6 +88,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             sort: 'date,asc',
             size: '20',
             locale: '*'
+          },
+          headers: {
+            'Accept': 'application/json'
           }
         }
       );
@@ -64,6 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         date: event.dates.start.dateTime || event.dates.start.localDate,
         venue: event._embedded?.venues?.[0]?.name || 'Venue TBA',
         location: event._embedded?.venues?.[0]?.address?.line1,
+        category: event.classifications?.[0]?.segment?.name || 'Other',
         price: event.priceRanges ? 
           `${event.priceRanges[0].min} - ${event.priceRanges[0].max} ${event.priceRanges[0].currency}` : 
           'Price TBA',
@@ -79,9 +121,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Attractions API endpoint
+  // Places/Attractions API endpoint
   apiRouter.get("/api/attractions", async (req, res) => {
     const { city } = req.query;
+    const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
     if (!city || typeof city !== 'string' || !city.trim()) {
       return res.status(400).json({ 
@@ -90,7 +133,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
-    const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
     if (!API_KEY) {
       return res.status(500).json({ 
         error: "API configuration error",
@@ -108,6 +150,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             key: API_KEY,
             language: 'en',
             type: 'tourist_attraction'
+          },
+          headers: {
+            'Accept': 'application/json'
           }
         }
       );
