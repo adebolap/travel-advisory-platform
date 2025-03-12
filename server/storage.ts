@@ -1,46 +1,40 @@
-import { 
-  users, 
-  searchPreferences, 
-  type User, 
-  type InsertUser, 
-  type SearchPreference, 
-  type InsertSearchPreference, 
-  travelQuizResponses, 
-  type TravelQuizResponse, 
-  type InsertTravelQuizResponse
-} from "@shared/schema";
-
+import { users, searchPreferences, type User, type InsertUser, type SearchPreference, type InsertSearchPreference } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { travelQuizResponses, type TravelQuizResponse, type InsertTravelQuizResponse } from "@shared/schema";
 
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   createSearchPreference(pref: InsertSearchPreference): Promise<SearchPreference>;
   getSearchPreferences(userId: number): Promise<SearchPreference[]>;
+  sessionStore: session.Store;
   createTravelQuizResponse(response: InsertTravelQuizResponse): Promise<TravelQuizResponse>;
   updateUserPreferences(userId: number, preferences: Partial<User>): Promise<User>;
   updateSubscriptionStatus(userId: number, isSubscribed: boolean, endDate?: Date): Promise<User>;
-  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
-  private users = new Map<number, User>();
-  private preferences = new Map<number, SearchPreference>();
-  private quizResponses = new Map<number, TravelQuizResponse>();
-  private currentUserId = 1;
-  private currentPrefId = 1;
-  private currentQuizId = 1;
+  private users: Map<number, User>;
+  private preferences: Map<number, SearchPreference>;
+  private quizResponses: Map<number, TravelQuizResponse>;
+  private currentUserId: number;
+  private currentPrefId: number;
+  private currentQuizId: number;
   public sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new MemoryStore({ 
-      checkPeriod: 86400000, // Prune expired entries every 24h
-      stale: false // Don't serve stale sessions
+    this.users = new Map();
+    this.preferences = new Map();
+    this.quizResponses = new Map();
+    this.currentUserId = 1;
+    this.currentPrefId = 1;
+    this.currentQuizId = 1;
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // 24 hours
     });
   }
 
@@ -50,33 +44,18 @@ export class MemStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      user => user.username.toLowerCase() === username.toLowerCase()
+      (user) => user.username === username,
     );
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      user => user.email?.toLowerCase() === email.toLowerCase()
-    );
-  }
-
-  async createUser(user: InsertUser): Promise<User> {
-    // Validate unique username and email
-    const existingUsername = await this.getUserByUsername(user.username);
-    if (existingUsername) {
-      throw new Error('Username already exists');
-    }
-
-    if (user.email) {
-      const existingEmail = await this.getUserByEmail(user.email);
-      if (existingEmail) {
-        throw new Error('Email already exists');
-      }
-    }
-
-    const newUser: User = {
-      id: this.currentUserId++,
-      ...user,
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = this.currentUserId++;
+    const user: User = {
+      id,
+      username: insertUser.username,
+      password: insertUser.password,
+      travelStyle: insertUser.travelStyle || null,
+      preferredActivities: insertUser.preferredActivities || null,
       lastQuizDate: null,
       preferredDestinations: null,
       travelBudget: null,
@@ -87,46 +66,75 @@ export class MemStorage implements IStorage {
       languagesSpoken: null,
       isSubscribed: false,
       subscriptionEndDate: null,
-      createdAt: new Date(), // Add creation timestamp
-      updatedAt: new Date(), // Add update timestamp
     };
-
-    this.users.set(newUser.id, newUser);
-    return newUser;
+    this.users.set(id, user);
+    return user;
   }
 
-  async updateUser(id: number, updates: Partial<User>): Promise<User> {
-    const user = await this.getUser(id);
+  async createSearchPreference(pref: InsertSearchPreference): Promise<SearchPreference> {
+    const id = this.currentPrefId++;
+    const createdAt = new Date();
+    const preference: SearchPreference = {
+      id,
+      userId: pref.userId,
+      city: pref.city,
+      interests: pref.interests,
+      budget: pref.budget || null,
+      preferredSeason: pref.preferredSeason || null,
+      travelStyle: pref.travelStyle || null,
+      createdAt,
+      minDuration: pref.minDuration || null,
+      maxDuration: pref.maxDuration || null,
+      accommodation: pref.accommodation || null,
+      travelWithKids: pref.travelWithKids || null
+    };
+    this.preferences.set(id, preference);
+    return preference;
+  }
+
+  async getSearchPreferences(userId: number): Promise<SearchPreference[]> {
+    return Array.from(this.preferences.values()).filter(
+      (pref) => pref.userId === userId
+    );
+  }
+
+  async createTravelQuizResponse(response: InsertTravelQuizResponse): Promise<TravelQuizResponse> {
+    const id = this.currentQuizId++;
+    const quizResponse: TravelQuizResponse = {
+      id,
+      userId: response.userId,
+      quizDate: new Date(),
+      responses: response.responses,
+      recommendedDestinations: response.recommendedDestinations || [],
+      recommendedActivities: response.recommendedActivities || []
+    };
+    this.quizResponses.set(id, quizResponse);
+    return quizResponse;
+  }
+
+  async updateUserPreferences(userId: number, preferences: Partial<User>): Promise<User> {
+    const user = await this.getUser(userId);
     if (!user) {
       throw new Error('User not found');
     }
-
-    // If updating username or email, check for uniqueness
-    if (updates.username && updates.username !== user.username) {
-      const existingUsername = await this.getUserByUsername(updates.username);
-      if (existingUsername) {
-        throw new Error('Username already exists');
-      }
-    }
-
-    if (updates.email && updates.email !== user.email) {
-      const existingEmail = await this.getUserByEmail(updates.email);
-      if (existingEmail) {
-        throw new Error('Email already exists');
-      }
-    }
-
-    const updatedUser = {
-      ...user,
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    this.users.set(id, updatedUser);
+    const updatedUser = { ...user, ...preferences };
+    this.users.set(userId, updatedUser);
     return updatedUser;
   }
 
-  // ... rest of the methods remain the same ...
+  async updateSubscriptionStatus(userId: number, isSubscribed: boolean, endDate?: Date): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const updatedUser = { 
+      ...user, 
+      isSubscribed, 
+      subscriptionEndDate: endDate || null 
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
 }
 
 export const storage = new MemStorage();

@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Twitter, Facebook, Linkedin, Link2, Share2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
 
 interface ShareButtonsProps {
   title: string;
@@ -26,8 +25,7 @@ export default function ShareButtons({ title, description, url, compact = false 
       await navigator.clipboard.writeText(url);
       toast({
         title: "Link copied!",
-        description: "The link has been copied to your clipboard.",
-        variant: "default"
+        description: "The link has been copied to your clipboard."
       });
     } catch (err) {
       toast({
@@ -38,61 +36,66 @@ export default function ShareButtons({ title, description, url, compact = false 
     }
   };
 
-  const buttonVariants = {
-    hover: { scale: 1.1, transition: { duration: 0.2 } },
-    tap: { scale: 0.9 }
-  };
+  if (compact) {
+    return (
+      <div className="flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:text-primary"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (navigator.share) {
+              navigator.share({
+                title,
+                text: description,
+                url
+              });
+            } else {
+              copyToClipboard();
+            }
+          }}
+        >
+          <Share2 className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
-      {compact ? (
-        <motion.div
-          variants={buttonVariants}
-          whileHover="hover"
-          whileTap="tap"
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (navigator.share) {
-                navigator.share({
-                  title,
-                  text: description,
-                  url
-                });
-              } else {
-                copyToClipboard();
-              }
-            }}
-          >
-            <Share2 className="h-4 w-4 text-primary" />
-          </Button>
-        </motion.div>
-      ) : (
-        [
-          { icon: <Twitter className="h-4 w-4 text-blue-400" />, url: shareUrls.twitter },
-          { icon: <Facebook className="h-4 w-4 text-blue-600" />, url: shareUrls.facebook },
-          { icon: <Linkedin className="h-4 w-4 text-blue-700" />, url: shareUrls.linkedin }
-        ].map((btn, index) => (
-          <motion.div key={index} variants={buttonVariants} whileHover="hover" whileTap="tap">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => window.open(btn.url, '_blank')}
-            >
-              {btn.icon}
-            </Button>
-          </motion.div>
-        ))
-      )}
-      <motion.div variants={buttonVariants} whileHover="hover" whileTap="tap">
-        <Button variant="outline" size="icon" onClick={copyToClipboard}>
-          <Link2 className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </motion.div>
+      <Button
+        variant="outline"
+        size="icon"
+        className="hover:text-blue-400"
+        onClick={() => window.open(shareUrls.twitter, '_blank')}
+      >
+        <Twitter className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        className="hover:text-blue-600"
+        onClick={() => window.open(shareUrls.facebook, '_blank')}
+      >
+        <Facebook className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        className="hover:text-blue-700"
+        onClick={() => window.open(shareUrls.linkedin, '_blank')}
+      >
+        <Linkedin className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={copyToClipboard}
+      >
+        <Link2 className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

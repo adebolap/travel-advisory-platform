@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { CalendarPlus, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
 
 interface CalendarIntegrationProps {
   event: {
@@ -16,7 +15,7 @@ interface CalendarIntegrationProps {
 export default function CalendarIntegration({ event }: CalendarIntegrationProps) {
   const generateGoogleCalendarUrl = () => {
     const eventDate = new Date(event.date);
-    const endDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000);
+    const endDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
 
     const params = new URLSearchParams({
       action: "TEMPLATE",
@@ -31,7 +30,7 @@ export default function CalendarIntegration({ event }: CalendarIntegrationProps)
 
   const generateAppleCalendarUrl = () => {
     const eventDate = new Date(event.date);
-    const endDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000);
+    const endDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
 
     const icsData = [
       "BEGIN:VCALENDAR",
@@ -50,39 +49,39 @@ export default function CalendarIntegration({ event }: CalendarIntegrationProps)
     return URL.createObjectURL(blob);
   };
 
-  const addToCalendar = (url: string, fileName?: string) => {
-    if (fileName) {
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      window.open(url, '_blank');
-    }
+  const addToGoogleCalendar = () => {
+    window.open(generateGoogleCalendarUrl(), '_blank');
+  };
+
+  const addToAppleCalendar = () => {
+    const link = document.createElement('a');
+    link.href = generateAppleCalendarUrl();
+    link.setAttribute('download', `${event.name}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
-    <motion.div className="flex items-center gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <div className="flex items-center gap-2">
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 bg-primary text-primary-foreground hover:bg-primary/80"
-        onClick={() => addToCalendar(generateGoogleCalendarUrl())}
+        className="gap-2"
+        onClick={addToGoogleCalendar}
       >
-        <CalendarPlus className="h-4 w-4 text-primary-foreground" />
+        <CalendarPlus className="h-4 w-4" />
         Google Calendar
       </Button>
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
-        onClick={() => addToCalendar(generateAppleCalendarUrl(), `${event.name}.ics`)}
+        className="gap-2"
+        onClick={addToAppleCalendar}
       >
-        <CalendarIcon className="h-4 w-4 text-secondary-foreground" />
+        <CalendarIcon className="h-4 w-4" />
         Apple Calendar
       </Button>
-    </motion.div>
+    </div>
   );
 }

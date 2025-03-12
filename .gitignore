@@ -18,36 +18,3 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-
-# Environment variables
-.env.local
-.env.development
-.env.test
-.env.production
-
-# IDE specific files
-.idea
-.vscode
-*.sublime-workspace
-*.sublime-project
-
-# Build files
-build/
-dist/
-out/
-
-# Temp files
-.temp
-.tmp
-.cache
-
-# Test coverage
-coverage/
-.nyc_output/
-
-# Logs
-logs/
-*.log.*
-
-# System Files
-Thumbs.db

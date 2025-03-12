@@ -5,8 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, insertUserSchema } from "@shared/schema";
-import { z } from "zod";
+import { User as SelectUser } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -37,8 +36,6 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
   };
@@ -78,94 +75,39 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res) => {
+  // Authentication routes
+  app.post("/api/register", async (req, res, next) => {
     try {
-      // Validate request body against schema
-      const validatedData = insertUserSchema.parse(req.body);
-
-      // Check if username exists
-      const existingUsername = await storage.getUserByUsername(validatedData.username);
-      if (existingUsername) {
-        return res.status(409).json({ 
-          message: "Username already exists",
-          field: "username"
-        });
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
       }
 
-      // Check if email exists (if your storage supports it)
-      if (validatedData.email) {
-        const existingEmail = await storage.getUserByEmail(validatedData.email);
-        if (existingEmail) {
-          return res.status(409).json({ 
-            message: "Email already registered",
-            field: "email"
-          });
-        }
-      }
-
-      // Create user with hashed password
-      const hashedPassword = await hashPassword(validatedData.password);
       const user = await storage.createUser({
-        ...validatedData,
-        password: hashedPassword,
+        ...req.body,
+        password: await hashPassword(req.body.password),
       });
 
-      // Log in the new user
       req.login(user, (err) => {
-        if (err) {
-          console.error('Login error after registration:', err);
-          return res.status(500).json({ message: "Registration successful but login failed" });
-        }
-
-        // Return user data without password
+        if (err) return next(err);
+        // Exclude password from response
         const { password, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
       });
-
     } catch (error) {
-      console.error('Registration error:', error);
-
-      // Handle Zod validation errors
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: "Validation failed",
-          errors: error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-          }))
-        });
-      }
-
-      // Handle other errors
-      res.status(500).json({ 
-        message: "Registration failed. Please try again later." 
-      });
+      next(error);
     }
   });
 
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err, user, info) => {
-      if (err) {
-        console.error('Login error:', err);
-        return res.status(500).json({ 
-          message: "Login failed. Please try again later." 
-        });
-      }
-
+      if (err) return next(err);
       if (!user) {
-        return res.status(401).json({ 
-          message: "Invalid username or password" 
-        });
+        return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
-
       req.login(user, (err) => {
-        if (err) {
-          console.error('Session creation error:', err);
-          return res.status(500).json({ 
-            message: "Login failed. Please try again." 
-          });
-        }
-
+        if (err) return next(err);
+        // Exclude password from response
         const { password, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
       });
@@ -173,67 +115,50 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      res.sendStatus(200);
+    });
+  });
+
+  // Add quiz endpoints
+  app.post("/api/quiz/submit", async (req, res, next) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not logged in" });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
-    req.logout((err) => {
-      if (err) {
-        console.error('Logout error:', err);
-        return res.status(500).json({ message: "Logout failed" });
-      }
-
-      req.session.destroy((err) => {
-        if (err) {
-          console.error("Session destruction error:", err);
-          return res.status(500).json({ message: "Logout failed" });
-        }
-        res.clearCookie("connect.sid", { 
-          path: '/',
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: 'lax'
-        });
-        res.sendStatus(200);
+    try {
+      const quizResponse = await storage.createTravelQuizResponse({
+        userId: req.user.id,
+        responses: req.body.responses,
+        recommendedDestinations: req.body.recommendedDestinations || [],
+        recommendedActivities: req.body.recommendedActivities || []
       });
-    });
+
+      // Update user preferences based on quiz responses
+      const updatedUser = await storage.updateUserPreferences(req.user.id, {
+        lastQuizDate: new Date(),
+        ...req.body.preferences
+      });
+
+      // Exclude password from response
+      const { password, ...userWithoutPassword } = updatedUser;
+
+      res.json({
+        quizResponse,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
+    // Exclude password from response
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
-  });
-
-  // Add a route to check if a username is available
-  app.get("/api/check-username/:username", async (req, res) => {
-    try {
-      const { username } = req.params;
-      const existingUser = await storage.getUserByUsername(username);
-      res.json({ available: !existingUser });
-    } catch (error) {
-      console.error('Username check error:', error);
-      res.status(500).json({ message: "Could not check username availability" });
-    }
-  });
-
-  // Add a route to check if an email is available
-  app.get("/api/check-email/:email", async (req, res) => {
-    try {
-      const { email } = req.params;
-      const existingUser = await storage.getUserByEmail(email);
-      res.json({ available: !existingUser });
-    } catch (error) {
-      console.error('Email check error:', error);
-      res.status(500).json({ message: "Could not check email availability" });
-    }
-  });
-
-  // Error handling middleware
-  app.use((err: Error, req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-    console.error('Auth error:', err);
-    res.status(500).json({ message: "Internal server error" });
   });
 }

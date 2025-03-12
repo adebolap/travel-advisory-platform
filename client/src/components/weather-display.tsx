@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Cloud, CloudRain, Droplets, Snow, Sun, Thermometer, Wind } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import { Sun, Cloud, CloudRain, Wind, Droplets, ChevronDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
+import { useState, useEffect } from "react";
 
 interface WeatherData {
   weather: Array<{
@@ -15,169 +15,180 @@ interface WeatherData {
     temp: number;
     feels_like: number;
     humidity: number;
-    temp_min: number;
-    temp_max: number;
-  };
-  name: string;
-  sys: {
-    country: string;
   };
   wind: {
     speed: number;
+  };
+  name: string;
+}
+
+interface ForecastData {
+  list: Array<{
+    dt: number;
+    main: {
+      temp: number;
+      humidity: number;
+    };
+    weather: Array<{
+      main: string;
+      description: string;
+    }>;
+    wind: {
+      speed: number;
+    };
+  }>;
+  city: {
+    name: string;
   };
 }
 
 interface WeatherDisplayProps {
   city: string;
-  onWeatherUpdate?: (weather: string, temp?: number, condition?: string) => void;
+  onWeatherUpdate?: (weather: string) => void;
 }
 
 export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplayProps) {
-  const { data: weather, isLoading, error, refetch } = useQuery<WeatherData>({
-    queryKey: ['/api/weather', city],
-    queryFn: async () => {
-      if (!city?.trim()) {
-        throw new Error('City parameter is required');
-      }
-      const response = await fetch(`/api/weather/${encodeURIComponent(city.trim())}`);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch weather data' }));
-        throw new Error(errorData.details || errorData.message || 'Failed to fetch weather data');
-      }
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
-      const data = await response.json();
-
-      // Update parent component with weather info
-      if (onWeatherUpdate) {
-        const temp = data.main.temp;
-        let weatherCategory = 'Mild';
-        if (temp <= 0) weatherCategory = 'Freezing';
-        else if (temp <= 10) weatherCategory = 'Cold';
-        else if (temp >= 30) weatherCategory = 'Hot';
-        else if (temp >= 22) weatherCategory = 'Warm';
-
-        onWeatherUpdate(weatherCategory, temp, data.weather[0].main);
-      }
-
-      return data;
-    },
-    enabled: Boolean(city?.trim()),
-    retry: 1,
-    refetchOnWindowFocus: false,
+  const { data: currentWeather, isLoading: isLoadingCurrent, error: currentError } = useQuery<WeatherData>({
+    queryKey: [`/api/weather/${encodeURIComponent(city)}`],
+    enabled: Boolean(city)
   });
 
+  const { data: forecast, isLoading: isLoadingForecast, error: forecastError } = useQuery<ForecastData>({
+    queryKey: [`/api/forecast/${encodeURIComponent(city)}`],
+    enabled: Boolean(city)
+  });
+
+  // Map weather condition to our categories
+  const mapWeatherToCategory = (temp: number, description: string): string => {
+    const desc = description.toLowerCase();
+    if (desc.includes('rain') || desc.includes('drizzle')) return 'Rainy';
+    if (desc.includes('wind')) return 'Windy';
+    if (temp <= 10) return 'Cold';
+    if (temp >= 25) return 'Warm';
+    return 'Mild';
+  };
+
+  useEffect(() => {
+    if (currentWeather && onWeatherUpdate) {
+      const weatherCategory = mapWeatherToCategory(
+        currentWeather.main.temp,
+        currentWeather.weather[0].description
+      );
+      onWeatherUpdate(weatherCategory);
+    }
+  }, [currentWeather, onWeatherUpdate]);
+
+  if (isLoadingCurrent || isLoadingForecast) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  if (currentError || forecastError) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-destructive">
+          Unable to load weather data. Please try again later.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!currentWeather || !forecast) return null;
+
   const getWeatherIcon = (condition: string) => {
-    const iconClass = "h-10 w-10";
     switch (condition.toLowerCase()) {
       case 'clear':
-        return <Sun className={`${iconClass} text-yellow-500`} />;
+        return <Sun className="h-6 w-6 text-yellow-500" />;
       case 'clouds':
-        return <Cloud className={`${iconClass} text-slate-400`} />;
+        return <Cloud className="h-6 w-6 text-gray-500" />;
       case 'rain':
       case 'drizzle':
-        return <CloudRain className={`${iconClass} text-blue-400`} />;
-      case 'snow':
-        return <Snow className={`${iconClass} text-blue-200`} />;
+        return <CloudRain className="h-6 w-6 text-blue-500" />;
       default:
-        return <Cloud className={`${iconClass} text-slate-300`} />;
+        return <Sun className="h-6 w-6 text-yellow-500" />;
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
-          <p className="text-destructive font-medium mb-2">Unable to load weather data</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            {error instanceof Error ? error.message : 'Please try again later'}
-          </p>
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!weather) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          No weather data available
-        </CardContent>
-      </Card>
-    );
-  }
+  // Get next 4 days forecast
+  const dailyForecasts = forecast.list.filter((item, index) => index % 8 === 4).slice(0, 4);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Current Weather</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            {getWeatherIcon(weather.weather[0].main)}
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-medium">
-                  {weather.name}, {weather.sys.country}
-                </h3>
-                <Badge variant="outline" className="text-xs">
-                  {weather.weather[0].main}
-                </Badge>
+    <div className="space-y-4">
+      {/* Current Weather - Compact Horizontal Layout */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {getWeatherIcon(currentWeather.weather[0].main)}
+              <div>
+                <h3 className="font-semibold">{currentWeather.name}</h3>
+                <p className="text-2xl font-bold">{Math.round(currentWeather.main.temp)}°C</p>
+                <p className="text-sm text-muted-foreground capitalize">{currentWeather.weather[0].description}</p>
               </div>
-              <p className="text-3xl font-bold">
-                {Math.round(weather.main.temp)}°C
-              </p>
-              <p className="text-sm text-muted-foreground capitalize">
-                {weather.weather[0].description}
-              </p>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-1">
+                <Droplets className="h-4 w-4 text-blue-500" />
+                <span className="text-sm">{currentWeather.main.humidity}%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Wind className="h-4 w-4 text-blue-500" />
+                <span className="text-sm">{currentWeather.wind.speed}m/s</span>
+              </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* 4-Day Forecast */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3">4-Day Forecast</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {dailyForecasts.map((day, index) => (
+            <Card
+              key={day.dt}
+              className="h-full cursor-pointer transition-all duration-200 hover:shadow-md"
+              onClick={() => setExpandedDay(expandedDay === index ? null : index)}
+            >
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex flex-col h-full">
+                  <div className="text-center border-b border-border/50 pb-2">
+                    <p className="font-medium">{format(new Date(day.dt * 1000), 'EEE')}</p>
+                    <p className="text-xs text-muted-foreground">{format(new Date(day.dt * 1000), 'MMM d')}</p>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center py-3 sm:py-4 flex-grow">
+                    {getWeatherIcon(day.weather[0].main)}
+                    <p className="text-xl sm:text-2xl font-bold mt-2">{Math.round(day.main.temp)}°C</p>
+                    <p className="text-xs text-center text-muted-foreground mt-1 h-8 flex items-center">
+                      {day.weather[0].description}
+                    </p>
+                  </div>
+
+                  <div className="mt-auto">
+                    <div className="flex items-center justify-center gap-1 text-xs">
+                      <Droplets className="h-3 w-3 text-blue-500" />
+                      <span>{day.main.humidity}%</span>
+                    </div>
+
+                    <div className={`overflow-hidden transition-all duration-200 ${expandedDay === index ? 'max-h-8' : 'max-h-0'}`}>
+                      <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
+                        <Wind className="h-3 w-3" />
+                        <span>{day.wind.speed.toFixed(1)}m/s</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center mt-2">
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedDay === index ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col items-center p-3 bg-muted/50 rounded-lg">
-            <Thermometer className="h-4 w-4 text-primary mb-1" />
-            <span className="text-sm font-medium">
-              {Math.round(weather.main.temp_min)}° / {Math.round(weather.main.temp_max)}°
-            </span>
-            <span className="text-xs text-muted-foreground">Min/Max</span>
-          </div>
-
-          <div className="flex flex-col items-center p-3 bg-muted/50 rounded-lg">
-            <Droplets className="h-4 w-4 text-blue-500 mb-1" />
-            <span className="text-sm font-medium">{weather.main.humidity}%</span>
-            <span className="text-xs text-muted-foreground">Humidity</span>
-          </div>
-
-          <div className="flex flex-col items-center p-3 bg-muted/50 rounded-lg">
-            <Wind className="h-4 w-4 text-slate-500 mb-1" />
-            <span className="text-sm font-medium">
-              {Math.round(weather.wind.speed * 3.6)} km/h
-            </span>
-            <span className="text-xs text-muted-foreground">Wind</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

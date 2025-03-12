@@ -101,132 +101,6 @@ export const accommodationEnum = [
   "BnB",
 ] as const;
 
-export const cities = pgTable("cities", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  name: text("name").notNull(),
-  country: text("country").notNull(),
-  visitDate: timestamp("visit_date").notNull(),
-  memories: text("memories"),
-  rating: integer("rating").notNull(),
-  isWishlist: boolean("is_wishlist").default(false),
-  photos: text("photos").array(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Additional cities organized by regions
-export const popularCities = [
-  // Europe
-  "Paris, France",
-  "London, UK",
-  "Barcelona, Spain",
-  "Rome, Italy",
-  "Amsterdam, Netherlands",
-  "Berlin, Germany",
-  "Vienna, Austria",
-  "Prague, Czech Republic",
-  "Copenhagen, Denmark",
-  "Stockholm, Sweden",
-  "Santorini, Greece",
-  "Venice, Italy",
-  "Brugge, Belgium",
-  "Porto, Portugal",
-  "Zurich, Switzerland",
-  "Dublin, Ireland",
-  "Edinburgh, UK",
-  "Milan, Italy",
-  "Munich, Germany",
-  "Helsinki, Finland",
-
-  // Middle East
-  "Dubai, UAE",
-  "Abu Dhabi, UAE",
-  "Doha, Qatar",
-  "Muscat, Oman",
-  "Istanbul, Turkey",
-  "Jerusalem, Israel",
-  "Petra, Jordan",
-  "Riyadh, Saudi Arabia",
-  "Manama, Bahrain",
-  "Kuwait City, Kuwait",
-
-  // Asia
-  "Tokyo, Japan",
-  "Kyoto, Japan",
-  "Osaka, Japan",
-  "Seoul, South Korea",
-  "Busan, South Korea",
-  "Singapore",
-  "Bangkok, Thailand",
-  "Chiang Mai, Thailand",
-  "Phuket, Thailand",
-  "Hong Kong",
-  "Mumbai, India",
-  "Delhi, India",
-  "Jaipur, India",
-  "Bali, Indonesia",
-  "Jakarta, Indonesia",
-  "Shanghai, China",
-  "Beijing, China",
-  "Ho Chi Minh City, Vietnam",
-  "Hanoi, Vietnam",
-  "Siem Reap, Cambodia",
-
-  // Americas
-  "New York City, USA",
-  "San Francisco, USA",
-  "Los Angeles, USA",
-  "Miami, USA",
-  "Chicago, USA",
-  "Vancouver, Canada",
-  "Toronto, Canada",
-  "Montreal, Canada",
-  "Rio de Janeiro, Brazil",
-  "São Paulo, Brazil",
-  "Buenos Aires, Argentina",
-  "Mexico City, Mexico",
-  "Cancun, Mexico",
-  "Cusco, Peru",
-  "Lima, Peru",
-  "Havana, Cuba",
-  "Cartagena, Colombia",
-  "Santiago, Chile",
-
-  // Oceania
-  "Sydney, Australia",
-  "Melbourne, Australia",
-  "Brisbane, Australia",
-  "Perth, Australia",
-  "Auckland, New Zealand",
-  "Wellington, New Zealand",
-  "Queenstown, New Zealand",
-  "Fiji Islands",
-  "Bora Bora, French Polynesia",
-  "Tahiti, French Polynesia",
-
-  // Africa
-  "Cape Town, South Africa",
-  "Johannesburg, South Africa",
-  "Marrakech, Morocco",
-  "Casablanca, Morocco",
-  "Cairo, Egypt",
-  "Luxor, Egypt",
-  "Nairobi, Kenya",
-  "Zanzibar, Tanzania",
-  "Dar es Salaam, Tanzania",
-  "Victoria Falls, Zimbabwe"
-] as const;
-
-// Add continent mapping for cities
-export const cityToContinentMap = {
-  "Europe 🇪🇺": ["France", "UK", "Spain", "Italy", "Netherlands", "Germany", "Austria", "Czech Republic", "Denmark", "Sweden", "Greece", "Belgium", "Portugal", "Switzerland", "Ireland", "Finland"],
-  "Middle East 🌅": ["UAE", "Qatar", "Oman", "Turkey", "Israel", "Jordan", "Saudi Arabia", "Bahrain", "Kuwait"],
-  "Asia 🌏": ["Japan", "South Korea", "Singapore", "Thailand", "Hong Kong", "India", "Indonesia", "China", "Vietnam", "Cambodia"],
-  "Americas 🌎": ["USA", "Canada", "Brazil", "Argentina", "Mexico", "Peru", "Cuba", "Colombia", "Chile"],
-  "Oceania 🏝️": ["Australia", "New Zealand", "French Polynesia", "Fiji"],
-  "Africa 🌍": ["South Africa", "Morocco", "Egypt", "Kenya", "Tanzania", "Zimbabwe"]
-} as const;
-
 // Extended schemas for input validation
 export const insertUserSchema = createInsertSchema(users)
   .extend({
@@ -257,54 +131,6 @@ export const travelQuizResponseSchema = createInsertSchema(travelQuizResponses)
     quizDate: true,
   });
 
-export const insertCitySchema = createInsertSchema(cities)
-  .omit({
-    id: true,
-    createdAt: true,
-  })
-  .extend({
-    rating: z.number().min(1).max(5),
-    photos: z.array(z.string()).optional(),
-  });
-
-// Add achievement-related constants
-export const achievementTypes = {
-  citiesVisited: {
-    bronze: { count: 5, icon: "🌆", title: "City Explorer" },
-    silver: { count: 10, icon: "🏙️", title: "Urban Adventurer" },
-    gold: { count: 20, icon: "🌃", title: "Metropolis Master" }
-  },
-  countriesVisited: {
-    bronze: { count: 3, icon: "🗺️", title: "Globe Trotter" },
-    silver: { count: 5, icon: "🌍", title: "World Wanderer" },
-    gold: { count: 10, icon: "🌎", title: "Planet Pioneer" }
-  },
-  plansCreated: {
-    bronze: { count: 3, icon: "📝", title: "Trip Planner" },
-    silver: { count: 5, icon: "📋", title: "Journey Master" },
-    gold: { count: 10, icon: "📅", title: "Travel Strategist" }
-  },
-  ratings: {
-    bronze: { count: 5, icon: "⭐", title: "Review Rookie" },
-    silver: { count: 10, icon: "⭐⭐", title: "Feedback Pro" },
-    gold: { count: 20, icon: "⭐⭐⭐", title: "Rating Legend" }
-  }
-} as const;
-
-// Add achievements table
-export const achievements = pgTable("achievements", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  type: text("type").notNull(),
-  level: text("level").notNull(), // bronze, silver, gold
-  unlockedAt: timestamp("unlocked_at").defaultNow(),
-  progress: integer("progress").notNull().default(0),
-});
-
-// Add achievement types to the schema
-export type AchievementType = keyof typeof achievementTypes;
-export type AchievementLevel = keyof typeof achievementTypes.citiesVisited;
-
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -312,8 +138,6 @@ export type SearchPreference = typeof searchPreferences.$inferSelect;
 export type InsertSearchPreference = z.infer<typeof searchPreferenceSchema>;
 export type TravelQuizResponse = typeof travelQuizResponses.$inferSelect;
 export type InsertTravelQuizResponse = z.infer<typeof travelQuizResponseSchema>;
-export type City = typeof cities.$inferSelect;
-export type InsertCity = z.infer<typeof insertCitySchema>;
 
 // Travel quiz question types
 export interface TravelQuizQuestion {
