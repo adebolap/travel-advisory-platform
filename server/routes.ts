@@ -9,9 +9,115 @@ import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' });
 
-
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
+
+  // Add city search endpoint
+  apiRouter.get("/api/cities/search", async (req, res) => {
+    const { query } = req.query;
+
+    if (!process.env.GOOGLE_PLACES_API_KEY) {
+      return res.status(500).json({ error: "Google Places API key not configured" });
+    }
+
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ error: "Search query is required" });
+    }
+
+    try {
+      console.log(`Searching for cities matching: ${query}`);
+
+      const response = await axios.get(
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json',
+        {
+          params: {
+            input: query,
+            types: '(cities)',
+            key: process.env.GOOGLE_PLACES_API_KEY,
+          }
+        }
+      );
+
+      if (response.data.status === 'REQUEST_DENIED') {
+        console.error('API Key error:', response.data.error_message);
+        return res.status(500).json({ 
+          error: "Google API key error",
+          details: response.data.error_message 
+        });
+      }
+
+      const cities = response.data.predictions.map((prediction: any) => ({
+        id: prediction.place_id,
+        name: prediction.structured_formatting.main_text,
+        description: prediction.description,
+        country: prediction.structured_formatting.secondary_text,
+      }));
+
+      console.log(`Found ${cities.length} cities matching "${query}"`);
+      res.json(cities);
+    } catch (error: any) {
+      console.error("City search error:", error.response?.data || error.message);
+      res.status(500).json({ 
+        error: "Failed to search cities",
+        details: error.response?.data?.message || error.message
+      });
+    }
+  });
+
+  // Get detailed city information
+  apiRouter.get("/api/cities/:placeId", async (req, res) => {
+    const { placeId } = req.params;
+
+    if (!process.env.GOOGLE_PLACES_API_KEY) {
+      return res.status(500).json({ error: "Google Places API key not configured" });
+    }
+
+    try {
+      console.log(`Fetching details for place ID: ${placeId}`);
+
+      const response = await axios.get(
+        'https://maps.googleapis.com/maps/api/place/details/json',
+        {
+          params: {
+            place_id: placeId,
+            key: process.env.GOOGLE_PLACES_API_KEY,
+            fields: 'name,formatted_address,geometry,photos,place_id,types,url'
+          }
+        }
+      );
+
+      if (response.data.status === 'REQUEST_DENIED') {
+        console.error('API Key error:', response.data.error_message);
+        return res.status(500).json({ 
+          error: "Google API key error",
+          details: response.data.error_message 
+        });
+      }
+
+      const place = response.data.result;
+      const cityDetails = {
+        id: place.place_id,
+        name: place.name,
+        address: place.formatted_address,
+        coordinates: place.geometry.location,
+        photos: place.photos?.map((photo: any) => ({
+          reference: photo.photo_reference,
+          url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photo.photo_reference}&key=${process.env.GOOGLE_PLACES_API_KEY}`
+        })) || [],
+        types: place.types,
+        googleMapsUrl: place.url
+      };
+
+      console.log(`Retrieved details for ${cityDetails.name}`);
+      res.json(cityDetails);
+    } catch (error: any) {
+      console.error("City details error:", error.response?.data || error.message);
+      res.status(500).json({ 
+        error: "Failed to fetch city details",
+        details: error.response?.data?.message || error.message
+      });
+    }
+  });
 
   // Create Stripe checkout session
   apiRouter.post("/api/create-checkout-session", async (req, res) => {
