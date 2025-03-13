@@ -4,16 +4,7 @@ import { DateRange } from "react-day-picker";
 import { Plane, Sun, Moon, Sunrise, Sunset, Clock } from "lucide-react";
 import { useState } from "react";
 
-// Simple TimePicker component implementation (replace with your actual implementation)
-const TimePicker: React.FC<{ label: string; value: string; onChange: (value: string) => void }> = ({ label, value, onChange }) => {
-  return (
-    <div>
-      <label htmlFor={label}>{label}</label>
-      <input type="time" id={label} value={value} onChange={(e) => onChange(e.target.value)} />
-    </div>
-  );
-};
-
+import { TimePicker } from "./time-picker";
 
 interface SmartItineraryProps {
   dateRange: DateRange | undefined;
@@ -49,11 +40,24 @@ export function SmartItinerary({ dateRange, cityName }: SmartItineraryProps) {
         title: "Arrival Day",
         icon: <Plane className="rotate-90 h-5 w-5" />,
         activities: [
-          "🛬 Airport arrival and transfer to city",
-          "🏨 Hotel/accommodation check-in",
-          ...(availableHours >= 2 ? ["🚶‍♂️ Light exploration of nearby area"] : []),
-          ...(availableHours >= 4 ? ["🍽️ Dinner at local restaurant"] : []),
-          "😴 Early rest to adjust to timezone"
+          {
+            type: "essential",
+            items: [
+              "🛬 Airport arrival and transfer to city",
+              "🏨 Hotel/accommodation check-in",
+              "😴 Rest and refresh"
+            ]
+          },
+          ...(availableHours >= 2 ? [{
+            type: "suggested",
+            title: "Evening Easy Activities",
+            items: [
+              "☕ Explore nearby cafes",
+              "🍽️ Dinner at local restaurant",
+              "🚶‍♂️ Casual stroll in neighborhood",
+              "🛍️ Visit local convenience stores"
+            ]
+          }] : [])
         ]
       };
     } else if (dayIndex === totalDays - 1) {
@@ -62,52 +66,91 @@ export function SmartItinerary({ dateRange, cityName }: SmartItineraryProps) {
         title: "Departure Day",
         icon: <Plane className="-rotate-90 h-5 w-5" />,
         activities: [
-          "🏨 Hotel check-out",
-          ...(availableHours >= 2 ? ["☕ Quick breakfast & last-minute shopping"] : []),
-          "🎒 Pack and prepare",
-          "🚕 Transfer to airport",
-          "🛫 Departure"
+          {
+            type: "essential",
+            items: [
+              "🏨 Hotel check-out",
+              "🎒 Pack and prepare",
+              "🚕 Transfer to airport",
+              "🛫 Departure"
+            ]
+          },
+          ...(availableHours >= 2 ? [{
+            type: "suggested",
+            title: "Morning Quick Visits",
+            items: [
+              "☕ Local breakfast spot",
+              "🛍️ Last-minute souvenirs",
+              "📸 Final city photos",
+              "🍵 Quick visit to nearby attractions"
+            ]
+          }] : [])
         ]
       };
     } else {
-      // Full day activities remain the same as before
-      const middleDayActivities = [
-        // Morning activities
-        [
-          "🌅 Sunrise city walk",
-          "☕ Local breakfast experience",
-          "🏃‍♂️ Morning fitness in city park"
-        ],
-        // Main activities
-        [
-          "🏛️ Visit historical landmarks",
-          "🎨 Explore local museums",
-          "🌿 Botanical gardens tour",
-          "🎭 Cultural district exploration"
-        ],
-        // Evening activities
-        [
-          "🌆 Sunset viewpoint visit",
-          "🍷 Wine tasting experience",
-          "🎵 Live music venue",
-          "🌙 Night market exploration"
-        ]
+      // Full day exploration grouped by themes
+      const cityThemes = [
+        {
+          type: "cultural",
+          title: "Cultural Exploration",
+          icon: "🏛️",
+          items: [
+            "Historical landmarks",
+            "Local museums",
+            "Art galleries",
+            "Traditional markets"
+          ]
+        },
+        {
+          type: "nature",
+          title: "Nature & Outdoors",
+          icon: "🌿",
+          items: [
+            "City parks",
+            "Botanical gardens",
+            "Scenic viewpoints",
+            "Walking trails"
+          ]
+        },
+        {
+          type: "entertainment",
+          title: "Entertainment & Lifestyle",
+          icon: "🎭",
+          items: [
+            "Shopping districts",
+            "Local performances",
+            "Food markets",
+            "Entertainment venues"
+          ]
+        },
+        {
+          type: "culinary",
+          title: "Food & Dining",
+          icon: "🍽️",
+          items: [
+            "Local restaurants",
+            "Street food spots",
+            "Cafes and dessert shops",
+            "Food tours"
+          ]
+        }
       ];
 
-      const morningActivity = middleDayActivities[0][dayIndex % middleDayActivities[0].length];
-      const mainActivity = middleDayActivities[1][dayIndex % middleDayActivities[1].length];
-      const eveningActivity = middleDayActivities[2][dayIndex % middleDayActivities[2].length];
+      // Select different themes based on the day number to ensure variety
+      const selectedThemes = [
+        cityThemes[dayIndex % cityThemes.length],
+        cityThemes[(dayIndex + 1) % cityThemes.length]
+      ];
 
       return {
         title: `Day ${dayIndex + 1}`,
         icon: dayIndex % 2 === 0 ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />,
-        activities: [
-          morningActivity,
-          "🚶‍♂️ City exploration",
-          mainActivity,
-          "🍽️ Local cuisine experience",
-          eveningActivity
-        ]
+        activities: selectedThemes.map(theme => ({
+          type: "suggested",
+          title: theme.title,
+          icon: theme.icon,
+          items: theme.items.map(item => `${theme.icon} ${item}`)
+        }))
       };
     }
   };
@@ -150,13 +193,24 @@ export function SmartItinerary({ dateRange, cityName }: SmartItineraryProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
-                  {dayPlan.activities.map((activity, i) => (
-                    <li key={i} className="text-sm">
-                      {activity}
-                    </li>
+                <div className="space-y-4">
+                  {dayPlan.activities.map((activityGroup, i) => (
+                    <div key={i} className="space-y-2">
+                      {activityGroup.title && (
+                        <h4 className="text-sm font-medium text-muted-foreground">
+                          {activityGroup.icon} {activityGroup.title}
+                        </h4>
+                      )}
+                      <ul className="space-y-2">
+                        {activityGroup.items.map((activity, j) => (
+                          <li key={j} className="text-sm">
+                            {activity}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </CardContent>
             </Card>
           );
