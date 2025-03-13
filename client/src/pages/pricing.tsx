@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { premiumFeatures } from "@shared/schema";
+import { usePremium } from "@/hooks/use-premium"; // Import the usePremium hook
+
 
 const currencies = {
   USD: { symbol: "$", rate: 1 },
@@ -12,11 +14,18 @@ const currencies = {
   GBP: { symbol: "£", rate: 0.79 },
   JPY: { symbol: "¥", rate: 149.50 },
   AUD: { symbol: "A$", rate: 1.53 },
+  // Add more currencies
+  SGD: { symbol: "S$", rate: 1.34 },
+  CAD: { symbol: "C$", rate: 1.35 },
+  CNY: { symbol: "¥", rate: 7.19 },
+  INR: { symbol: "₹", rate: 82.85 },
+  AED: { symbol: "د.إ", rate: 3.67 }
 };
 
 export default function PricingPage() {
   const [currency, setCurrency] = useState<keyof typeof currencies>("USD");
   const { user } = useAuth();
+  const { isPremium } = usePremium();
 
   const basePrice = 12;
   const price = Math.round(basePrice * currencies[currency].rate);
@@ -44,21 +53,25 @@ export default function PricingPage() {
   return (
     <div className="container max-w-6xl py-16">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Choose Your Travel Experience</h1>
+        <h1 className="text-4xl font-bold mb-4 gradient-text">Choose Your Travel Experience</h1>
         <p className="text-xl text-muted-foreground">
           Get access to premium features for just {currencies[currency].symbol}{price}/year
         </p>
       </div>
 
       <div className="flex justify-end mb-8">
-        <Select value={currency} onValueChange={(value: keyof typeof currencies) => setCurrency(value)}>
+        <Select 
+          value={currency} 
+          onValueChange={(value: keyof typeof currencies) => setCurrency(value)}
+          disabled={!isPremium}
+        >
           <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {Object.entries(currencies).map(([code]) => (
               <SelectItem key={code} value={code}>
-                {code}
+                {code} {currencies[code].symbol}
               </SelectItem>
             ))}
           </SelectContent>
@@ -67,7 +80,7 @@ export default function PricingPage() {
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Basic Plan */}
-        <Card>
+        <Card className="card-hover">
           <CardHeader>
             <CardTitle className="text-2xl">Basic Plan</CardTitle>
             <CardDescription>Free forever</CardDescription>
@@ -88,8 +101,8 @@ export default function PricingPage() {
         </Card>
 
         {/* Premium Plan */}
-        <Card className="relative overflow-hidden border-primary/20">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+        <Card className="relative overflow-hidden border-primary/20 card-hover">
+          <div className="absolute inset-x-0 top-0 h-1 gradient-border" />
           <CardHeader>
             <CardTitle className="text-2xl">
               Premium Plan
