@@ -39,14 +39,44 @@ export function SmartItinerary({ dateRange, cityName }: SmartItineraryProps) {
         ]
       };
     } else {
+      // Generate different activities for middle days to avoid repetition
+      const middleDayActivities = [
+        // Morning activities
+        [
+          "🌅 Sunrise city walk",
+          "☕ Local breakfast experience",
+          "🏃‍♂️ Morning fitness in city park"
+        ],
+        // Main activities
+        [
+          "🏛️ Visit historical landmarks",
+          "🎨 Explore local museums",
+          "🌿 Botanical gardens tour",
+          "🎭 Cultural district exploration"
+        ],
+        // Evening activities
+        [
+          "🌆 Sunset viewpoint visit",
+          "🍷 Wine tasting experience",
+          "🎵 Live music venue",
+          "🌙 Night market exploration"
+        ]
+      ];
+
+      // Pick different activities based on the day number to ensure variety
+      const morningActivity = middleDayActivities[0][dayIndex % middleDayActivities[0].length];
+      const mainActivity = middleDayActivities[1][dayIndex % middleDayActivities[1].length];
+      const eveningActivity = middleDayActivities[2][dayIndex % middleDayActivities[2].length];
+
       return {
         title: `Day ${dayIndex + 1}`,
         icon: dayIndex % 2 === 0 ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />,
         activities: [
-          "🌅 Morning activities",
-          "🏛️ Main attractions visit",
+          morningActivity,
+          "🚶‍♂️ City exploration",
+          mainActivity,
           "🍽️ Local cuisine experience",
-          "🌆 Evening entertainment"
+          eveningActivity
         ]
       };
     }
@@ -58,12 +88,12 @@ export function SmartItinerary({ dateRange, cityName }: SmartItineraryProps) {
         <Sunrise className="h-5 w-5" />
         <h3>Smart Itinerary for {cityName}</h3>
       </div>
-      
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: totalDays }).map((_, index) => {
           const currentDate = addDays(dateRange.from!, index);
           const dayPlan = generateDayPlan(index, totalDays);
-          
+
           return (
             <Card key={index} className="card-hover">
               <CardHeader className="flex flex-row items-center gap-2 pb-2">
@@ -88,7 +118,7 @@ export function SmartItinerary({ dateRange, cityName }: SmartItineraryProps) {
           );
         })}
       </div>
-      
+
       {isShortTrip && (
         <p className="text-sm text-muted-foreground italic">
           💡 Tip: For short trips, consider focusing on key attractions near your accommodation to maximize your time.
