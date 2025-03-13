@@ -36,7 +36,7 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
           <Button
             variant={"outline"}
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal h-12 sm:h-10 mobile-button",
               !dateRange && "text-muted-foreground"
             )}
           >
@@ -51,17 +51,21 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
                 format(dateRange.from, "LLL dd, y")
               )
             ) : (
-              <span>Pick your travel dates</span>
+              <span>✈️ Pick your travel dates</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent 
+          className="w-auto p-0 date-picker-container" 
+          align="start"
+        >
           <div className="space-y-3">
             <Calendar
               mode="range"
               selected={tempRange}
               onSelect={handleSelect}
-              numberOfMonths={2}
+              numberOfMonths={1}
+              className="mobile-scroll-container sm:block"
               initialFocus
             />
             <div className="flex justify-end gap-2 p-3 border-t">
@@ -71,10 +75,14 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
                   setTempRange(dateRange);
                   setIsOpen(false);
                 }}
+                className="mobile-button"
               >
                 Cancel
               </Button>
-              <Button onClick={handleConfirm}>
+              <Button 
+                onClick={handleConfirm}
+                className="mobile-button"
+              >
                 Confirm Dates
               </Button>
             </div>

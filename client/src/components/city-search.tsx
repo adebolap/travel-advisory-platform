@@ -57,11 +57,13 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
             // Delay hiding the dropdown to allow click events to fire
             setTimeout(() => setIsDropdownVisible(false), 200);
           }}
-          className="pl-14"
+          className="pl-14 h-12 sm:h-10 text-base sm:text-sm mobile-button"
         />
         {isDropdownVisible && cities && cities.length > 0 && (
           <div 
-            className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-y-auto animate-in fade-in-0 slide-in-from-top-2"
+            className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg 
+                     max-h-[50vh] sm:max-h-[300px] overflow-y-auto mobile-scroll-container
+                     animate-in fade-in-0 slide-in-from-top-2"
           >
             {cities.map((city: City) => (
               <button
@@ -70,10 +72,12 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
                   e.preventDefault(); // Prevent blur from firing immediately
                   handleCitySelect(city);
                 }}
-                className="w-full px-4 py-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors"
+                className="w-full px-4 py-3 sm:py-2 text-left hover:bg-accent 
+                         hover:text-accent-foreground transition-colors
+                         flex items-center gap-2 touch-manipulation"
               >
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2 min-h-[44px] sm:min-h-0">
+                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <div>
                     <div className="font-medium">{city.name}</div>
                     <div className="text-sm text-muted-foreground">🌍 {city.country}</div>

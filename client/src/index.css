@@ -58,4 +58,58 @@
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg hover:scale-[1.02];
   }
+
+  /* Mobile-first responsive card grid */
+  .card-grid {
+    @apply grid gap-4 sm:gap-6 md:gap-8;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  }
+
+  /* Mobile-optimized date picker container */
+  .date-picker-container {
+    @apply fixed inset-0 z-50 bg-background md:relative md:inset-auto md:bg-transparent;
+    @apply flex flex-col md:block;
+  }
+
+  /* Mobile-friendly scrollable content */
+  .mobile-scroll-container {
+    @apply overflow-y-auto overscroll-contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-scroll-container::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  .mobile-scroll-container::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .mobile-scroll-container::-webkit-scrollbar-thumb {
+    @apply bg-primary/10 rounded-full;
+  }
+
+  /* Smart stacking for mobile */
+  .stack-mobile {
+    @apply flex flex-col gap-4 sm:flex-row sm:gap-6;
+  }
+
+  /* Responsive padding for mobile */
+  .mobile-padding {
+    @apply p-4 sm:p-6 md:p-8;
+  }
+
+  /* Mobile-first buttons */
+  .mobile-button {
+    @apply min-h-[44px] px-4;
+    @apply touch-manipulation;
+  }
+
+  /* Mobile-optimized modal */
+  .mobile-modal {
+    @apply fixed inset-0 z-50 flex items-end justify-center sm:items-center;
+    @apply p-4 sm:p-6;
+  }
 }
