@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check } from "lucide-react";
+import { Check, Globe2, Crown, Sparkles, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { premiumFeatures } from "@shared/schema";
-import { usePremium } from "@/hooks/use-premium"; // Import the usePremium hook
-
+import { usePremium } from "@/hooks/use-premium";
 
 const currencies = {
   USD: { symbol: "$", rate: 1 },
@@ -14,7 +13,6 @@ const currencies = {
   GBP: { symbol: "£", rate: 0.79 },
   JPY: { symbol: "¥", rate: 149.50 },
   AUD: { symbol: "A$", rate: 1.53 },
-  // Add more currencies
   SGD: { symbol: "S$", rate: 1.34 },
   CAD: { symbol: "C$", rate: 1.35 },
   CNY: { symbol: "¥", rate: 7.19 },
@@ -53,7 +51,10 @@ export default function PricingPage() {
   return (
     <div className="container max-w-6xl py-16">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4 gradient-text">Choose Your Travel Experience</h1>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Globe2 className="h-8 w-8 text-primary animate-spin-slow" />
+          <h1 className="text-4xl font-bold gradient-text">Choose Your Travel Experience</h1>
+        </div>
         <p className="text-xl text-muted-foreground">
           Get access to premium features for just {currencies[currency].symbol}{price}/year
         </p>
@@ -66,6 +67,7 @@ export default function PricingPage() {
           disabled={!isPremium}
         >
           <SelectTrigger className="w-32">
+            <Globe2 className="h-4 w-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -82,8 +84,11 @@ export default function PricingPage() {
         {/* Basic Plan */}
         <Card className="card-hover">
           <CardHeader>
-            <CardTitle className="text-2xl">Basic Plan</CardTitle>
-            <CardDescription>Free forever</CardDescription>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-primary" />
+              <CardTitle className="text-2xl">Basic Plan</CardTitle>
+            </div>
+            <CardDescription>Free forever ⭐</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-4 mb-6">
@@ -104,13 +109,16 @@ export default function PricingPage() {
         <Card className="relative overflow-hidden border-primary/20 card-hover">
           <div className="absolute inset-x-0 top-0 h-1 gradient-border" />
           <CardHeader>
-            <CardTitle className="text-2xl">
-              Premium Plan
-              <span className="block text-xl text-muted-foreground">
-                {currencies[currency].symbol}{price}/year
-              </span>
-            </CardTitle>
-            <CardDescription>Unlock all premium features</CardDescription>
+            <div className="flex items-center gap-2">
+              <Crown className="h-6 w-6 text-primary animate-pulse" />
+              <CardTitle className="text-2xl">
+                Premium Plan
+                <span className="block text-xl text-muted-foreground">
+                  {currencies[currency].symbol}{price}/year
+                </span>
+              </CardTitle>
+            </div>
+            <CardDescription>✨ Unlock all premium features</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-4 mb-6">
@@ -127,9 +135,10 @@ export default function PricingPage() {
               </Button>
             ) : (
               <Button
-                className="w-full"
+                className="w-full group"
                 onClick={handleSubscribe}
               >
+                <CreditCard className="h-4 w-4 mr-2 transition-transform group-hover:scale-110" />
                 {user ? "Upgrade Now" : "Sign up to Subscribe"}
               </Button>
             )}

@@ -5,28 +5,28 @@ import { z } from "zod";
 // Add premium feature definitions
 export const premiumFeatures = {
   currencyConversion: {
-    basic: "View prices in USD only",
-    premium: "Convert prices to any currency with cute mascot guides"
+    basic: "💵 View prices in USD only",
+    premium: "🌎 Convert prices to any currency with cute mascot guides"
   },
   weatherForecast: {
-    basic: "Current weather only",
-    premium: "5-day detailed forecast with trend analysis"
+    basic: "🌤️ Current weather only",
+    premium: "🌈 5-day detailed forecast with trend analysis"
   },
   eventSearch: {
-    basic: "Basic event listings",
-    premium: "Advanced filtering and personalized event recommendations"
+    basic: "🎫 Basic event listings",
+    premium: "✨ Advanced filtering and personalized event recommendations"
   },
   itineraryPlanning: {
-    basic: "Simple trip planning",
-    premium: "AI-powered personalized itinerary generation"
+    basic: "📝 Simple trip planning",
+    premium: "🤖 AI-powered personalized itinerary generation"
   },
   attractions: {
-    basic: "View top attractions",
-    premium: "Detailed attraction insights with crowd prediction"
+    basic: "🏛️ View top attractions",
+    premium: "🎯 Detailed attraction insights with crowd prediction"
   },
   support: {
-    basic: "Standard support",
-    premium: "Priority customer support"
+    basic: "📧 Standard support",
+    premium: "👑 Priority customer support"
   }
 } as const;
 
