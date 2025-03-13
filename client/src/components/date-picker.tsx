@@ -56,19 +56,21 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-0 date-picker-container" 
+          className="w-auto p-0 shadow-lg bg-background border rounded-lg relative mobile-modal" 
           align="start"
+          sideOffset={8}
         >
-          <div className="space-y-3">
+          <div className="flex flex-col w-full max-h-[80vh] sm:max-h-none">
             <Calendar
               mode="range"
               selected={tempRange}
               onSelect={handleSelect}
               numberOfMonths={1}
-              className="mobile-scroll-container sm:block"
+              className="p-3 mobile-scroll-container"
               initialFocus
+              fromDate={new Date()} // Prevent selecting past dates
             />
-            <div className="flex justify-end gap-2 p-3 border-t">
+            <div className="flex justify-end gap-2 p-3 border-t bg-background sticky bottom-0">
               <Button
                 variant="outline"
                 onClick={() => {
