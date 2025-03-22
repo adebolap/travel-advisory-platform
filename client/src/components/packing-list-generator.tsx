@@ -11,6 +11,7 @@ interface PackingListGeneratorProps {
   travelStyle?: string;
   dateRange?: DateRange;
   currentWeather?: string;
+  activities?: string[]; // Added activities prop
 }
 
 interface PackingItem {
@@ -18,6 +19,7 @@ interface PackingItem {
   name: string;
   category: string;
   weather?: string;
+  activity?: string;
   essential: boolean;
   checked: boolean;
 }
@@ -55,6 +57,33 @@ const weatherBasedItems = {
   }
 };
 
+const activityBasedItems = {
+  "nature": {
+    clothing: ["Hiking pants", "Moisture-wicking shirts", "Light jacket"],
+    accessories: ["Backpack", "Walking poles", "Binoculars"],
+    footwear: ["Hiking boots", "Wool socks"],
+    essentials: ["First aid kit", "Trail map", "Compass"]
+  },
+  "culture": {
+    clothing: ["Smart casual outfits", "Modest clothing for temples", "Light layers"],
+    accessories: ["Day bag", "Camera", "Guide book"],
+    footwear: ["Comfortable walking shoes", "Dress shoes"],
+    essentials: ["Museum passes", "Translation app", "Cultural guide"]
+  },
+  "beach": {
+    clothing: ["Swimwear", "Cover-ups", "Beach dresses"],
+    accessories: ["Beach bag", "Sun umbrella", "Waterproof phone case"],
+    footwear: ["Flip-flops", "Water shoes"],
+    essentials: ["Beach towel", "Waterproof sunscreen", "After-sun lotion"]
+  },
+  "nightlife": {
+    clothing: ["Evening wear", "Smart casual outfits", "Light jacket"],
+    accessories: ["Small purse/wallet", "Evening bag"],
+    footwear: ["Dress shoes", "Comfortable heels"],
+    essentials: ["Evening makeup", "Going-out essentials"]
+  }
+};
+
 const categories = {
   clothing: "Clothing",
   accessories: "Accessories",
@@ -63,11 +92,12 @@ const categories = {
   documents: "Documents & Tech"
 };
 
-// Generate packing list based on weather and travel details
+// Generate packing list based on weather, activities, and travel style
 const generatePackingList = (
   city: string,
   weatherType: string = "Mild",
-  travelStyle: string = "Cultural"
+  travelStyle: string = "Cultural",
+  activities: string[] = []
 ): PackingItem[] => {
   const baseList: PackingItem[] = [
     { id: "passport", name: "Passport", category: "documents", essential: true, checked: false },
@@ -79,10 +109,11 @@ const generatePackingList = (
   // Add weather-specific items
   const weatherItems = weatherBasedItems[weatherType as keyof typeof weatherBasedItems] || weatherBasedItems.Mild;
 
+  // Add weather-based items
   Object.entries(weatherItems).forEach(([category, items]) => {
     items.forEach((item, index) => {
       baseList.push({
-        id: `${category}-${index}`,
+        id: `weather-${category}-${index}`,
         name: item,
         category,
         weather: weatherType,
@@ -92,18 +123,45 @@ const generatePackingList = (
     });
   });
 
+  // Add activity-specific items
+  activities.forEach(activity => {
+    const activityItems = activityBasedItems[activity as keyof typeof activityBasedItems];
+    if (activityItems) {
+      Object.entries(activityItems).forEach(([category, items]) => {
+        items.forEach((item, index) => {
+          // Check if item is already in the list to avoid duplicates
+          if (!baseList.some(existing => existing.name === item)) {
+            baseList.push({
+              id: `${activity}-${category}-${index}`,
+              name: item,
+              category,
+              activity,
+              essential: category === "essentials",
+              checked: false
+            });
+          }
+        });
+      });
+    }
+  });
+
   return baseList;
 };
 
-export default function PackingListGenerator({ city, travelStyle = "Cultural", dateRange, currentWeather = "Mild" }: PackingListGeneratorProps) {
+export default function PackingListGenerator({ 
+  city, 
+  travelStyle = "Cultural", 
+  dateRange, 
+  currentWeather = "Mild",
+  activities = []
+}: PackingListGeneratorProps) {
   const [packingList, setPackingList] = useState<PackingItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerate = () => {
     setIsGenerating(true);
-    // Simulate AI processing time
     setTimeout(() => {
-      const newList = generatePackingList(city, currentWeather, travelStyle);
+      const newList = generatePackingList(city, currentWeather, travelStyle, activities);
       setPackingList(newList);
       setIsGenerating(false);
     }, 1000);
@@ -145,14 +203,14 @@ export default function PackingListGenerator({ city, travelStyle = "Cultural", d
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Luggage className="h-5 w-5" />
-          Packing List Generator
+          Smart Packing List
         </CardTitle>
       </CardHeader>
       <CardContent>
         {packingList.length === 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Get a personalized packing list based on your destination, weather, and travel style.
+              Get a personalized packing list based on your destination, planned activities, and current weather.
             </p>
             <Button
               onClick={handleGenerate}
@@ -186,6 +244,11 @@ export default function PackingListGenerator({ city, travelStyle = "Cultural", d
                           </Badge>
                         )}
                         {item.weather && getWeatherIcon(item.weather)}
+                        {item.activity && (
+                          <Badge variant="outline" className="text-xs">
+                            {item.activity}
+                          </Badge>
+                        )}
                       </label>
                     </div>
                   ))}
