@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DateRange } from "react-day-picker";
+import { useState } from "react";
 
 interface DatePickerProps {
   dateRange: DateRange | undefined;
@@ -16,9 +17,22 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempRange, setTempRange] = useState<DateRange | undefined>(dateRange);
+
+  const handleConfirm = () => {
+    onDateRangeChange(tempRange);
+    setIsOpen(false);
+  };
+
+  const handleCancel = () => {
+    setTempRange(dateRange);
+    setIsOpen(false);
+  };
+
   return (
     <div className={cn("grid gap-2 relative")}>
-      <Popover>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
@@ -48,15 +62,32 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
           align="start"
           sideOffset={4}
         >
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={dateRange?.from}
-            selected={dateRange}
-            onSelect={onDateRangeChange}
-            numberOfMonths={1}
-            disabled={{ before: new Date() }}
-          />
+          <div className="p-3">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={tempRange}
+              onSelect={setTempRange}
+              numberOfMonths={1}
+              disabled={{ before: new Date() }}
+            />
+            <div className="flex justify-end gap-2 mt-4 border-t pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleConfirm}
+              >
+                Confirm Dates
+              </Button>
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
     </div>
