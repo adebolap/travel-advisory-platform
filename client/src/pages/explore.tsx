@@ -10,15 +10,12 @@ import ItineraryBuilder from "@/components/itinerary-builder";
 import CitySearch from "@/components/city-search";
 import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
-import { useAuth } from "@/hooks/use-auth";
-
 
 export default function Explore() {
   const [city, setCity] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [currentWeather, setCurrentWeather] = useState<string>("Mild");
-  const { user } = useAuth();
 
   // Mock interests for now - will be personalized later
   const interests = ["culture", "food", "nightlife", "shopping", "transport"];
@@ -32,10 +29,9 @@ export default function Explore() {
     setCurrentWeather(weather);
   };
 
-  const handleSearch = () => {
-    if (city) {
-      setSearchSubmitted(true);
-    }
+  const handleDateRangeChange = (newRange: DateRange | undefined) => {
+    console.log("Date range changed:", newRange); // Debug log
+    setDateRange(newRange);
   };
 
   return (
@@ -51,20 +47,13 @@ export default function Explore() {
                 <div className="flex-1">
                   <CitySearch onCitySelect={handleCitySelect} />
                 </div>
-                <Button 
-                  onClick={handleSearch}
-                  disabled={!city}
-                  variant="secondary"
-                >
-                  Update
-                </Button>
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Travel Dates</label>
               <DatePicker 
                 dateRange={dateRange}
-                onDateRangeChange={setDateRange}
+                onDateRangeChange={handleDateRangeChange}
               />
             </div>
           </div>
