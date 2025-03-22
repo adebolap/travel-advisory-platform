@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Search, MapPin, Loader2, Globe2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { formatCurrency, getLocalCurrency } from "@/lib/currency";
 
 interface CitySearchProps {
   onCitySelect: (city: string) => void;
@@ -12,6 +13,8 @@ interface City {
   name: string;
   description: string;
   country: string;
+  countryCode: string;
+  averageCost?: number; // Daily average cost in USD
 }
 
 export default function CitySearch({ onCitySelect }: CitySearchProps) {
@@ -35,6 +38,19 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
     setIsDropdownVisible(false);
   };
 
+  const renderCityCost = (city: City) => {
+    if (!city.averageCost) return null;
+
+    const localCurrency = getLocalCurrency(city.countryCode);
+    return (
+      <div className="text-sm text-muted-foreground">
+        💰 From {formatCurrency(city.averageCost, "USD")}
+        {localCurrency !== "USD" && ` (${formatCurrency(city.averageCost, localCurrency)})`}
+        <span className="text-xs"> per day</span>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="relative">
@@ -54,7 +70,6 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
           }}
           onFocus={() => setIsDropdownVisible(true)}
           onBlur={() => {
-            // Delay hiding the dropdown to allow click events to fire
             setTimeout(() => setIsDropdownVisible(false), 200);
           }}
           className="pl-14 h-12 sm:h-10 text-base sm:text-sm mobile-button"
@@ -69,7 +84,7 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
               <button
                 key={city.id}
                 onMouseDown={(e) => {
-                  e.preventDefault(); // Prevent blur from firing immediately
+                  e.preventDefault();
                   handleCitySelect(city);
                 }}
                 className="w-full px-4 py-3 sm:py-2 text-left hover:bg-accent 
@@ -80,7 +95,10 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
                   <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <div>
                     <div className="font-medium">{city.name}</div>
-                    <div className="text-sm text-muted-foreground">🌍 {city.country}</div>
+                    <div className="text-sm text-muted-foreground">
+                      🌍 {city.country}
+                      {renderCityCost(city)}
+                    </div>
                   </div>
                 </div>
               </button>
