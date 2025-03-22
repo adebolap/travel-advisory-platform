@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { DollarSign, Plane, Bed, Utensils, MapPin } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { differenceInDays } from "date-fns";
+import { formatCurrency } from "@/lib/currency";
 
 interface BudgetEstimatorProps {
   city: string;
@@ -12,7 +13,7 @@ interface BudgetEstimatorProps {
   dateRange?: DateRange;
 }
 
-// Real-world cost estimates based on city tiers and local currencies
+// Leave cityBaseCosts unchanged - it's already well structured
 const cityBaseCosts: Record<string, {
   accommodation: number,
   food: number,
@@ -22,91 +23,91 @@ const cityBaseCosts: Record<string, {
   symbol: string,
   exchangeRate?: number // Optional exchange rate to USD for comparison
 }> = {
-  "London": { 
-    accommodation: 150, 
-    food: 40, 
-    activities: 30, 
+  "London": {
+    accommodation: 150,
+    food: 40,
+    activities: 30,
     transport: 15,
     currency: "GBP",
     symbol: "£",
     exchangeRate: 1.27
   },
-  "Paris": { 
-    accommodation: 130, 
-    food: 35, 
-    activities: 25, 
+  "Paris": {
+    accommodation: 130,
+    food: 35,
+    activities: 25,
     transport: 12,
     currency: "EUR",
     symbol: "€",
     exchangeRate: 1.08
   },
-  "New York": { 
-    accommodation: 200, 
-    food: 50, 
-    activities: 40, 
+  "New York": {
+    accommodation: 200,
+    food: 50,
+    activities: 40,
     transport: 20,
     currency: "USD",
     symbol: "$",
     exchangeRate: 1
   },
-  "Tokyo": { 
-    accommodation: 15000, 
-    food: 4000, 
-    activities: 3000, 
+  "Tokyo": {
+    accommodation: 15000,
+    food: 4000,
+    activities: 3000,
     transport: 1000,
     currency: "JPY",
     symbol: "¥",
     exchangeRate: 0.0067
   },
-  "Sydney": { 
-    accommodation: 200, 
-    food: 50, 
-    activities: 40, 
+  "Sydney": {
+    accommodation: 200,
+    food: 50,
+    activities: 40,
     transport: 15,
     currency: "AUD",
     symbol: "A$",
     exchangeRate: 0.65
   },
-  "Dubai": { 
-    accommodation: 500, 
-    food: 150, 
-    activities: 200, 
+  "Dubai": {
+    accommodation: 500,
+    food: 150,
+    activities: 200,
     transport: 50,
     currency: "AED",
     symbol: "د.إ",
     exchangeRate: 0.27
   },
-  "Singapore": { 
-    accommodation: 200, 
-    food: 30, 
-    activities: 40, 
+  "Singapore": {
+    accommodation: 200,
+    food: 30,
+    activities: 40,
     transport: 10,
     currency: "SGD",
     symbol: "S$",
     exchangeRate: 0.74
   },
-  "Amsterdam": { 
-    accommodation: 120, 
-    food: 35, 
-    activities: 25, 
+  "Amsterdam": {
+    accommodation: 120,
+    food: 35,
+    activities: 25,
     transport: 10,
     currency: "EUR",
     symbol: "€",
     exchangeRate: 1.08
   },
-  "Barcelona": { 
-    accommodation: 100, 
-    food: 30, 
-    activities: 20, 
+  "Barcelona": {
+    accommodation: 100,
+    food: 30,
+    activities: 20,
     transport: 8,
     currency: "EUR",
     symbol: "€",
     exchangeRate: 1.08
   },
-  "Berlin": { 
-    accommodation: 90, 
-    food: 25, 
-    activities: 20, 
+  "Berlin": {
+    accommodation: 90,
+    food: 25,
+    activities: 20,
     transport: 8,
     currency: "EUR",
     symbol: "€",
@@ -178,16 +179,6 @@ const travelStyleMultipliers: Record<string, number> = {
   "Family": 1.4     // Family-friendly hotels, kid-friendly activities
 };
 
-// Format currency based on locale and currency code
-function formatCurrency(amount: number, currency: string, symbol: string): string {
-  // Special formatting for currencies with large denominations
-  if (currency === 'JPY' || currency === 'KRW') {
-    return `${symbol}${Math.round(amount).toLocaleString()}`;
-  }
-
-  // Format with 2 decimal places for most currencies
-  return `${symbol}${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-}
 
 export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRange }: BudgetEstimatorProps) {
   const [days, setDays] = useState(7);
@@ -216,6 +207,10 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
 
   const totalCost = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
   const totalUSD = baseCosts.exchangeRate ? (totalCost * baseCosts.exchangeRate) : totalCost;
+
+  const formatLocalCurrency = (amount: number) => {
+    return formatCurrency(amount, baseCosts.currency, baseCosts.symbol);
+  };
 
   return (
     <Card className="w-full">
@@ -247,38 +242,66 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
                 <Bed className="h-4 w-4 text-muted-foreground" />
                 <span>Accommodation</span>
               </div>
-              <span className="font-medium">{formatCurrency(costs.accommodation, baseCosts.currency, baseCosts.symbol)}</span>
+              <div className="text-right">
+                <div className="font-medium">{formatLocalCurrency(costs.accommodation)}</div>
+                {baseCosts.currency !== 'USD' && (
+                  <div className="text-sm text-muted-foreground">
+                    ≈ ${Math.round(costs.accommodation * (baseCosts.exchangeRate || 1))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Utensils className="h-4 w-4 text-muted-foreground" />
                 <span>Food & Drinks</span>
               </div>
-              <span className="font-medium">{formatCurrency(costs.food, baseCosts.currency, baseCosts.symbol)}</span>
+              <div className="text-right">
+                <div className="font-medium">{formatLocalCurrency(costs.food)}</div>
+                {baseCosts.currency !== 'USD' && (
+                  <div className="text-sm text-muted-foreground">
+                    ≈ ${Math.round(costs.food * (baseCosts.exchangeRate || 1))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <span>Activities</span>
               </div>
-              <span className="font-medium">{formatCurrency(costs.activities, baseCosts.currency, baseCosts.symbol)}</span>
+              <div className="text-right">
+                <div className="font-medium">{formatLocalCurrency(costs.activities)}</div>
+                {baseCosts.currency !== 'USD' && (
+                  <div className="text-sm text-muted-foreground">
+                    ≈ ${Math.round(costs.activities * (baseCosts.exchangeRate || 1))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Plane className="h-4 w-4 text-muted-foreground" />
                 <span>Local Transport</span>
               </div>
-              <span className="font-medium">{formatCurrency(costs.transport, baseCosts.currency, baseCosts.symbol)}</span>
+              <div className="text-right">
+                <div className="font-medium">{formatLocalCurrency(costs.transport)}</div>
+                {baseCosts.currency !== 'USD' && (
+                  <div className="text-sm text-muted-foreground">
+                    ≈ ${Math.round(costs.transport * (baseCosts.exchangeRate || 1))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="pt-2 mt-2 border-t">
               <div className="flex items-center justify-between font-semibold">
                 <span>Estimated Total</span>
                 <div className="text-right">
-                  <div className="text-lg">{formatCurrency(totalCost, baseCosts.currency, baseCosts.symbol)}</div>
+                  <div className="text-lg">{formatLocalCurrency(totalCost)}</div>
                   {baseCosts.currency !== 'USD' && (
                     <div className="text-sm text-muted-foreground">
-                      ≈ ${Math.round(totalUSD).toLocaleString()} USD
+                      ≈ ${Math.round(totalUSD)} USD
                     </div>
                   )}
                 </div>
