@@ -28,11 +28,6 @@ export default function Explore() {
     setCurrentWeather(weather);
   };
 
-  const handleDateChange = (range: DateRange | undefined) => {
-    console.log("New date range selected:", range);
-    setDateRange(range);
-  };
-
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
       <h1 className="text-3xl sm:text-4xl font-bold mb-4 sm:mb-8 gradient-text">Explore Destinations</h1>
@@ -48,7 +43,7 @@ export default function Explore() {
               <label className="text-sm font-medium">Travel Dates</label>
               <DatePicker 
                 dateRange={dateRange}
-                onDateRangeChange={handleDateChange}
+                onDateRangeChange={setDateRange}
               />
             </div>
           </div>
