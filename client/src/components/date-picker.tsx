@@ -9,7 +9,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DateRange } from "react-day-picker";
-import { useState } from "react";
 
 interface DatePickerProps {
   dateRange: DateRange | undefined;
@@ -17,16 +16,14 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
   return (
     <div className="grid gap-2">
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal h-12 sm:h-10 mobile-button",
+              "w-full justify-start text-left font-normal",
               !dateRange && "text-muted-foreground"
             )}
           >
@@ -46,9 +43,8 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-0 shadow-lg bg-background border rounded-lg" 
+          className="w-auto p-0" 
           align="start"
-          side="bottom"
         >
           <Calendar
             initialFocus
@@ -58,7 +54,6 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
             onSelect={onDateRangeChange}
             numberOfMonths={1}
             disabled={{ before: new Date() }}
-            className="p-3"
           />
         </PopoverContent>
       </Popover>

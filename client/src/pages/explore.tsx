@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
 import TravelSuggestions from "@/components/travel-suggestions";
 import BudgetEstimator from "@/components/budget-estimator";
@@ -22,16 +21,16 @@ export default function Explore() {
 
   const handleCitySelect = (selectedCity: string) => {
     setCity(selectedCity);
-    setSearchSubmitted(true); // Automatically trigger search when city is selected
+    setSearchSubmitted(true);
   };
 
   const handleWeatherUpdate = (weather: string) => {
     setCurrentWeather(weather);
   };
 
-  const handleDateRangeChange = (newRange: DateRange | undefined) => {
-    console.log("Date range changed:", newRange); // Debug log
-    setDateRange(newRange);
+  const handleDateChange = (range: DateRange | undefined) => {
+    console.log("Setting date range:", range); // Debug log
+    setDateRange(range);
   };
 
   return (
@@ -43,17 +42,13 @@ export default function Explore() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Destination</label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <CitySearch onCitySelect={handleCitySelect} />
-                </div>
-              </div>
+              <CitySearch onCitySelect={handleCitySelect} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Travel Dates</label>
               <DatePicker 
                 dateRange={dateRange}
-                onDateRangeChange={handleDateRangeChange}
+                onDateRangeChange={handleDateChange}
               />
             </div>
           </div>
