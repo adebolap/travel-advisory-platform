@@ -101,6 +101,29 @@ export const accommodationEnum = [
   "BnB",
 ] as const;
 
+export const trips = pgTable("trips", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  city: text("city").notNull(),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  title: text("title").notNull(),
+  description: text("description"),
+  events: json("events").notNull(), // Store selected events
+  activities: text("activities").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
+  isShared: boolean("is_shared").default(false),
+});
+
+// Add insert schema for trips
+export const insertTripSchema = createInsertSchema(trips)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  });
+
 // Extended schemas for input validation
 export const insertUserSchema = createInsertSchema(users)
   .extend({
@@ -138,6 +161,8 @@ export type SearchPreference = typeof searchPreferences.$inferSelect;
 export type InsertSearchPreference = z.infer<typeof searchPreferenceSchema>;
 export type TravelQuizResponse = typeof travelQuizResponses.$inferSelect;
 export type InsertTravelQuizResponse = z.infer<typeof travelQuizResponseSchema>;
+export type Trip = typeof trips.$inferSelect;
+export type InsertTrip = z.infer<typeof insertTripSchema>;
 
 // Travel quiz question types
 export interface TravelQuizQuestion {

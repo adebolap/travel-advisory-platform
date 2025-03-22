@@ -367,6 +367,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(preferences);
   });
 
+  // Trip management routes
+  apiRouter.post("/api/trips", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const tripData = {
+        ...req.body,
+        userId: req.user.id
+      };
+      const trip = await storage.createTrip(tripData);
+      res.status(201).json(trip);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  apiRouter.get("/api/trips", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const trips = await storage.getUserTrips(req.user.id);
+      res.json(trips);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  apiRouter.get("/api/trips/:tripId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const trip = await storage.getTripById(parseInt(req.params.tripId));
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      if (trip.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      res.json(trip);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  apiRouter.patch("/api/trips/:tripId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const trip = await storage.getTripById(parseInt(req.params.tripId));
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      if (trip.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const updatedTrip = await storage.updateTrip(parseInt(req.params.tripId), req.body);
+      res.json(updatedTrip);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  apiRouter.delete("/api/trips/:tripId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const trip = await storage.getTripById(parseInt(req.params.tripId));
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      if (trip.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      await storage.deleteTrip(parseInt(req.params.tripId));
+      res.sendStatus(204);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.use("/", apiRouter);
 
   const httpServer = createServer(app);

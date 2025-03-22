@@ -2,6 +2,7 @@ import { users, searchPreferences, type User, type InsertUser, type SearchPrefer
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { travelQuizResponses, type TravelQuizResponse, type InsertTravelQuizResponse } from "@shared/schema";
+import { trips, type Trip, type InsertTrip } from "@shared/schema";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -15,6 +16,11 @@ export interface IStorage {
   createTravelQuizResponse(response: InsertTravelQuizResponse): Promise<TravelQuizResponse>;
   updateUserPreferences(userId: number, preferences: Partial<User>): Promise<User>;
   updateSubscriptionStatus(userId: number, isSubscribed: boolean, endDate?: Date): Promise<User>;
+  createTrip(trip: InsertTrip): Promise<Trip>;
+  getUserTrips(userId: number): Promise<Trip[]>;
+  getTripById(tripId: number): Promise<Trip | undefined>;
+  updateTrip(tripId: number, trip: Partial<Trip>): Promise<Trip>;
+  deleteTrip(tripId: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -24,6 +30,8 @@ export class MemStorage implements IStorage {
   private currentUserId: number;
   private currentPrefId: number;
   private currentQuizId: number;
+  private trips: Map<number, Trip>;
+  private currentTripId: number;
   public sessionStore: session.Store;
 
   constructor() {
@@ -33,6 +41,8 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentPrefId = 1;
     this.currentQuizId = 1;
+    this.trips = new Map();
+    this.currentTripId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
     });
@@ -134,6 +144,46 @@ export class MemStorage implements IStorage {
     };
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+
+  async createTrip(insertTrip: InsertTrip): Promise<Trip> {
+    const id = this.currentTripId++;
+    const trip: Trip = {
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...insertTrip,
+    };
+    this.trips.set(id, trip);
+    return trip;
+  }
+
+  async getUserTrips(userId: number): Promise<Trip[]> {
+    return Array.from(this.trips.values()).filter(
+      (trip) => trip.userId === userId
+    );
+  }
+
+  async getTripById(tripId: number): Promise<Trip | undefined> {
+    return this.trips.get(tripId);
+  }
+
+  async updateTrip(tripId: number, updates: Partial<Trip>): Promise<Trip> {
+    const existingTrip = await this.getTripById(tripId);
+    if (!existingTrip) {
+      throw new Error('Trip not found');
+    }
+    const updatedTrip = {
+      ...existingTrip,
+      ...updates,
+      updatedAt: new Date()
+    };
+    this.trips.set(tripId, updatedTrip);
+    return updatedTrip;
+  }
+
+  async deleteTrip(tripId: number): Promise<void> {
+    this.trips.delete(tripId);
   }
 }
 
