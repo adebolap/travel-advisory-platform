@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Righteous&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,20 +12,20 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 246 90% 64%;
+    --primary: 280 85% 60%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
+    --accent: 280 85% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 246 90% 64%;
-    --radius: 0.75rem;
+    --ring: 280 85% 60%;
+    --radius: 1rem;
   }
 
   * {
@@ -33,12 +33,12 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased font-sans;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Space Grotesk', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Righteous', cursive;
   }
 }
 
@@ -48,34 +48,46 @@
   }
 
   .gradient-border {
-    @apply bg-gradient-to-r from-primary via-primary/80 to-primary border-transparent;
+    @apply bg-gradient-to-r from-primary via-purple-500 to-pink-500 border-transparent;
   }
 
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-pink-500;
   }
 
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:scale-[1.02];
+    @apply transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:shadow-primary/20;
   }
 
-  /* Mobile-first responsive card grid */
+  .funky-card {
+    @apply relative overflow-hidden rounded-xl bg-white;
+    &::before {
+      content: '';
+      @apply absolute inset-0 bg-gradient-to-r from-primary/20 via-purple-500/20 to-pink-500/20 opacity-0 transition-opacity;
+    }
+    &:hover::before {
+      @apply opacity-100;
+    }
+  }
+
+  .premium-feature {
+    @apply relative overflow-hidden;
+    &::after {
+      content: '✨ Premium';
+      @apply absolute top-2 right-2 text-xs font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 
+             text-white px-2 py-1 rounded-full opacity-90;
+    }
+  }
+
   .card-grid {
     @apply grid gap-4 sm:gap-6 md:gap-8;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   }
 
-  /* Mobile-optimized date picker container */
-  .date-picker-container {
-    @apply fixed inset-0 z-50 bg-background md:relative md:inset-auto md:bg-transparent;
-    @apply flex flex-col md:block;
-  }
-
-  /* Mobile-friendly scrollable content */
   .mobile-scroll-container {
     @apply overflow-y-auto overscroll-contain;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+    scrollbar-color: theme('colors.primary.DEFAULT') transparent;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -88,26 +100,22 @@
   }
 
   .mobile-scroll-container::-webkit-scrollbar-thumb {
-    @apply bg-primary/10 rounded-full;
+    @apply bg-primary/20 rounded-full hover:bg-primary/30;
   }
 
-  /* Smart stacking for mobile */
   .stack-mobile {
     @apply flex flex-col gap-4 sm:flex-row sm:gap-6;
   }
 
-  /* Responsive padding for mobile */
   .mobile-padding {
     @apply p-4 sm:p-6 md:p-8;
   }
 
-  /* Mobile-first buttons */
   .mobile-button {
     @apply min-h-[44px] px-4;
     @apply touch-manipulation;
   }
 
-  /* Mobile-optimized modal */
   .mobile-modal {
     @apply fixed inset-0 z-50 flex items-end justify-center sm:items-center;
     @apply p-4 sm:p-6;

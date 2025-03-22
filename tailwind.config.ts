@@ -6,8 +6,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        heading: ['Poppins', 'sans-serif'],
+        sans: ['Space Grotesk', 'sans-serif'],
+        heading: ['Righteous', 'cursive'],
+        display: ['Outfit', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -72,12 +73,17 @@ export default {
             "background-position": "right center",
           },
         },
+        "sparkle": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "spin-slow": "spin-slow 3s linear infinite",
         "gradient-shift": "gradient-shift 8s ease infinite",
+        "sparkle": "sparkle 2s ease-in-out infinite",
       },
     },
   },
