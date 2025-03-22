@@ -11,7 +11,7 @@ import CitySearch from "@/components/city-search";
 import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
 import { useAuth } from "@/hooks/use-auth";
-import { Link } from "wouter";
+
 
 export default function Explore() {
   const [city, setCity] = useState("");
@@ -83,51 +83,29 @@ export default function Explore() {
                 city={city}
                 interests={interests}
               />
-              <div className={!user ? "premium-feature" : ""}>
-                <EventList 
-                  city={city}
-                  dateRange={dateRange}
-                />
-              </div>
-              <div className={!user ? "premium-feature" : ""}>
-                <ItineraryBuilder
-                  city={city}
-                  dateRange={dateRange}
-                />
-              </div>
+              <EventList 
+                city={city}
+                dateRange={dateRange}
+              />
+              <ItineraryBuilder
+                city={city}
+                dateRange={dateRange}
+              />
             </div>
           </div>
           <div className="space-y-4 sm:space-y-8">
-            <div className={!user ? "premium-feature" : ""}>
-              <BudgetEstimator 
-                city={city} 
-                dateRange={dateRange}
-              />
-            </div>
-            <div className={!user ? "premium-feature" : ""}>
-              <PackingListGenerator
-                city={city}
-                dateRange={dateRange}
-                currentWeather={currentWeather}
-                activities={interests}
-              />
-            </div>
+            <BudgetEstimator 
+              city={city} 
+              dateRange={dateRange}
+            />
+            <PackingListGenerator
+              city={city}
+              dateRange={dateRange}
+              currentWeather={currentWeather}
+              activities={interests}
+            />
           </div>
         </div>
-      )}
-
-      {!user && searchSubmitted && (
-        <Card className="mt-8 p-6 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5">
-          <div className="text-center space-y-4">
-            <h3 className="text-xl font-bold gradient-text">✨ Unlock Premium Features</h3>
-            <p className="text-muted-foreground">
-              Sign up to access personalized itineraries, event listings, smart packing lists, and detailed budget estimates!
-            </p>
-            <Button asChild className="gradient-border">
-              <Link href="/auth">Get Started</Link>
-            </Button>
-          </div>
-        </Card>
       )}
     </div>
   );
