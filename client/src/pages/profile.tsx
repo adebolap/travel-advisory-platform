@@ -9,16 +9,33 @@ import { Link } from "wouter";
 
 export default function Profile() {
   const { user } = useAuth();
-  
+
   const { data: trips } = useQuery({
     queryKey: ["/api/trips"],
+    enabled: !!user, // Only fetch trips if user is logged in
   });
 
+  // Show login/signup prompt for non-authenticated users
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Card className="p-6 text-center">
-          <p className="text-muted-foreground">Please log in to view your profile.</p>
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Welcome to Travel Companion</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-center text-muted-foreground">
+              Sign in to access your personalized travel profile, save trips, and get customized recommendations.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Button asChild variant="outline">
+                <Link href="/auth?mode=login">Sign In</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/auth?mode=register">Create Account</Link>
+              </Button>
+            </div>
+          </CardContent>
         </Card>
       </div>
     );

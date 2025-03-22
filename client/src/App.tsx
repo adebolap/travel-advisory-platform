@@ -37,10 +37,10 @@ export default function App() {
             <Switch>
               <Route path="/auth" component={Auth} />
               <Route path="/pricing" component={Pricing} />
+              <Route path="/profile" component={Profile} />
               <ProtectedRoute path="/" component={Home} />
               <ProtectedRoute path="/explore" component={Explore} />
               <ProtectedRoute path="/events" component={Events} />
-              <ProtectedRoute path="/profile" component={Profile} />
               <ProtectedRoute path="/quiz" component={TravelQuiz} />
               <Route component={NotFound} />
             </Switch>
