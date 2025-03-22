@@ -7,6 +7,7 @@ import { format, parseISO, isWithinInterval } from "date-fns";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
+import CalendarIntegration from "./calendar-integration";
 
 interface Event {
   id: number;
@@ -67,7 +68,7 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
     if (!events) return new Map<string, Event[]>();
 
     // Sort events by date first
-    const sortedEvents = [...events].sort((a, b) => 
+    const sortedEvents = [...events].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
@@ -130,7 +131,7 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
         const dateEvents = groupedEvents.get(dateKey)!;
         return (
           <Card key={dateKey} className="overflow-hidden">
-            <CardHeader 
+            <CardHeader
               className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer"
               onClick={() => toggleDateExpansion(dateKey)}
             >
@@ -184,15 +185,26 @@ export default function EventList({ city, dateRange, compact = false }: EventLis
                             {event.price}
                           </div>
                         </div>
-                        <div className="mt-2">
-                          <a
-                            href={event.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline text-sm"
-                          >
-                            View Details
-                          </a>
+                        <div className="mt-4 space-y-2">
+                          <div>
+                            <a
+                              href={event.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline text-sm"
+                            >
+                              View Details
+                            </a>
+                          </div>
+                          <CalendarIntegration
+                            event={{
+                              id: event.id,
+                              name: event.name,
+                              description: event.description,
+                              date: event.date,
+                              location: `${event.venue}, ${event.location}`,
+                            }}
+                          />
                         </div>
                       </div>
                     </div>
