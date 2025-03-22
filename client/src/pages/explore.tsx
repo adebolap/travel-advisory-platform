@@ -12,7 +12,7 @@ import EventList from "@/components/event-list";
 
 export default function Explore() {
   const [city, setCity] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [currentWeather, setCurrentWeather] = useState<string>("Mild");
 
@@ -27,6 +27,11 @@ export default function Explore() {
     setCurrentWeather(weather);
   };
 
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    console.log("Date range changed:", range); 
+    setDateRange(range);
+  };
+
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
       <h1 className="text-3xl sm:text-4xl font-bold mb-4 sm:mb-8 gradient-text">Explore Destinations</h1>
@@ -39,10 +44,10 @@ export default function Explore() {
               <CitySearch onCitySelect={handleCitySelect} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Event Dates</label>
+              <label className="text-sm font-medium">Travel Dates</label>
               <DatePicker 
                 dateRange={dateRange}
-                onDateRangeChange={setDateRange}
+                onDateRangeChange={handleDateRangeChange}
               />
             </div>
           </div>

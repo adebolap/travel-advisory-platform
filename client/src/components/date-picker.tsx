@@ -21,6 +21,7 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
       <Popover>
         <PopoverTrigger asChild>
           <Button
+            id="date"
             variant={"outline"}
             className={cn(
               "w-full justify-start text-left font-normal",
@@ -42,7 +43,7 @@ export function DatePicker({ dateRange, onDateRangeChange }: DatePickerProps) {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0" align="center">
           <Calendar
             initialFocus
             mode="range"
