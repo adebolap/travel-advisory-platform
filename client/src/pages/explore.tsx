@@ -12,11 +12,10 @@ import EventList from "@/components/event-list";
 
 export default function Explore() {
   const [city, setCity] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange>();
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [currentWeather, setCurrentWeather] = useState<string>("Mild");
 
-  // Mock interests for now - will be personalized later
   const interests = ["culture", "food", "nightlife", "shopping", "transport"];
 
   const handleCitySelect = (selectedCity: string) => {
@@ -36,11 +35,11 @@ export default function Explore() {
         <CardContent className="p-4 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Destination</label>
+              <label className="text-sm font-medium">City</label>
               <CitySearch onCitySelect={handleCitySelect} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Travel Dates</label>
+              <label className="text-sm font-medium">Event Dates</label>
               <DatePicker 
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
