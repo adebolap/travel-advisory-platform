@@ -3,6 +3,27 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { FaPlane, FaCompass, FaMap, FaCalendarAlt, FaSuitcase } from "react-icons/fa";
 
+const cityShowcases = [
+  {
+    city: 'Paris',
+    landmark: 'Eiffel Tower',
+    image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=2000&auto=format',
+    description: 'The City of Light awaits with its iconic architecture and timeless charm.'
+  },
+  {
+    city: 'Tokyo',
+    landmark: 'Senso-ji Temple',
+    image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=2000&auto=format',
+    description: 'Where tradition meets innovation in the heart of Japan.'
+  },
+  {
+    city: 'New York',
+    landmark: 'Statue of Liberty',
+    image: 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?q=80&w=2000&auto=format',
+    description: 'The city that never sleeps, full of endless possibilities.'
+  }
+];
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
@@ -81,16 +102,19 @@ export default function Home() {
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold mb-8 gradient-text">Popular Destinations</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {['Paris', 'Tokyo', 'New York'].map((city) => (
-              <div key={city} className="relative group overflow-hidden rounded-xl">
+            {cityShowcases.map((showcase) => (
+              <div key={showcase.city} className="relative group overflow-hidden rounded-xl">
                 <div 
-                  className="aspect-[4/3] bg-cover bg-center"
+                  className="aspect-[4/3] bg-cover bg-center transform transition-transform duration-500 group-hover:scale-110"
                   style={{
-                    backgroundImage: `url('https://source.unsplash.com/featured/?${city},landmark')`
+                    backgroundImage: `url('${showcase.image}')`
                   }}
                 />
-                <div className="absolute inset-0 bg-black/40 flex items-end p-6 transition-opacity group-hover:bg-black/50">
-                  <h3 className="text-2xl font-bold text-white">{city}</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-6 transition-opacity">
+                  <h3 className="text-2xl font-bold text-white mb-2">{showcase.city}</h3>
+                  <p className="text-white/90 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {showcase.description}
+                  </p>
                 </div>
               </div>
             ))}
