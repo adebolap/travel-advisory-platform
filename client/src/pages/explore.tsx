@@ -29,7 +29,7 @@ export default function Explore() {
   };
 
   const handleDateChange = (range: DateRange | undefined) => {
-    console.log("Setting date range:", range); // Debug log
+    console.log("New date range selected:", range);
     setDateRange(range);
   };
 
