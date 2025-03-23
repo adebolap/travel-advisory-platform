@@ -78,9 +78,13 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
       {isDropdownVisible && cities && cities.length > 0 && (
         <div 
           className="absolute left-0 right-0 z-50 mt-1 bg-background border rounded-lg shadow-lg 
-                   max-h-[60vh] sm:max-h-[400px] overflow-y-auto 
+                   max-h-[80vh] overflow-y-auto 
                    animate-in fade-in-0 slide-in-from-top-2
                    overscroll-contain w-full"
+          style={{
+            minHeight: '300px',
+            maxHeight: 'calc(100vh - 200px)'
+          }}
         >
           {cities.slice(0, 10).map((city: City) => (
             <button
@@ -89,15 +93,16 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
                 e.preventDefault();
                 handleCitySelect(city);
               }}
-              className="w-full px-4 py-3 text-left hover:bg-accent 
+              className="w-full px-4 py-4 text-left hover:bg-accent 
                        hover:text-accent-foreground transition-colors
                        flex items-center gap-2 touch-manipulation
-                       first:rounded-t-lg last:rounded-b-lg"
+                       first:rounded-t-lg last:rounded-b-lg
+                       border-b border-border last:border-0"
             >
               <div className="flex items-center gap-3 min-h-[44px] w-full">
                 <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{city.name}</div>
+                  <div className="font-medium text-lg truncate">{city.name}</div>
                   <div className="text-sm text-muted-foreground truncate">
                     🌍 {city.country}
                   </div>
