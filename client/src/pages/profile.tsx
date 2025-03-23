@@ -15,32 +15,6 @@ export default function Profile() {
     enabled: !!user, // Only fetch trips if user is logged in
   });
 
-  // Show login/signup prompt for non-authenticated users
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Welcome to Travel Companion</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-center text-muted-foreground">
-              Sign in to access your personalized travel profile, save trips, and get customized recommendations.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button asChild variant="outline">
-                <Link href="/auth?mode=login">Sign In</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/auth?mode=register">Create Account</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid md:grid-cols-3 gap-8">
@@ -51,33 +25,49 @@ export default function Profile() {
               <CardTitle>Profile</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium">Username</h3>
-                  <p className="text-muted-foreground">{user.username}</p>
-                </div>
-                {user.travelStyle && (
+              {user ? (
+                <div className="space-y-4">
                   <div>
-                    <h3 className="font-medium">Travel Style</h3>
-                    <p className="text-muted-foreground capitalize">{user.travelStyle}</p>
+                    <h3 className="font-medium">Username</h3>
+                    <p className="text-muted-foreground">{user.username}</p>
                   </div>
-                )}
-                {user.preferredActivities && user.preferredActivities.length > 0 && (
-                  <div>
-                    <h3 className="font-medium">Preferred Activities</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {user.preferredActivities.map((activity) => (
-                        <span key={activity} className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm">
-                          {activity}
-                        </span>
-                      ))}
+                  {user.travelStyle && (
+                    <div>
+                      <h3 className="font-medium">Travel Style</h3>
+                      <p className="text-muted-foreground capitalize">{user.travelStyle}</p>
                     </div>
+                  )}
+                  {user.preferredActivities && user.preferredActivities.length > 0 && (
+                    <div>
+                      <h3 className="font-medium">Preferred Activities</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {user.preferredActivities.map((activity) => (
+                          <span key={activity} className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm">
+                            {activity}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <Button className="w-full" variant="outline" asChild>
+                    <Link href="/quiz">Complete Travel Quiz</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Create an account to personalize your travel experience and save your preferences.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                      <Link href="/auth?mode=login">Sign In</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/auth?mode=register">Register</Link>
+                    </Button>
                   </div>
-                )}
-                <Button className="w-full" variant="outline" asChild>
-                  <Link href="/travel-quiz">Complete Travel Quiz</Link>
-                </Button>
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -89,7 +79,14 @@ export default function Profile() {
               <CardTitle>My Trips</CardTitle>
             </CardHeader>
             <CardContent>
-              {!trips?.length ? (
+              {!user ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">Sign in to view and manage your trips</p>
+                  <Button asChild>
+                    <Link href="/auth?mode=login">Sign In</Link>
+                  </Button>
+                </div>
+              ) : !trips?.length ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground mb-4">No trips planned yet!</p>
                   <Button asChild>
