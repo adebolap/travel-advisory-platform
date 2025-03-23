@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plane, Calendar, Globe, Home, CreditCard } from "lucide-react";
+import { Plane, Calendar, Globe, Home, CreditCard, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export function Navigation() {
@@ -42,6 +42,12 @@ export function Navigation() {
           </div>
 
           <div className="flex items-center gap-4">
+            <Link href="/profile">
+              <Button variant={location === "/profile" ? "default" : "ghost"}>
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </Button>
+            </Link>
             {user ? (
               user.isSubscribed ? (
                 <span className="text-sm text-muted-foreground">Premium Member</span>
