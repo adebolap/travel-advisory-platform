@@ -25,7 +25,7 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
     queryKey: ['/api/cities/search', searchTerm],
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
-      const response = await fetch(`/api/cities/search?query=${encodeURIComponent(searchTerm)}&limit=10`);
+      const response = await fetch(`/api/cities/search?query=${encodeURIComponent(searchTerm)}`);
       if (!response.ok) throw new Error('Failed to fetch cities');
       return response.json();
     },
@@ -78,15 +78,14 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
       {isDropdownVisible && cities && cities.length > 0 && (
         <div 
           className="absolute left-0 right-0 z-50 mt-1 bg-background border rounded-lg shadow-lg 
-                   max-h-[80vh] overflow-y-auto 
-                   animate-in fade-in-0 slide-in-from-top-2
+                   overflow-y-auto animate-in fade-in-0 slide-in-from-top-2
                    overscroll-contain w-full"
           style={{
-            minHeight: '300px',
-            maxHeight: 'calc(100vh - 200px)'
+            minHeight: '400px',
+            maxHeight: 'calc(100vh - 160px)'
           }}
         >
-          {cities.slice(0, 10).map((city: City) => (
+          {cities.map((city: City) => (
             <button
               key={city.id}
               onMouseDown={(e) => {
