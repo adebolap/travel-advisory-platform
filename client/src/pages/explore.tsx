@@ -49,7 +49,7 @@ export default function Explore() {
           description: `Planned trip to ${city}`,
           startDate: dateRange.from,
           endDate: dateRange.to,
-          events: [], 
+          events: [],
           activities: interests,
         }),
       });
@@ -78,14 +78,15 @@ export default function Explore() {
 
   return (
     <div className="container mx-auto px-4 py-4 sm:py-8">
-      <div className="flex justify-between items-center mb-4 sm:mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold gradient-text">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-8">
+        <h1 className="text-2xl sm:text-4xl font-bold gradient-text">
           Explore Destinations
         </h1>
         {city && dateRange?.from && dateRange?.to && (
           <Button
             onClick={() => saveTripMutation.mutate()}
             disabled={saveTripMutation.isPending}
+            className="w-full sm:w-auto"
           >
             {saveTripMutation.isPending ? "Saving..." : "Save Trip"}
           </Button>
@@ -112,25 +113,24 @@ export default function Explore() {
 
       {searchSubmitted && city && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-          <div className="lg:col-span-2">
-            <div className="space-y-4 sm:space-y-8">
-              <WeatherDisplay
-                city={city}
-                onWeatherUpdate={handleWeatherUpdate}
-              />
-              <TravelSuggestions
-                city={city}
-                interests={interests}
-              />
-              <EventList
-                city={city}
-                dateRange={dateRange}
-              />
-              <ItineraryBuilder
-                city={city}
-                dateRange={dateRange}
-              />
-            </div>
+          <div className="lg:col-span-2 space-y-4 sm:space-y-8">
+            <WeatherDisplay
+              city={city}
+              onWeatherUpdate={handleWeatherUpdate}
+              className="w-full"
+            />
+            <TravelSuggestions
+              city={city}
+              interests={interests}
+            />
+            <EventList
+              city={city}
+              dateRange={dateRange}
+            />
+            <ItineraryBuilder
+              city={city}
+              dateRange={dateRange}
+            />
           </div>
           <div className="space-y-4 sm:space-y-8">
             <BudgetEstimator

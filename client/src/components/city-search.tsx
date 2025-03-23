@@ -25,7 +25,7 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
     queryKey: ['/api/cities/search', searchTerm],
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
-      const response = await fetch(`/api/cities/search?query=${encodeURIComponent(searchTerm)}`);
+      const response = await fetch(`/api/cities/search?query=${encodeURIComponent(searchTerm)}&limit=10`);
       if (!response.ok) throw new Error('Failed to fetch cities');
       return response.json();
     },
@@ -54,12 +54,12 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
   return (
     <div className="space-y-4">
       <div className="relative">
-        <div className="absolute left-3 top-3 flex items-center gap-1 text-muted-foreground">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-muted-foreground z-10">
           <Globe2 className="h-4 w-4" />
           <Search className="h-4 w-4" />
         </div>
         {isLoading && (
-          <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
         )}
         <Input
           placeholder="✈️ Search for a city..."
@@ -70,35 +70,38 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
           }}
           onFocus={() => setIsDropdownVisible(true)}
           onBlur={() => {
+            // Delay hiding dropdown to allow click events
             setTimeout(() => setIsDropdownVisible(false), 200);
           }}
-          className="pl-14 h-12 sm:h-10 text-base sm:text-sm mobile-button"
+          className="pl-14 pr-10 h-12 text-base sm:h-10 sm:text-sm rounded-lg"
         />
         {isDropdownVisible && cities && cities.length > 0 && (
           <div 
-            className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg 
-                     max-h-[50vh] sm:max-h-[300px] overflow-y-auto mobile-scroll-container
-                     animate-in fade-in-0 slide-in-from-top-2"
+            className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg 
+                     max-h-[60vh] sm:max-h-[400px] overflow-y-auto 
+                     animate-in fade-in-0 slide-in-from-top-2
+                     overscroll-contain"
           >
-            {cities.map((city: City) => (
+            {cities.slice(0, 10).map((city: City) => (
               <button
                 key={city.id}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleCitySelect(city);
                 }}
-                className="w-full px-4 py-3 sm:py-2 text-left hover:bg-accent 
+                className="w-full px-4 py-3 text-left hover:bg-accent 
                          hover:text-accent-foreground transition-colors
-                         flex items-center gap-2 touch-manipulation"
+                         flex items-center gap-2 touch-manipulation
+                         first:rounded-t-lg last:rounded-b-lg"
               >
-                <div className="flex items-center gap-2 min-h-[44px] sm:min-h-0">
+                <div className="flex items-center gap-3 min-h-[44px] w-full">
                   <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div>
-                    <div className="font-medium">{city.name}</div>
-                    <div className="text-sm text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{city.name}</div>
+                    <div className="text-sm text-muted-foreground truncate">
                       🌍 {city.country}
-                      {renderCityCost(city)}
                     </div>
+                    {renderCityCost(city)}
                   </div>
                 </div>
               </button>
