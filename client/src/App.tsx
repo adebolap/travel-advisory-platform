@@ -17,6 +17,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const Auth = lazy(() => import("@/pages/auth-page"));
 const TravelQuiz = lazy(() => import("@/pages/travel-quiz"));
 const Pricing = lazy(() => import("@/pages/pricing"));
+const Chat = lazy(() => import("@/pages/chat"));
 
 // Loading component
 function LoadingSpinner() {
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="/auth" component={Auth} />
               <Route path="/pricing" component={Pricing} />
               <Route path="/profile" component={Profile} />
+              <Route path="/chat" component={Chat} />
               <ProtectedRoute path="/" component={Home} />
               <ProtectedRoute path="/explore" component={Explore} />
               <ProtectedRoute path="/events" component={Events} />

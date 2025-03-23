@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plane, Calendar, Globe, Home, CreditCard, User } from "lucide-react";
+import { Plane, Calendar, Globe, Home, CreditCard, User, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export function Navigation() {
@@ -36,6 +36,12 @@ export function Navigation() {
                 <Button variant={location === "/events" ? "default" : "ghost"}>
                   <Calendar className="h-4 w-4 mr-2" />
                   Events
+                </Button>
+              </Link>
+              <Link href="/chat">
+                <Button variant={location === "/chat" ? "default" : "ghost"}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat
                 </Button>
               </Link>
             </div>
