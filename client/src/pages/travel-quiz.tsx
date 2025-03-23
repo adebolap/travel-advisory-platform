@@ -7,51 +7,52 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Plane, Palmtree, Mountain, Coffee, Camera, Book, Map } from "lucide-react";
+import { Plane, Palmtree, Mountain, Coffee, Camera, Book, Map, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface QuizQuestion {
   id: string;
   question: string;
-  illustration: string; // URL to the illustration
+  illustration: string;
   animatedIcon: React.ReactNode;
   options: {
     value: string;
     label: string;
     description: string;
-    image?: string; // Optional image URL for each option
+    image?: string;
   }[];
 }
 
 const quizQuestions: QuizQuestion[] = [
   {
     id: "travel-style",
-    question: "What's your ideal way to explore a new destination?",
+    question: "What's your dream travel style?",
     illustration: "https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1000&auto=format",
-    animatedIcon: <Plane className="w-16 h-16 text-primary animate-bounce" />,
+    animatedIcon: <Sparkles className="w-16 h-16 text-primary animate-pulse" />,
     options: [
       {
         value: "adventurer",
-        label: "Adventurer",
-        description: "Off the beaten path, seeking thrilling experiences",
+        label: "Free Spirit Explorer",
+        description: "Seeking thrilling experiences and hidden gems",
         image: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?q=80&w=500&auto=format"
       },
       {
         value: "cultural",
-        label: "Culture Explorer",
-        description: "Museums, historical sites, and local traditions",
+        label: "Cultural Connoisseur",
+        description: "Diving deep into local traditions and history",
         image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=500&auto=format"
       },
       {
         value: "relaxer",
-        label: "Relaxation Seeker",
-        description: "Beaches, spas, and peaceful retreats",
+        label: "Zen Wanderer",
+        description: "Finding peace in beautiful destinations",
         image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=500&auto=format"
       },
       {
         value: "foodie",
-        label: "Food Enthusiast",
-        description: "Local cuisine, food tours, and cooking classes",
+        label: "Culinary Adventurer",
+        description: "Tasting your way around the world",
         image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=500&auto=format"
       }
     ]
@@ -88,7 +89,6 @@ const quizQuestions: QuizQuestion[] = [
       }
     ]
   },
-  // More questions with similar structure...
   {
     id: "activity-preference",
     question: "How do you like to spend your time while traveling?",
@@ -210,15 +210,14 @@ export default function TravelQuiz() {
     },
     onSuccess: () => {
       toast({
-        title: "Quiz completed! 🎉",
-        description: "Your travel preferences have been saved. Let's find your perfect destinations!",
+        title: "✨ Quiz completed!",
+        description: "Your travel personality has been revealed. Let's find your perfect destinations!",
       });
-      // Redirect to home page after successful submission
       setTimeout(() => setLocation("/"), 1500);
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to save quiz results",
+        title: "Oops! Something went wrong",
         description: error.message,
         variant: "destructive",
       });
@@ -242,66 +241,100 @@ export default function TravelQuiz() {
   const currentQuizQuestion = quizQuestions[currentQuestion];
 
   return (
-    <div className="container max-w-4xl py-8 space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-2">Discover Your Travel Style</h1>
-        <p className="text-muted-foreground">
-          Let's find out what kind of traveler you are and create your perfect journey!
-        </p>
-      </div>
+    <AnimatePresence mode="wait">
+      <div className="container max-w-4xl py-8 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <h1 className="text-3xl font-bold mb-2">Discover Your Travel Style</h1>
+          <p className="text-muted-foreground">
+            Let's find out what kind of traveler you are and create your perfect journey!
+          </p>
+        </motion.div>
 
-      <Progress value={progress} className="h-2" />
+        <div className="relative pt-2">
+          <Progress value={progress} className="h-2" />
+          <span className="absolute right-0 top-0 text-sm text-muted-foreground">
+            {currentQuestion + 1} of {quizQuestions.length}
+          </span>
+        </div>
 
-      <Card className="mt-8">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            {currentQuizQuestion.animatedIcon}
-          </div>
-          <div className="relative h-48 mb-6 overflow-hidden rounded-lg">
-            <img 
-              src={currentQuizQuestion.illustration} 
-              alt={currentQuizQuestion.question}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-              <CardTitle className="text-3xl text-white px-4">
-                {currentQuizQuestion.question}
-              </CardTitle>
-            </div>
-          </div>
-          <CardDescription>
-            Question {currentQuestion + 1} of {quizQuestions.length}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {currentQuizQuestion.options.map((option) => (
-              <Button
-                key={option.value}
-                variant="outline"
-                className="h-auto p-0 overflow-hidden flex flex-col items-stretch text-left hover:scale-[1.02] transition-transform"
-                onClick={() => handleAnswer(option.value)}
+        <motion.div
+          key={currentQuestion}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="mt-8 overflow-hidden">
+            <CardHeader className="text-center">
+              <motion.div
+                className="flex justify-center mb-4"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                }}
               >
-                {option.image && (
-                  <div className="relative h-40 w-full">
-                    <img
-                      src={option.image}
-                      alt={option.label}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="p-4">
-                  <div className="font-semibold">{option.label}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {option.description}
-                  </div>
+                {currentQuizQuestion.animatedIcon}
+              </motion.div>
+              <div className="relative h-48 mb-6 overflow-hidden rounded-lg">
+                <img 
+                  src={currentQuizQuestion.illustration} 
+                  alt={currentQuizQuestion.question}
+                  className="absolute inset-0 w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center p-6">
+                  <CardTitle className="text-3xl text-white">
+                    {currentQuizQuestion.question}
+                  </CardTitle>
                 </div>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentQuizQuestion.options.map((option, index) => (
+                  <motion.div
+                    key={option.value}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Button
+                      variant="outline"
+                      className="h-auto p-0 overflow-hidden flex flex-col items-stretch text-left hover:scale-[1.02] transition-transform w-full"
+                      onClick={() => handleAnswer(option.value)}
+                    >
+                      {option.image && (
+                        <div className="relative h-40 w-full overflow-hidden">
+                          <img
+                            src={option.image}
+                            alt={option.label}
+                            className="absolute inset-0 w-full h-full object-cover transform hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <div className="font-semibold">{option.label}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {option.description}
+                        </div>
+                      </div>
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 }
