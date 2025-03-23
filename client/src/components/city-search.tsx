@@ -14,7 +14,7 @@ interface City {
   description: string;
   country: string;
   countryCode: string;
-  averageCost?: number; // Daily average cost in USD
+  averageCost?: number;
 }
 
 export default function CitySearch({ onCitySelect }: CitySearchProps) {
@@ -52,7 +52,7 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="relative w-full">
       <div className="relative">
         <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-muted-foreground z-10">
           <Globe2 className="h-4 w-4" />
@@ -70,45 +70,44 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
           }}
           onFocus={() => setIsDropdownVisible(true)}
           onBlur={() => {
-            // Delay hiding dropdown to allow click events
             setTimeout(() => setIsDropdownVisible(false), 200);
           }}
-          className="pl-14 pr-10 h-12 text-base sm:h-10 sm:text-sm rounded-lg"
+          className="pl-14 pr-10 h-12 text-base sm:h-10 sm:text-sm rounded-lg w-full"
         />
-        {isDropdownVisible && cities && cities.length > 0 && (
-          <div 
-            className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg 
-                     max-h-[60vh] sm:max-h-[400px] overflow-y-auto 
-                     animate-in fade-in-0 slide-in-from-top-2
-                     overscroll-contain"
-          >
-            {cities.slice(0, 10).map((city: City) => (
-              <button
-                key={city.id}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleCitySelect(city);
-                }}
-                className="w-full px-4 py-3 text-left hover:bg-accent 
-                         hover:text-accent-foreground transition-colors
-                         flex items-center gap-2 touch-manipulation
-                         first:rounded-t-lg last:rounded-b-lg"
-              >
-                <div className="flex items-center gap-3 min-h-[44px] w-full">
-                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{city.name}</div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      🌍 {city.country}
-                    </div>
-                    {renderCityCost(city)}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+      {isDropdownVisible && cities && cities.length > 0 && (
+        <div 
+          className="absolute left-0 right-0 z-50 mt-1 bg-background border rounded-lg shadow-lg 
+                   max-h-[60vh] sm:max-h-[400px] overflow-y-auto 
+                   animate-in fade-in-0 slide-in-from-top-2
+                   overscroll-contain w-full"
+        >
+          {cities.slice(0, 10).map((city: City) => (
+            <button
+              key={city.id}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleCitySelect(city);
+              }}
+              className="w-full px-4 py-3 text-left hover:bg-accent 
+                       hover:text-accent-foreground transition-colors
+                       flex items-center gap-2 touch-manipulation
+                       first:rounded-t-lg last:rounded-b-lg"
+            >
+              <div className="flex items-center gap-3 min-h-[44px] w-full">
+                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{city.name}</div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    🌍 {city.country}
+                  </div>
+                  {renderCityCost(city)}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
