@@ -24,6 +24,10 @@ export const premiumFeatures = {
     basic: "🏛️ View top attractions",
     premium: "🎯 Detailed attraction insights with crowd prediction"
   },
+  aiChatbot: {
+    premium: "🤖 AI-powered travel chatbot with personalized recommendations"
+    // No basic version - this is a premium-only feature
+  },
   support: {
     basic: "📧 Standard support",
     premium: "👑 Priority customer support"
