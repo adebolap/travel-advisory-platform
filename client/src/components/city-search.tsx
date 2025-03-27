@@ -77,12 +77,14 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
       </div>
       {isDropdownVisible && cities && cities.length > 0 && (
         <div 
-          className="absolute left-0 right-0 z-50 mt-1 bg-background border rounded-lg shadow-lg 
+          className="absolute left-0 right-0 z-[100] mt-1 bg-background border rounded-lg shadow-xl 
                    overflow-y-auto animate-in fade-in-0 slide-in-from-top-2
                    overscroll-contain w-full"
           style={{
-            minHeight: '400px',
-            maxHeight: 'calc(100vh - 160px)'
+            minHeight: '200px',
+            maxHeight: 'min(400px, 60vh)',
+            position: 'absolute',
+            top: '100%'
           }}
         >
           {cities.map((city: City) => (
@@ -92,16 +94,16 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
                 e.preventDefault();
                 handleCitySelect(city);
               }}
-              className="w-full px-4 py-4 text-left hover:bg-accent 
+              className="w-full px-4 py-3 text-left hover:bg-accent/50 
                        hover:text-accent-foreground transition-colors
                        flex items-center gap-2 touch-manipulation
                        first:rounded-t-lg last:rounded-b-lg
-                       border-b border-border last:border-0"
+                       border-b border-border/50 last:border-0"
             >
               <div className="flex items-center gap-3 min-h-[44px] w-full">
                 <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-lg truncate">{city.name}</div>
+                  <div className="font-medium text-base truncate">{city.name}</div>
                   <div className="text-sm text-muted-foreground truncate">
                     🌍 {city.country}
                   </div>
