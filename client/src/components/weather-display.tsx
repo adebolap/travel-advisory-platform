@@ -4,6 +4,7 @@ import { Sun, Cloud, CloudRain, Wind, Droplets, ChevronDown } from "lucide-react
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface WeatherData {
   weather: Array<{
@@ -45,9 +46,10 @@ interface ForecastData {
 interface WeatherDisplayProps {
   city: string;
   onWeatherUpdate?: (weather: string) => void;
+  className?: string;
 }
 
-export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplayProps) {
+export default function WeatherDisplay({ city, onWeatherUpdate, className }: WeatherDisplayProps) {
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const { data: currentWeather, isLoading: isLoadingCurrent, error: currentError } = useQuery<WeatherData>({
@@ -114,7 +116,7 @@ export default function WeatherDisplay({ city, onWeatherUpdate }: WeatherDisplay
   const dailyForecasts = forecast.list.filter((item, index) => index % 8 === 4).slice(0, 4);
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-4", className)}>
       {/* Current Weather - Compact Horizontal Layout */}
       <Card>
         <CardContent className="p-4">

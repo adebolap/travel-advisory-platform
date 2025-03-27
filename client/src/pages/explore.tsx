@@ -93,23 +93,44 @@ export default function Explore() {
         )}
       </div>
 
-      <Card className="mb-6 sm:mb-8 funky-card">
-        <CardContent className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">City</label>
-              <CitySearch onCitySelect={handleCitySelect} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Travel Dates</label>
-              <DatePicker
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col md:flex-row gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <Card className="flex-1 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <CardContent className="p-4 sm:p-6 flex flex-col">
+            <h3 className="font-semibold text-md mb-3 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              Where to?
+            </h3>
+            <CitySearch onCitySelect={handleCitySelect} />
+          </CardContent>
+        </Card>
+        
+        <Card className="flex-1 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <CardContent className="p-4 sm:p-6 flex flex-col">
+            <h3 className="font-semibold text-md mb-3 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2">
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                <line x1="16" x2="16" y1="2" y2="6" />
+                <line x1="8" x2="8" y1="2" y2="6" />
+                <line x1="3" x2="21" y1="10" y2="10" />
+                <path d="M8 14h.01" />
+                <path d="M12 14h.01" />
+                <path d="M16 14h.01" />
+                <path d="M8 18h.01" />
+                <path d="M12 18h.01" />
+                <path d="M16 18h.01" />
+              </svg>
+              When?
+            </h3>
+            <DatePicker
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       {searchSubmitted && city && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
