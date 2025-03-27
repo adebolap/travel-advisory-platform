@@ -6,6 +6,7 @@ import { addMonths, format, isWithinInterval, parseISO } from "date-fns";
 import axios from "axios";
 import { createCheckoutSession } from "./payment";
 import Stripe from 'stripe';
+import { generateChatbotResponse, chatRequestSchema } from "./chatbot";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' });
 
@@ -365,6 +366,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userId = parseInt(req.params.userId);
     const preferences = await storage.getSearchPreferences(userId);
     res.json(preferences);
+  });
+  
+  // Travel chatbot endpoint
+  apiRouter.post("/api/chatbot", async (req, res) => {
+    try {
+      // Validate request data
+      const chatRequest = chatRequestSchema.parse(req.body);
+      console.log("Chatbot request received:", {
+        messageCount: chatRequest.messages.length,
+        city: chatRequest.city || "Not specified",
+        hasInterests: chatRequest.interests && chatRequest.interests.length > 0
+      });
+      
+      // Generate a response from the AI
+      const response = await generateChatbotResponse(chatRequest);
+      console.log("Generated chatbot response");
+      res.json(response);
+    } catch (error: any) {
+      console.error("Chatbot error:", error);
+      res.status(400).json({ 
+        error: "Failed to process chatbot request", 
+        details: error.message
+      });
+    }
   });
 
   // Trip management routes

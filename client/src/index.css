@@ -4,6 +4,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  /* Custom scrollbar for chat interface */
+  .chat-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .chat-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .chat-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  
+  .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
