@@ -66,9 +66,9 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
         )}
         {selectedCity ? (
           <div className="border-2 border-primary/60 rounded-lg px-4 py-2 h-12 sm:h-10 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              <div>
+            <div className="flex items-center gap-3">
+              <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+              <div className="flex-1 min-w-0">
                 <span className="font-medium">{selectedCity.name}</span>
                 <span className="text-xs text-muted-foreground ml-1">({selectedCity.country})</span>
               </div>
