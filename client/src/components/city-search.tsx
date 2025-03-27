@@ -70,12 +70,13 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
           }}
           onFocus={() => setIsDropdownVisible(true)}
           onBlur={() => {
-            setTimeout(() => setIsDropdownVisible(false), 200);
+            // Increase timeout to give user more time to interact with dropdown
+            setTimeout(() => setIsDropdownVisible(false), 500);
           }}
           className="pl-14 pr-10 h-12 text-base sm:h-10 sm:text-sm rounded-lg w-full"
         />
       </div>
-      {isDropdownVisible && cities && cities.length > 0 && (
+      {searchTerm.length >= 2 && cities && cities.length > 0 && (
         <div 
           className="absolute left-0 right-0 z-[100] mt-1 bg-background border rounded-lg shadow-xl 
                    overflow-y-auto animate-in fade-in-0 slide-in-from-top-2
@@ -85,6 +86,10 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
             maxHeight: 'min(400px, 60vh)',
             position: 'absolute',
             top: '100%'
+          }}
+          onMouseDown={(e) => {
+            // Prevent parent blur event from hiding dropdown when clicking on the dropdown itself
+            e.preventDefault();
           }}
         >
           {cities.map((city: City) => (
