@@ -31,7 +31,7 @@ interface SeasonalFactor {
   food: {
     specialties: string[];
     experiences: string[];
-    prices: 'Budget-friendly' | 'Moderate' | 'Expensive' | 'Peak season';
+    prices: 'Budget-friendly' | 'Moderate' | 'Expensive' | 'Peak season' | 'Premium';
     notes: string;
   };
   nightlife: {
@@ -41,7 +41,7 @@ interface SeasonalFactor {
     notes: string;
   };
   crowds: {
-    level: 'Low' | 'Moderate' | 'High' | 'Peak';
+    level: 'Low' | 'Moderate' | 'High' | 'Peak' | 'Mixed';
     attractions: string;
     wait: string;
   };
@@ -111,6 +111,324 @@ const getSeasonalData = (city: string, season: string): SeasonalFactor => {
 
   // City-specific seasonal data based on research
   const cityData: Record<string, Record<string, SeasonalFactor>> = {
+    "Barcelona": {
+      "Spring": {
+        season: "Spring",
+        flights: {
+          demand: 'High',
+          prices: 'Expensive',
+          availability: 'Good',
+          notes: 'Popular time to visit with good weather; book 2-3 months ahead.'
+        },
+        food: {
+          specialties: ['Spring vegetables', 'Seafood paella', 'Fresh tapas', 'Calçots'],
+          experiences: ['Outdoor dining', 'Waterfront restaurants', 'Food markets'],
+          prices: 'Moderate',
+          notes: 'Many restaurants offer spring specials with seasonal ingredients.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Spring festivals', 'Live music events', 'Outdoor parties'],
+          crowd: 'Mixed',
+          notes: 'Weather gets warm enough for outdoor nightlife and beach parties.'
+        },
+        crowds: {
+          level: 'High',
+          attractions: 'Sagrada Familia and Park Güell get increasingly crowded.',
+          wait: 'Lines begin forming at major attractions; advance tickets recommended.'
+        }
+      },
+      "Summer": {
+        season: "Summer",
+        flights: {
+          demand: 'Peak',
+          prices: 'Premium',
+          availability: 'Limited',
+          notes: 'Highest tourist season; book 4-5 months ahead for best rates.'
+        },
+        food: {
+          specialties: ['Cold gazpacho', 'Grilled seafood', 'Ice cream', 'Summer fruits'],
+          experiences: ['Beachside dining', 'Rooftop restaurants', 'Food festivals'],
+          prices: 'Peak season',
+          notes: 'Authentic places fill up quickly; tourist areas charge premium prices.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['Beach parties', 'Music festivals', 'Neighborhood feasts'],
+          crowd: 'Tourist-heavy',
+          notes: 'The city comes alive at night with clubs open until dawn and beach parties.'
+        },
+        crowds: {
+          level: 'Peak',
+          attractions: 'Extremely crowded everywhere, especially beaches and Gaudi sites.',
+          wait: 'Very long lines; advance tickets essential for all major attractions.'
+        }
+      },
+      "Fall": {
+        season: "Fall",
+        flights: {
+          demand: 'Moderate',
+          prices: 'Moderate',
+          availability: 'Good',
+          notes: 'Pleasant shoulder season with reasonable airfares after summer peak.'
+        },
+        food: {
+          specialties: ['Mushroom dishes', 'Roasted vegetables', 'Hearty stews', 'Wine harvests'],
+          experiences: ['Wine tastings', 'Food markets', 'Traditional restaurants'],
+          prices: 'Moderate',
+          notes: 'Excellent time for food lovers with harvest-inspired menus.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Cultural festivals', 'Independent music scenes', 'Art events'],
+          crowd: 'Mixed',
+          notes: 'Good balance of tourists and locals; more authentic experience.'
+        },
+        crowds: {
+          level: 'Moderate',
+          attractions: 'Manageable crowds at most attractions.',
+          wait: 'Shorter lines than summer; weekends still busy.'
+        }
+      },
+      "Winter": {
+        season: "Winter",
+        flights: {
+          demand: 'Low',
+          prices: 'Budget-friendly',
+          availability: 'Abundant',
+          notes: 'Except for Christmas/New Year and Mobile World Congress, winter offers best deals.'
+        },
+        food: {
+          specialties: ['Hot chocolate', 'Churros', 'Catalan winter stews', 'Holiday specialties'],
+          experiences: ['Christmas markets', 'Cozy tapas bars', 'Winter food festivals'],
+          prices: 'Budget-friendly',
+          notes: 'Many restaurants offer winter specials and set menus.'
+        },
+        nightlife: {
+          activity: 'Moderate',
+          events: ['Christmas celebrations', 'Three Kings parade', 'Indoor music venues'],
+          crowd: 'Local',
+          notes: 'More low-key with locals; Christmas period is festive and busy.'
+        },
+        crowds: {
+          level: 'Low',
+          attractions: 'Minimal crowds at most sites except during holidays.',
+          wait: 'Short or no lines at major attractions; some reduced winter hours.'
+        }
+      }
+    },
+    "Amsterdam": {
+      "Spring": {
+        season: "Spring",
+        flights: {
+          demand: 'High',
+          prices: 'Expensive',
+          availability: 'Limited',
+          notes: 'Tulip season (mid-March to early May) is extremely popular; book 3-4 months ahead.'
+        },
+        food: {
+          specialties: ['Spring herring', 'Asparagus dishes', 'Seasonal beers', 'Dutch cheeses'],
+          experiences: ['Canal-side dining', 'Food markets', 'Outdoor cafés'],
+          prices: 'Expensive',
+          notes: 'Specialty tulip season menus and spring flavors are featured everywhere.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Kings Day celebrations', 'Spring festivals', 'Outdoor concerts'],
+          crowd: 'Tourist-heavy',
+          notes: 'Vibrant atmosphere with major events, especially Kings Day (April 27).'
+        },
+        crowds: {
+          level: 'Peak',
+          attractions: 'Very crowded, especially museums, Keukenhof gardens, and canal tours.',
+          wait: 'Long lines everywhere; advance booking essential during tulip season.'
+        }
+      },
+      "Summer": {
+        season: "Summer",
+        flights: {
+          demand: 'High',
+          prices: 'Expensive',
+          availability: 'Limited',
+          notes: 'Peak tourist season; book flights 2-3 months ahead.'
+        },
+        food: {
+          specialties: ['Fresh seafood', 'Seasonal fruit pies', 'Outdoor grill dishes', 'Ice cream'],
+          experiences: ['Outdoor dining', 'Food festivals', 'Canal-side restaurants'],
+          prices: 'Expensive',
+          notes: 'Busy restaurant scene with emphasis on outdoor dining.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['Summer festivals', 'Outdoor concerts', 'Canal festivals'],
+          crowd: 'Tourist-heavy',
+          notes: 'Lively atmosphere with extended daylight hours; many outdoor events.'
+        },
+        crowds: {
+          level: 'High',
+          attractions: 'Very crowded throughout the city, especially museums and popular areas.',
+          wait: 'Long lines at major museums; advance tickets highly recommended.'
+        }
+      },
+      "Fall": {
+        season: "Fall",
+        flights: {
+          demand: 'Moderate',
+          prices: 'Moderate',
+          availability: 'Good',
+          notes: 'Pleasant shoulder season with better deals after summer crowds.'
+        },
+        food: {
+          specialties: ['Dutch stews', 'Wild game', 'Mushroom dishes', 'Apple desserts'],
+          experiences: ['Cozy cafés', 'Specialty food events', 'Indoor food halls'],
+          prices: 'Moderate',
+          notes: 'Comfort foods appear on menus; good time for culinary experiences.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Cultural festivals', 'Museum Night', 'Indoor concerts'],
+          crowd: 'Mixed',
+          notes: 'Good balance of tourists and locals; active cultural calendar.'
+        },
+        crowds: {
+          level: 'Moderate',
+          attractions: 'Good access to attractions with reasonable crowds.',
+          wait: 'Shorter lines at major museums; weekends still busy.'
+        }
+      },
+      "Winter": {
+        season: "Winter",
+        flights: {
+          demand: 'Moderate',
+          prices: 'Moderate',
+          availability: 'Good',
+          notes: 'December is busy with Christmas markets; January/February offer best deals.'
+        },
+        food: {
+          specialties: ['Erwtensoep (pea soup)', 'Stamppot', 'Dutch donuts', 'Hot chocolate'],
+          experiences: ['Cozy brown cafés', 'Winter food markets', 'Ice skating rinks with food'],
+          prices: 'Moderate',
+          notes: 'Hearty winter specialties; cozy indoor dining experiences.'
+        },
+        nightlife: {
+          activity: 'Moderate',
+          events: ['Amsterdam Light Festival', 'New Year celebrations', 'Indoor music venues'],
+          crowd: 'Mixed',
+          notes: 'Festive atmosphere during holiday season and Light Festival.'
+        },
+        crowds: {
+          level: 'Moderate',
+          attractions: 'Busy during Christmas markets and Light Festival; quieter in January/February.',
+          wait: 'Moderate lines during holiday events; minimal at other times.'
+        }
+      }
+    },
+    "Dubai": {
+      "Spring": {
+        season: "Spring",
+        flights: {
+          demand: 'High',
+          prices: 'Expensive',
+          availability: 'Limited',
+          notes: 'Last chance for comfortable weather before extreme summer heat; book 2-3 months ahead.'
+        },
+        food: {
+          specialties: ['Seafood', 'International cuisine', 'Outdoor brunch experiences'],
+          experiences: ['Outdoor dining', 'Desert dining experiences', 'Waterfront restaurants'],
+          prices: 'Expensive',
+          notes: 'Excellent outdoor dining weather; many high-end restaurants feature spring menus.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['Music festivals', 'Beach clubs', 'Rooftop parties'],
+          crowd: 'Tourist-heavy',
+          notes: 'Perfect weather for outdoor nightlife; beach clubs and rooftop venues are popular.'
+        },
+        crowds: {
+          level: 'High',
+          attractions: 'Very busy at all major attractions and malls.',
+          wait: 'Long lines at Burj Khalifa and other popular sites; advance tickets recommended.'
+        }
+      },
+      "Summer": {
+        season: "Summer",
+        flights: {
+          demand: 'Low',
+          prices: 'Budget-friendly',
+          availability: 'Abundant',
+          notes: 'Low season due to extreme heat; best flight deals of the year.'
+        },
+        food: {
+          specialties: ['Indoor buffets', 'Cooling dishes', 'International cuisine'],
+          experiences: ['Luxury hotel dining', 'Indoor air-conditioned venues', 'Late-night dining'],
+          prices: 'Budget-friendly',
+          notes: 'Many summer dining deals and promotions; Dubai Summer Surprises festival.'
+        },
+        nightlife: {
+          activity: 'Moderate',
+          events: ['Indoor club events', 'Hotel parties', 'Limited outdoor events'],
+          crowd: 'Local',
+          notes: 'Nightlife moves indoors due to heat; many special summer promotions.'
+        },
+        crowds: {
+          level: 'Low',
+          attractions: 'Much less crowded; indoor attractions like malls are busier.',
+          wait: 'Minimal waiting at most attractions; best time to avoid crowds.'
+        }
+      },
+      "Fall": {
+        season: "Fall",
+        flights: {
+          demand: 'High',
+          prices: 'Expensive',
+          availability: 'Limited',
+          notes: 'Tourism picks up as temperatures cool; book 2-3 months ahead.'
+        },
+        food: {
+          specialties: ['Outdoor dining returns', 'Seasonal specialties', 'Food festivals'],
+          experiences: ['Beachside restaurants', 'Outdoor markets', 'Desert dining'],
+          prices: 'Expensive',
+          notes: 'Outdoor dining becomes popular again; restaurant scene very active.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['Outdoor concerts', 'Beach parties', 'Rooftop events'],
+          crowd: 'Mixed',
+          notes: 'Nightlife moves outdoors again; many new seasonal venues open.'
+        },
+        crowds: {
+          level: 'High',
+          attractions: 'Increasing crowds at all attractions as high season begins.',
+          wait: 'Growing lines at major attractions; advance booking advised.'
+        }
+      },
+      "Winter": {
+        season: "Winter",
+        flights: {
+          demand: 'Peak',
+          prices: 'Premium',
+          availability: 'Very limited',
+          notes: 'Peak tourist season with perfect weather; book 4-5 months ahead.'
+        },
+        food: {
+          specialties: ['Al fresco dining', 'International cuisine', 'Holiday specialties'],
+          experiences: ['Outdoor dining', 'Desert camps', 'Friday brunches'],
+          prices: 'Premium',
+          notes: 'Restaurants are extremely busy; reservation essential for good venues.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['New Year celebrations', 'Major concerts', 'Outdoor festivals'],
+          crowd: 'Tourist-heavy',
+          notes: 'Most active nightlife season; prestigious events and celebrity appearances.'
+        },
+        crowds: {
+          level: 'Peak',
+          attractions: 'Extremely crowded everywhere, especially during holiday periods.',
+          wait: 'Very long waits for all attractions; advance tickets essential.'
+        }
+      }
+    },
     "Paris": {
       "Spring": {
         season: "Spring",
@@ -744,6 +1062,218 @@ const getSeasonalData = (city: string, season: string): SeasonalFactor => {
           level: 'Moderate',
           attractions: 'Busy during Christmas markets; quiet in January/February.',
           wait: 'Short lines in January/February; longer during December events.'
+        }
+      }
+    },
+    "Singapore": {
+      "Spring": {
+        season: "Spring",
+        flights: {
+          demand: 'Moderate',
+          prices: 'Moderate',
+          availability: 'Good',
+          notes: 'Weather is hot and humid year-round; March-May tend to be slightly less rainy.'
+        },
+        food: {
+          specialties: ['Chili crab', 'Hainanese chicken rice', 'Laksa', 'Seafood dishes'],
+          experiences: ['Hawker centers', 'High-end restaurants', 'Food festivals'],
+          prices: 'Moderate',
+          notes: 'Singapore Food Festival happens in April; great variety of local and international cuisine.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Music festivals', 'Rooftop parties', 'Club events'],
+          crowd: 'Mixed',
+          notes: 'Active nightlife scene with mix of tourists and locals; many areas to explore.'
+        },
+        crowds: {
+          level: 'Moderate',
+          attractions: 'Popular attractions like Gardens by the Bay have steady crowds.',
+          wait: 'Moderate lines at major attractions; manageable with planning.'
+        }
+      },
+      "Summer": {
+        season: "Summer",
+        flights: {
+          demand: 'High',
+          prices: 'Expensive',
+          availability: 'Limited',
+          notes: 'Peak tourist season during June-August; book flights 2-3 months ahead.'
+        },
+        food: {
+          specialties: ['Durian (in season)', 'Ice desserts', 'Seafood', 'Local specialties'],
+          experiences: ['The Great Singapore Food Festival', 'Durian festivals', 'Night markets'],
+          prices: 'Expensive',
+          notes: 'Food events and festivals throughout summer; restaurant reservations recommended.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['Singapore Night Festival', 'Music events', 'Cultural performances'],
+          crowd: 'Tourist-heavy',
+          notes: 'Lively atmosphere with major events and performances; many special nighttime activities.'
+        },
+        crowds: {
+          level: 'High',
+          attractions: 'Very crowded at all popular sites, especially during Great Singapore Sale.',
+          wait: 'Long lines at major attractions; advance tickets highly recommended.'
+        }
+      },
+      "Fall": {
+        season: "Fall",
+        flights: {
+          demand: 'Moderate',
+          prices: 'Moderate',
+          availability: 'Good',
+          notes: 'September-November sees slightly more rain but good travel deals.'
+        },
+        food: {
+          specialties: ['Mooncakes (mid-autumn)', 'Seafood', 'Local cuisine', 'Festival foods'],
+          experiences: ['Mid-Autumn Festival foods', 'Hawker centers', 'Food tours'],
+          prices: 'Moderate',
+          notes: 'Mid-Autumn Festival brings special foods and events; pleasant dining experiences.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Formula 1 Night Race (September)', 'Halloween events', 'Cultural festivals'],
+          crowd: 'Mixed',
+          notes: 'F1 period is extremely busy with many parties and events; otherwise good balance of tourists and locals.'
+        },
+        crowds: {
+          level: 'Moderate',
+          attractions: 'Steady crowds at main attractions; F1 period extremely busy.',
+          wait: 'Reasonable wait times except during special events.'
+        }
+      },
+      "Winter": {
+        season: "Winter",
+        flights: {
+          demand: 'High',
+          prices: 'Expensive',
+          availability: 'Limited',
+          notes: 'December-February is peak season with holiday travel; book 3-4 months ahead.'
+        },
+        food: {
+          specialties: ['Chinese New Year specialties', 'Holiday menus', 'Seafood', 'International cuisine'],
+          experiences: ['Holiday dining', 'Special festive menus', 'New Year celebrations'],
+          prices: 'Premium',
+          notes: 'Christmas and Chinese New Year periods see special menus and festive offerings.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['Christmas light-up on Orchard Road', 'New Year countdown', 'Chinese New Year celebrations'],
+          crowd: 'Tourist-heavy',
+          notes: 'Festive atmosphere with extensive decorations and events; very busy holiday season.'
+        },
+        crowds: {
+          level: 'Peak',
+          attractions: 'Extremely crowded during Christmas, New Year, and Chinese New Year periods.',
+          wait: 'Very long waits at popular attractions; advance booking essential.'
+        }
+      }
+    },
+    "Sydney": {
+      "Spring": {
+        season: "Spring",
+        flights: {
+          demand: 'Moderate',
+          prices: 'Moderate',
+          availability: 'Good',
+          notes: 'September-November offers pleasant weather and beautiful blooms; good flight availability.'
+        },
+        food: {
+          specialties: ['Seafood', 'Spring lamb', 'Fresh produce', 'Outdoor grills'],
+          experiences: ['Outdoor dining', 'Food festivals', 'Waterfront restaurants'],
+          prices: 'Moderate',
+          notes: 'Food festivals showcase spring produce; outdoor dining becomes popular.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Vivid Sydney (May/June)', 'Spring racing carnival', 'Outdoor concerts'],
+          crowd: 'Mixed',
+          notes: 'Weather becomes perfect for outdoor events; vibrant atmosphere.'
+        },
+        crowds: {
+          level: 'Moderate',
+          attractions: 'Popular sites like Opera House and beaches get busier as weather improves.',
+          wait: 'Reasonable wait times at major attractions; good season for exploring.'
+        }
+      },
+      "Summer": {
+        season: "Summer",
+        flights: {
+          demand: 'Peak',
+          prices: 'Premium',
+          availability: 'Limited',
+          notes: 'December-February is high season with hot weather; book flights 3-4 months ahead.'
+        },
+        food: {
+          specialties: ['Seafood barbecues', 'Fresh tropical fruits', 'Beach picnics', 'Ice cream'],
+          experiences: ['Beachside dining', 'Sydney Festival food events', 'Outdoor markets'],
+          prices: 'Expensive',
+          notes: 'Peak season brings vibrant food scene; outdoor dining very popular but busy.'
+        },
+        nightlife: {
+          activity: 'Vibrant',
+          events: ['New Year celebrations', 'Sydney Festival', 'Outdoor concerts'],
+          crowd: 'Tourist-heavy',
+          notes: 'Extremely active nightlife scene; New Year period is world-famous.'
+        },
+        crowds: {
+          level: 'Peak',
+          attractions: 'Very crowded everywhere, especially beaches, harbor areas, and major sites.',
+          wait: 'Long waits at popular attractions; advance tickets essential during holiday period.'
+        }
+      },
+      "Fall": {
+        season: "Fall",
+        flights: {
+          demand: 'Moderate',
+          prices: 'Moderate',
+          availability: 'Good',
+          notes: 'March-May offers pleasant temperatures and fewer tourists; good flight deals.'
+        },
+        food: {
+          specialties: ['Autumn produce', 'Oysters', 'Mushroom dishes', 'Comfort food'],
+          experiences: ['Food and wine festivals', 'Indoor dining', 'Cultural food events'],
+          prices: 'Moderate',
+          notes: 'Great time for food events with harvest season; comfortable dining temperatures.'
+        },
+        nightlife: {
+          activity: 'Lively',
+          events: ['Sydney Comedy Festival', 'Cultural events', 'Fall concerts'],
+          crowd: 'Local',
+          notes: 'More authentic local experience with fewer tourists; comfortable evening temperatures.'
+        },
+        crowds: {
+          level: 'Low',
+          attractions: 'Less crowded at major attractions; pleasant time to explore the city.',
+          wait: 'Minimal wait times at most attractions; better access to popular sites.'
+        }
+      },
+      "Winter": {
+        season: "Winter",
+        flights: {
+          demand: 'Low',
+          prices: 'Budget-friendly',
+          availability: 'Abundant',
+          notes: 'June-August is low season (except for snow destinations); best flight deals.'
+        },
+        food: {
+          specialties: ['Hearty soups', 'Truffle dishes', 'Winter menus', 'Hot drinks'],
+          experiences: ['Winter food festivals', 'Cozy restaurants', 'Special winter menus'],
+          prices: 'Budget-friendly',
+          notes: 'Many winter specials and deals; easier to get tables at popular restaurants.'
+        },
+        nightlife: {
+          activity: 'Moderate',
+          events: ['Vivid Sydney light festival', 'Indoor concerts', 'Winter cultural events'],
+          crowd: 'Local',
+          notes: 'Vivid Sydney (May/June) brings vibrant nightlife; otherwise more low-key local scene.'
+        },
+        crowds: {
+          level: 'Low',
+          attractions: 'Least crowded time except during Vivid Sydney festival.',
+          wait: 'Minimal wait times at major attractions; best time for crowd-free sightseeing.'
         }
       }
     }
