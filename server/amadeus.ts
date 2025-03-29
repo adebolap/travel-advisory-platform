@@ -8,6 +8,7 @@ if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
 const amadeus = new Amadeus({
   clientId: process.env.AMADEUS_API_KEY,
   clientSecret: process.env.AMADEUS_API_SECRET,
+  hostname: 'production', // Use the production API instead of test environment
 });
 
 // Mapping of major cities to their IATA airport codes
