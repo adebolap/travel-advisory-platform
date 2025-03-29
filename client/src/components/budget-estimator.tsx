@@ -206,7 +206,8 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
         code: '', // Will be populated by AirportSelector when user selects
         name: '',
         city: originCity,
-        country: ''
+        country: '',
+        continent: '' // Adding the required continent field
       });
     }
   }, [originCity]);

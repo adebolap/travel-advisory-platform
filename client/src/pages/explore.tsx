@@ -10,11 +10,12 @@ import CitySearch from "@/components/city-search";
 import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
 import TravelPricing from "@/components/travel-pricing";
+import AirportSelector from "@/components/airport-selector";
+import { Airport } from "@/lib/airport-data";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function Explore() {
@@ -35,6 +36,10 @@ export default function Explore() {
 
   const handleOriginCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setOriginCity(e.target.value);
+  };
+  
+  const handleAirportSelect = (airport: Airport) => {
+    setOriginCity(airport.city);
   };
 
   const handleOriginSubmit = () => {
@@ -170,12 +175,10 @@ export default function Explore() {
             </h3>
             <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
               <div className="flex-1">
-                <Label htmlFor="originCity" className="sr-only">Origin City</Label>
-                <Input 
-                  id="originCity" 
-                  placeholder="Enter your departure city (e.g. New York)" 
-                  value={originCity}
-                  onChange={handleOriginCityChange}
+                <AirportSelector 
+                  onSelect={handleAirportSelect}
+                  initialCity={originCity}
+                  label="Select your departure airport"
                   className="w-full"
                 />
               </div>

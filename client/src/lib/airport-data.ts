@@ -1,76 +1,82 @@
-// Airport data for dropdown selection
+// Airport data structure
 export interface Airport {
   code: string;
   name: string;
   city: string;
   country: string;
+  continent: string;
 }
 
+// List of major airports worldwide
 export const majorAirports: Airport[] = [
-  { code: 'ATL', name: 'Hartsfield-Jackson Atlanta International', city: 'Atlanta', country: 'United States' },
-  { code: 'PEK', name: 'Beijing Capital International', city: 'Beijing', country: 'China' },
-  { code: 'LHR', name: 'London Heathrow', city: 'London', country: 'United Kingdom' },
-  { code: 'ORD', name: 'O\'Hare International', city: 'Chicago', country: 'United States' },
-  { code: 'HND', name: 'Tokyo Haneda', city: 'Tokyo', country: 'Japan' },
-  { code: 'LAX', name: 'Los Angeles International', city: 'Los Angeles', country: 'United States' },
-  { code: 'CDG', name: 'Charles de Gaulle', city: 'Paris', country: 'France' },
-  { code: 'DFW', name: 'Dallas/Fort Worth International', city: 'Dallas', country: 'United States' },
-  { code: 'FRA', name: 'Frankfurt Airport', city: 'Frankfurt', country: 'Germany' },
-  { code: 'IST', name: 'Istanbul Airport', city: 'Istanbul', country: 'Turkey' },
-  { code: 'AMS', name: 'Amsterdam Schiphol', city: 'Amsterdam', country: 'Netherlands' },
-  { code: 'CAN', name: 'Guangzhou Baiyun International', city: 'Guangzhou', country: 'China' },
-  { code: 'ICN', name: 'Seoul Incheon International', city: 'Seoul', country: 'South Korea' },
-  { code: 'DXB', name: 'Dubai International', city: 'Dubai', country: 'United Arab Emirates' },
-  { code: 'SIN', name: 'Singapore Changi', city: 'Singapore', country: 'Singapore' },
-  { code: 'DEL', name: 'Indira Gandhi International', city: 'Delhi', country: 'India' },
-  { code: 'BOM', name: 'Chhatrapati Shivaji International', city: 'Mumbai', country: 'India' },
-  { code: 'CGK', name: 'Soekarno-Hatta International', city: 'Jakarta', country: 'Indonesia' },
-  { code: 'SYD', name: 'Sydney Airport', city: 'Sydney', country: 'Australia' },
-  { code: 'MAD', name: 'Adolfo Suárez Madrid–Barajas', city: 'Madrid', country: 'Spain' },
-  { code: 'JFK', name: 'John F. Kennedy International', city: 'New York', country: 'United States' },
-  { code: 'LGW', name: 'London Gatwick', city: 'London', country: 'United Kingdom' },
-  { code: 'FCO', name: 'Leonardo da Vinci–Fiumicino', city: 'Rome', country: 'Italy' },
-  { code: 'YYZ', name: 'Toronto Pearson International', city: 'Toronto', country: 'Canada' },
-  { code: 'SFO', name: 'San Francisco International', city: 'San Francisco', country: 'United States' },
-  { code: 'BCN', name: 'Barcelona–El Prat', city: 'Barcelona', country: 'Spain' },
-  { code: 'LAS', name: 'McCarran International', city: 'Las Vegas', country: 'United States' },
-  { code: 'MIA', name: 'Miami International', city: 'Miami', country: 'United States' },
-  { code: 'MUC', name: 'Munich Airport', city: 'Munich', country: 'Germany' },
-  { code: 'HKG', name: 'Hong Kong International', city: 'Hong Kong', country: 'China' },
-  { code: 'BRU', name: 'Brussels Airport', city: 'Brussels', country: 'Belgium' },
-  { code: 'GRU', name: 'São Paulo–Guarulhos International', city: 'São Paulo', country: 'Brazil' },
-  { code: 'MEX', name: 'Mexico City International', city: 'Mexico City', country: 'Mexico' },
-  { code: 'ZRH', name: 'Zurich Airport', city: 'Zurich', country: 'Switzerland' },
-  { code: 'LIS', name: 'Lisbon Airport', city: 'Lisbon', country: 'Portugal' },
-  { code: 'DUB', name: 'Dublin Airport', city: 'Dublin', country: 'Ireland' },
-  { code: 'CPH', name: 'Copenhagen Airport', city: 'Copenhagen', country: 'Denmark' },
-  { code: 'SVO', name: 'Sheremetyevo International', city: 'Moscow', country: 'Russia' },
-  { code: 'VIE', name: 'Vienna International', city: 'Vienna', country: 'Austria' },
-  { code: 'OSL', name: 'Oslo Airport, Gardermoen', city: 'Oslo', country: 'Norway' },
+  { code: "ATL", name: "Hartsfield-Jackson Atlanta International Airport", city: "Atlanta", country: "United States", continent: "North America" },
+  { code: "LAX", name: "Los Angeles International Airport", city: "Los Angeles", country: "United States", continent: "North America" },
+  { code: "ORD", name: "O'Hare International Airport", city: "Chicago", country: "United States", continent: "North America" },
+  { code: "JFK", name: "John F. Kennedy International Airport", city: "New York", country: "United States", continent: "North America" },
+  { code: "LHR", name: "London Heathrow Airport", city: "London", country: "United Kingdom", continent: "Europe" },
+  { code: "CDG", name: "Charles de Gaulle Airport", city: "Paris", country: "France", continent: "Europe" },
+  { code: "FRA", name: "Frankfurt Airport", city: "Frankfurt", country: "Germany", continent: "Europe" },
+  { code: "AMS", name: "Amsterdam Airport Schiphol", city: "Amsterdam", country: "Netherlands", continent: "Europe" },
+  { code: "MAD", name: "Adolfo Suárez Madrid–Barajas Airport", city: "Madrid", country: "Spain", continent: "Europe" },
+  { code: "BCN", name: "Barcelona–El Prat Airport", city: "Barcelona", country: "Spain", continent: "Europe" },
+  { code: "FCO", name: "Leonardo da Vinci International Airport", city: "Rome", country: "Italy", continent: "Europe" },
+  { code: "HND", name: "Tokyo Haneda Airport", city: "Tokyo", country: "Japan", continent: "Asia" },
+  { code: "NRT", name: "Narita International Airport", city: "Tokyo", country: "Japan", continent: "Asia" },
+  { code: "PEK", name: "Beijing Capital International Airport", city: "Beijing", country: "China", continent: "Asia" },
+  { code: "PVG", name: "Shanghai Pudong International Airport", city: "Shanghai", country: "China", continent: "Asia" },
+  { code: "HKG", name: "Hong Kong International Airport", city: "Hong Kong", country: "China", continent: "Asia" },
+  { code: "ICN", name: "Incheon International Airport", city: "Seoul", country: "South Korea", continent: "Asia" },
+  { code: "SIN", name: "Singapore Changi Airport", city: "Singapore", country: "Singapore", continent: "Asia" },
+  { code: "BKK", name: "Suvarnabhumi Airport", city: "Bangkok", country: "Thailand", continent: "Asia" },
+  { code: "KUL", name: "Kuala Lumpur International Airport", city: "Kuala Lumpur", country: "Malaysia", continent: "Asia" },
+  { code: "SYD", name: "Sydney Airport", city: "Sydney", country: "Australia", continent: "Oceania" },
+  { code: "MEL", name: "Melbourne Airport", city: "Melbourne", country: "Australia", continent: "Oceania" },
+  { code: "AKL", name: "Auckland Airport", city: "Auckland", country: "New Zealand", continent: "Oceania" },
+  { code: "GRU", name: "São Paulo–Guarulhos International Airport", city: "São Paulo", country: "Brazil", continent: "South America" },
+  { code: "EZE", name: "Ministro Pistarini International Airport", city: "Buenos Aires", country: "Argentina", continent: "South America" },
+  { code: "BOG", name: "El Dorado International Airport", city: "Bogotá", country: "Colombia", continent: "South America" },
+  { code: "MEX", name: "Mexico City International Airport", city: "Mexico City", country: "Mexico", continent: "North America" },
+  { code: "YYZ", name: "Toronto Pearson International Airport", city: "Toronto", country: "Canada", continent: "North America" },
+  { code: "YVR", name: "Vancouver International Airport", city: "Vancouver", country: "Canada", continent: "North America" },
+  { code: "JNB", name: "O. R. Tambo International Airport", city: "Johannesburg", country: "South Africa", continent: "Africa" },
+  { code: "CAI", name: "Cairo International Airport", city: "Cairo", country: "Egypt", continent: "Africa" },
+  { code: "CPT", name: "Cape Town International Airport", city: "Cape Town", country: "South Africa", continent: "Africa" },
+  { code: "DXB", name: "Dubai International Airport", city: "Dubai", country: "United Arab Emirates", continent: "Asia" },
+  { code: "DOH", name: "Hamad International Airport", city: "Doha", country: "Qatar", continent: "Asia" },
+  { code: "IST", name: "Istanbul Airport", city: "Istanbul", country: "Turkey", continent: "Europe" },
+  { code: "DME", name: "Moscow Domodedovo Airport", city: "Moscow", country: "Russia", continent: "Europe" },
+  { code: "SVO", name: "Sheremetyevo International Airport", city: "Moscow", country: "Russia", continent: "Europe" },
+  { code: "BRU", name: "Brussels Airport", city: "Brussels", country: "Belgium", continent: "Europe" },
+  { code: "ZRH", name: "Zurich Airport", city: "Zurich", country: "Switzerland", continent: "Europe" },
+  { code: "VIE", name: "Vienna International Airport", city: "Vienna", country: "Austria", continent: "Europe" }
 ];
 
-// Function to search airports
-export function searchAirports(query: string): Airport[] {
-  if (!query || query.length < 2) return [];
-  
-  const normalizedQuery = query.toLowerCase();
-  
-  return majorAirports.filter(airport => 
-    airport.code.toLowerCase().includes(normalizedQuery) ||
-    airport.name.toLowerCase().includes(normalizedQuery) ||
-    airport.city.toLowerCase().includes(normalizedQuery) ||
-    airport.country.toLowerCase().includes(normalizedQuery)
-  ).slice(0, 10); // Limit to 10 results
-}
-
-// Function to get airport by code
+// Helper function to get airport by code
 export function getAirportByCode(code: string): Airport | undefined {
   return majorAirports.find(airport => airport.code === code);
 }
 
-// Function to get airport by city name
-export function getAirportByCity(cityName: string): Airport | undefined {
+// Helper function to get airport by city name
+export function getAirportByCity(city: string): Airport | undefined {
+  const lowercaseCity = city.toLowerCase().trim();
   return majorAirports.find(airport => 
-    airport.city.toLowerCase() === cityName.toLowerCase()
+    airport.city.toLowerCase().includes(lowercaseCity) || 
+    lowercaseCity.includes(airport.city.toLowerCase())
+  );
+}
+
+// Helper function to search airports by query (searches code, name, city, and country)
+export function searchAirports(query: string): Airport[] {
+  if (!query || query.trim() === '') {
+    return [];
+  }
+  
+  const lowercaseQuery = query.toLowerCase().trim();
+  
+  return majorAirports.filter(airport => 
+    airport.code.toLowerCase().includes(lowercaseQuery) ||
+    airport.name.toLowerCase().includes(lowercaseQuery) ||
+    airport.city.toLowerCase().includes(lowercaseQuery) ||
+    airport.country.toLowerCase().includes(lowercaseQuery)
   );
 }

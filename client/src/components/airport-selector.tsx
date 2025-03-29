@@ -1,20 +1,23 @@
-import { useState, useEffect, useRef } from 'react';
-import { Search, Map, Plane } from 'lucide-react';
-import { 
+import { useState, useEffect, useRef } from "react";
+import { Check, ChevronsUpDown, Plane, X, MapPin } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
-} from '@/components/ui/command';
+  CommandList,
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Airport, searchAirports } from '@/lib/airport-data';
+} from "@/components/ui/popover";
+import { Airport, searchAirports, getAirportByCity } from "@/lib/airport-data";
+import GeolocationDetector from "./geolocation-detector";
 
 interface AirportSelectorProps {
   onSelect: (airport: Airport) => void;
@@ -25,107 +28,127 @@ interface AirportSelectorProps {
 
 export default function AirportSelector({ 
   onSelect, 
-  initialCity, 
-  label = "Select your departure airport",
+  initialCity = "",
+  label = "Select your airport",
   className = ""
 }: AirportSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [value, setValue] = useState("");
+  const [query, setQuery] = useState("");
   const [airports, setAirports] = useState<Airport[]>([]);
-  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Search as user types
+  // Search for airports based on query
   useEffect(() => {
-    setAirports(searchAirports(query));
+    const results = searchAirports(query);
+    setAirports(results.slice(0, 10)); // Limit to top 10 results for performance
   }, [query]);
 
-  // If an initial city is provided, try to use it
+  // Set initial value if initialCity is provided
   useEffect(() => {
-    if (initialCity && !selectedAirport) {
-      const airports = searchAirports(initialCity);
-      if (airports.length > 0) {
-        setSelectedAirport(airports[0]);
-        onSelect(airports[0]);
+    if (initialCity) {
+      const airport = getAirportByCity(initialCity);
+      if (airport) {
+        setValue(airport.code);
+        // Don't call onSelect here to avoid unexpected behavior
       }
     }
-  }, [initialCity, selectedAirport, onSelect]);
+  }, [initialCity]);
 
+  // Handle airport selection
   const handleSelect = (airport: Airport) => {
-    setSelectedAirport(airport);
+    setValue(airport.code);
     setOpen(false);
     onSelect(airport);
   };
 
+  // Handle clearing the selection
+  const handleClear = () => {
+    setValue("");
+    setQuery("");
+    setOpen(false);
+  };
+
+  // Handle location detection
+  const handleLocationDetected = (city: string) => {
+    const airport = getAirportByCity(city);
+    if (airport) {
+      setValue(airport.code);
+      onSelect(airport);
+    }
+  };
+
   return (
-    <div className={`${className} space-y-2`}>
+    <div className={cn("flex items-center space-x-2", className)}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
-            role="combobox" 
+          <Button
+            ref={buttonRef}
+            variant="outline"
+            role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
+            onClick={() => setOpen(!open)}
           >
-            {selectedAirport ? (
-              <div className="flex items-center space-x-2 text-left">
-                <Plane className="h-4 w-4 shrink-0 opacity-50" />
-                <div className="flex flex-col">
-                  <span className="font-medium">{selectedAirport.city}</span>
-                  <span className="text-xs text-muted-foreground truncate">
-                    {selectedAirport.name} ({selectedAirport.code})
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Map className="h-4 w-4 shrink-0 opacity-50" />
-                <span>{label}</span>
-              </div>
-            )}
+            <div className="flex items-center">
+              <Plane className="mr-2 h-4 w-4" />
+              {value ? (
+                airports.find((airport) => airport.code === value)?.city || 
+                airports.find((airport) => airport.code === value)?.name || 
+                value
+              ) : (
+                <span className="text-muted-foreground">{label}</span>
+              )}
+            </div>
+            <div className="flex items-center">
+              {value && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 mr-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClear();
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+              <ChevronsUpDown className="h-4 w-4 opacity-50" />
+            </div>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="p-0 w-[300px]" align="start">
+        <PopoverContent className="w-full p-0" align="start">
           <Command>
             <CommandInput 
-              placeholder="Search airports or cities..." 
+              placeholder="Search airports..." 
               value={query}
               onValueChange={setQuery}
-              ref={inputRef}
-              className="h-9"
             />
             <CommandList>
-              <CommandEmpty>
-                {query.length < 2 ? (
-                  <div className="py-6 text-center text-sm">
-                    Type at least 2 characters to search
-                  </div>
-                ) : (
-                  <div className="py-6 text-center text-sm">
-                    No results found
-                  </div>
-                )}
-              </CommandEmpty>
+              <CommandEmpty>No airports found.</CommandEmpty>
               <CommandGroup>
                 {airports.map((airport) => (
                   <CommandItem
                     key={airport.code}
-                    value={`${airport.city} ${airport.code}`}
+                    value={airport.code}
                     onSelect={() => handleSelect(airport)}
-                    className="cursor-pointer"
                   >
                     <div className="flex flex-col">
                       <div className="flex items-center">
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value === airport.code ? "opacity-100" : "opacity-0"
+                          )}
+                        />
                         <span className="font-medium">{airport.city}</span>
-                        <span className="ml-2 text-xs bg-muted px-1 rounded">
+                        <span className="ml-2 text-xs bg-muted rounded px-1">
                           {airport.code}
                         </span>
-                        <span className="ml-auto text-xs text-muted-foreground">
-                          {airport.country}
-                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground truncate">
-                        {airport.name}
+                      <span className="text-xs text-muted-foreground ml-6">
+                        {airport.name}, {airport.country}
                       </span>
                     </div>
                   </CommandItem>
@@ -135,6 +158,8 @@ export default function AirportSelector({
           </Command>
         </PopoverContent>
       </Popover>
+      
+      <GeolocationDetector onLocationDetected={handleLocationDetected} />
     </div>
   );
 }
