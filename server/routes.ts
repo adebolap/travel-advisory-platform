@@ -489,11 +489,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/api/flights/price", async (req, res) => {
     const { origin, destination, departureDate, returnDate, adults } = req.query;
     
+    console.log("AMADEUS API: Flight price request received with params:", { 
+      origin, destination, departureDate, returnDate, adults 
+    });
+    
     if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      console.error("AMADEUS API: Missing API credentials");
       return res.status(500).json({ error: "Amadeus API credentials not configured" });
     }
     
     if (!origin || !destination || !departureDate) {
+      console.error("AMADEUS API: Missing required parameters");
       return res.status(400).json({ 
         error: "Missing required parameters",
         message: "origin, destination, and departureDate are required" 
@@ -501,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      console.log(`Fetching flight prices from ${origin} to ${destination}`);
+      console.log(`AMADEUS API: Fetching flight prices from ${origin} to ${destination}`);
       const flightOffers = await getFlightOffers(
         String(origin),
         String(destination),
@@ -510,10 +516,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adults ? Number(adults) : 1
       );
       
-      console.log(`Found ${flightOffers.length} flight offers`);
+      console.log(`AMADEUS API: Found ${flightOffers.length} flight offers`);
       res.json(flightOffers);
     } catch (error: any) {
-      console.error("Flight pricing error:", error.message);
+      console.error("AMADEUS API: Flight pricing error:", error.message);
       res.status(500).json({ 
         error: "Failed to fetch flight prices",
         message: error.message 

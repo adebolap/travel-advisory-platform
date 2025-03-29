@@ -213,15 +213,23 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
   // Fetch data when city, date range, or adults changes
   useEffect(() => {
     if (city && originCity) {
+      console.log(`TravelPricing: Fetching data for ${city} from ${originCity}`);
       fetchAveragePrices();
       
       if (dateRange?.from) {
+        console.log(`TravelPricing: Date range selected: ${formatApiDate(dateRange.from)} - ${dateRange.to ? formatApiDate(dateRange.to) : 'N/A'}`);
         if (activeTab === 'flights') {
+          console.log('TravelPricing: Fetching flight prices');
           fetchFlightPrices();
         } else {
+          console.log('TravelPricing: Fetching hotel prices');
           fetchHotelPrices();
         }
+      } else {
+        console.log('TravelPricing: No date range selected');
       }
+    } else {
+      console.log('TravelPricing: Missing city or originCity');
     }
   }, [city, originCity, dateRange, adults]);
 

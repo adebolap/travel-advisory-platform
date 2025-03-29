@@ -82,21 +82,23 @@ export default function Dashboard() {
               className="mb-8"
             />
             
-            <Tabs defaultValue="events" className="mt-8">
+            <Tabs defaultValue="events" className="mt-8" onValueChange={(value) => {
+              console.log("Dashboard: Tab changed to", value);
+            }}>
               <TabsList className="grid w-full grid-cols-5 md:w-auto">
-                <TabsTrigger value="events">
+                <TabsTrigger value="events" onClick={() => console.log("Events tab clicked")}>
                   <Calendar className="w-4 h-4 mr-2" /> Events
                 </TabsTrigger>
-                <TabsTrigger value="attractions">
+                <TabsTrigger value="attractions" onClick={() => console.log("Attractions tab clicked")}>
                   <Plane className="w-4 h-4 mr-2" /> Attractions
                 </TabsTrigger>
-                <TabsTrigger value="pricing">
+                <TabsTrigger value="pricing" onClick={() => console.log("Pricing tab clicked")}>
                   <DollarSign className="w-4 h-4 mr-2" /> Pricing
                 </TabsTrigger>
-                <TabsTrigger value="food">
+                <TabsTrigger value="food" onClick={() => console.log("Food tab clicked")}>
                   <UtensilsCrossed className="w-4 h-4 mr-2" /> Food
                 </TabsTrigger>
-                <TabsTrigger value="nightlife">
+                <TabsTrigger value="nightlife" onClick={() => console.log("Nightlife tab clicked")}>
                   <Music className="w-4 h-4 mr-2" /> Nightlife
                 </TabsTrigger>
               </TabsList>
