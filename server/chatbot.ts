@@ -1,9 +1,9 @@
 import OpenAI from "openai";
 import { z } from "zod";
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 // Schema for chat messages
 export const chatMessageSchema = z.object({
@@ -55,6 +55,12 @@ Always maintain your friendly, enthusiastic personality while providing accurate
 
 // Function to generate responses from the AI
 export async function generateChatbotResponse(chatRequest: ChatRequest): Promise<ChatMessage> {
+  if (!openai) {
+    return {
+      role: "assistant",
+      content: "I apologize, but I'm not available right now due to a configuration issue. Please try again later."
+    };
+  }
   try {
     // Create an array of messages with the traveler personality as the system prompt
     const messages = [
