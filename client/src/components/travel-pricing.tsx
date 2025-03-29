@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { DateRange } from 'react-day-picker';
 import { format, differenceInDays } from 'date-fns';
 import axios from 'axios';
-import { Loader2, Plane, HotelIcon, TrendingUp, Calendar, Users } from 'lucide-react';
+import { Loader2, Plane, HotelIcon, TrendingUp, Calendar, Users, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Types for flight offers
 interface FlightPricing {
@@ -66,6 +68,8 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
   const [adults, setAdults] = useState(1);
   const [activeTab, setActiveTab] = useState('flights');
   const [error, setError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Define seasons
   const seasons: Season[] = [
@@ -102,9 +106,10 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
     try {
       const departureDate = formatApiDate(dateRange.from);
       const returnDate = dateRange.to ? formatApiDate(dateRange.to) : '';
+      const actualOrigin = userLocation || originCity;
       
       console.log(`TravelPricing: Fetching flight prices with params:`, {
-        origin: originCity,
+        origin: actualOrigin,
         destination: city,
         departureDate,
         returnDate,
@@ -113,7 +118,7 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
       
       const response = await axios.get('/api/flights/price', {
         params: {
-          origin: originCity,
+          origin: actualOrigin,
           destination: city,
           departureDate,
           returnDate,
@@ -187,13 +192,14 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
     try {
       // Fetch average flight prices for all seasons
       const seasons = ['winter', 'spring', 'summer', 'fall'];
-      console.log(`TravelPricing: Fetching average prices for ${city} from ${originCity} for seasons:`, seasons);
+      const actualOrigin = userLocation || originCity;
+      console.log(`TravelPricing: Fetching average prices for ${city} from ${actualOrigin} for seasons:`, seasons);
       
       const flightPromises = seasons.map(season => {
         console.log(`TravelPricing: Creating flight price request for ${season} season`);
         return axios.get('/api/flights/average', {
           params: {
-            origin: originCity,
+            origin: actualOrigin,
             destination: city,
             season
           }
@@ -252,15 +258,62 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
     }
   };
 
+  // Get user's location
+  const getUserLocation = () => {
+    setIsLocating(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            // Get city name from coordinates
+            const response = await axios.get(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.coords.latitude},${position.coords.longitude}&key=${import.meta.env.VITE_GOOGLE_PLACES_API_KEY}`
+            );
+            
+            if (response.data.results && response.data.results.length > 0) {
+              // Find city component in the address components
+              const addressComponents = response.data.results[0].address_components;
+              const cityComponent = addressComponents.find(
+                (component: any) => 
+                  component.types.includes('locality') || 
+                  component.types.includes('administrative_area_level_1')
+              );
+              
+              if (cityComponent) {
+                setUserLocation(cityComponent.long_name);
+                console.log(`TravelPricing: User's location detected: ${cityComponent.long_name}`);
+              }
+            }
+          } catch (error) {
+            console.error('TravelPricing: Error getting location name:', error);
+          } finally {
+            setIsLocating(false);
+          }
+        },
+        (error) => {
+          console.error('TravelPricing: Geolocation error:', error);
+          setIsLocating(false);
+        }
+      );
+    } else {
+      console.error('TravelPricing: Geolocation not supported by browser');
+      setIsLocating(false);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     setSelectedSeason(getCurrentSeason());
+    getUserLocation(); // Get user's location on initial load
   }, []);
 
   // Fetch data when city, date range, or adults changes
   useEffect(() => {
-    if (city && originCity) {
-      console.log(`TravelPricing: Fetching data for ${city} from ${originCity}`);
+    // Use user's current location if available
+    const actualOrigin = userLocation || originCity;
+    
+    if (city && actualOrigin) {
+      console.log(`TravelPricing: Fetching data for ${city} from ${actualOrigin}`);
       fetchAveragePrices();
       
       if (dateRange?.from) {
@@ -276,9 +329,9 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
         console.log('TravelPricing: No date range selected');
       }
     } else {
-      console.log('TravelPricing: Missing city or originCity');
+      console.log('TravelPricing: Missing city or origin city');
     }
-  }, [city, originCity, dateRange, adults]);
+  }, [city, originCity, userLocation, dateRange, adults]);
 
   // Fetch appropriate data when tab changes
   useEffect(() => {
@@ -350,6 +403,29 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
                 ))}
               </SelectContent>
             </Select>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={getUserLocation} 
+                  disabled={isLocating}
+                  className="flex-shrink-0"
+                >
+                  {isLocating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <MapPin className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {userLocation 
+                  ? `Using your location: ${userLocation}` 
+                  : "Use your current location"}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
         
@@ -366,12 +442,12 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
               <CardDescription>
                 {dateRange?.from ? (
                   <>
-                    {originCity} to {city} 
+                    {userLocation || originCity} to {city} 
                     on {formatDisplayDate(formatApiDate(dateRange.from))}
                     {dateRange.to && ` - ${formatDisplayDate(formatApiDate(dateRange.to))}`}
                   </>
                 ) : (
-                  `Average seasonal flight prices from ${originCity} to ${city}`
+                  `Average seasonal flight prices from ${userLocation || originCity} to ${city}`
                 )}
               </CardDescription>
             </CardHeader>
@@ -472,8 +548,7 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
               <CardDescription>
                 {dateRange?.from ? (
                   <>
-                    Hotels in {city} 
-                    for {formatDisplayDate(formatApiDate(dateRange.from))}
+                    Hotels in {city} for {formatDisplayDate(formatApiDate(dateRange.from))}
                     {dateRange.to && ` - ${formatDisplayDate(formatApiDate(dateRange.to))}`}
                     {dateRange.to && dateRange.from && 
                       ` (${differenceInDays(dateRange.to, dateRange.from)} nights)`}
