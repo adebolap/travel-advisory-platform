@@ -90,14 +90,26 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
 
   // Fetch actual flight prices based on date range
   const fetchFlightPrices = async () => {
-    if (!dateRange?.from) return;
+    if (!dateRange?.from) {
+      console.log('TravelPricing: fetchFlightPrices - No date range selected');
+      return;
+    }
     
+    console.log('TravelPricing: fetchFlightPrices called');
     setIsLoadingFlights(true);
     setError(null);
     
     try {
       const departureDate = formatApiDate(dateRange.from);
       const returnDate = dateRange.to ? formatApiDate(dateRange.to) : '';
+      
+      console.log(`TravelPricing: Fetching flight prices with params:`, {
+        origin: originCity,
+        destination: city,
+        departureDate,
+        returnDate,
+        adults
+      });
       
       const response = await axios.get('/api/flights/price', {
         params: {
@@ -109,9 +121,11 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
         }
       });
       
+      console.log(`TravelPricing: Flight offers response:`, response.data);
       setFlightOffers(response.data);
     } catch (error: any) {
-      console.error('Error fetching flight prices:', error);
+      console.error('TravelPricing: Error fetching flight prices:', error);
+      console.error('TravelPricing: Error details:', error.response?.data);
       setError(error.response?.data?.message || 'Failed to fetch flight prices');
       setFlightOffers([]);
     } finally {
@@ -121,14 +135,26 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
 
   // Fetch actual hotel prices based on date range
   const fetchHotelPrices = async () => {
-    if (!dateRange?.from) return;
+    if (!dateRange?.from) {
+      console.log('TravelPricing: fetchHotelPrices - No date range selected');
+      return;
+    }
     
+    console.log('TravelPricing: fetchHotelPrices called');
     setIsLoadingHotels(true);
     setError(null);
     
     try {
       const checkInDate = formatApiDate(dateRange.from);
       const checkOutDate = dateRange.to ? formatApiDate(dateRange.to) : '';
+      
+      console.log(`TravelPricing: Fetching hotel prices with params:`, {
+        cityCode: city,
+        checkInDate,
+        checkOutDate,
+        adults,
+        radius: 10
+      });
       
       const response = await axios.get('/api/hotels/price', {
         params: {
@@ -140,9 +166,11 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
         }
       });
       
+      console.log(`TravelPricing: Hotel offers response:`, response.data);
       setHotelOffers(response.data);
     } catch (error: any) {
-      console.error('Error fetching hotel prices:', error);
+      console.error('TravelPricing: Error fetching hotel prices:', error);
+      console.error('TravelPricing: Error details:', error.response?.data);
       setError(error.response?.data?.message || 'Failed to fetch hotel prices');
       setHotelOffers([]);
     } finally {
@@ -152,53 +180,72 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
 
   // Fetch average seasonal prices
   const fetchAveragePrices = async () => {
+    console.log('TravelPricing: fetchAveragePrices called');
     setIsLoadingAverages(true);
     setError(null);
     
     try {
       // Fetch average flight prices for all seasons
       const seasons = ['winter', 'spring', 'summer', 'fall'];
-      const flightPromises = seasons.map(season => 
-        axios.get('/api/flights/average', {
+      console.log(`TravelPricing: Fetching average prices for ${city} from ${originCity} for seasons:`, seasons);
+      
+      const flightPromises = seasons.map(season => {
+        console.log(`TravelPricing: Creating flight price request for ${season} season`);
+        return axios.get('/api/flights/average', {
           params: {
             origin: originCity,
             destination: city,
             season
           }
-        })
-      );
+        }).catch(err => {
+          console.error(`TravelPricing: Error fetching flight prices for ${season} season:`, err.message);
+          throw err;
+        });
+      });
       
       // Fetch average hotel prices for all seasons
-      const hotelPromises = seasons.map(season => 
-        axios.get('/api/hotels/average', {
+      const nights = dateRange?.to && dateRange?.from ? 
+        differenceInDays(dateRange.to, dateRange.from) : 3;
+      console.log(`TravelPricing: Using ${nights} nights for hotel price calculations`);
+      
+      const hotelPromises = seasons.map(season => {
+        console.log(`TravelPricing: Creating hotel price request for ${season} season`);
+        return axios.get('/api/hotels/average', {
           params: {
             cityCode: city,
             season,
-            nights: dateRange?.to && dateRange?.from ? 
-              differenceInDays(dateRange.to, dateRange.from) : 3
+            nights
           }
-        })
-      );
+        }).catch(err => {
+          console.error(`TravelPricing: Error fetching hotel prices for ${season} season:`, err.message);
+          throw err;
+        });
+      });
       
+      console.log('TravelPricing: Awaiting all price promises...');
       const flightResponses = await Promise.all(flightPromises);
       const hotelResponses = await Promise.all(hotelPromises);
+      console.log('TravelPricing: Received all price responses');
       
       // Process flight price responses
       const flightPrices: Record<string, AveragePrice> = {};
       seasons.forEach((season, index) => {
+        console.log(`TravelPricing: Processing flight price for ${season}:`, flightResponses[index].data);
         flightPrices[season] = flightResponses[index].data;
       });
       
       // Process hotel price responses
       const hotelPrices: Record<string, AveragePrice> = {};
       seasons.forEach((season, index) => {
+        console.log(`TravelPricing: Processing hotel price for ${season}:`, hotelResponses[index].data);
         hotelPrices[season] = hotelResponses[index].data;
       });
       
+      console.log('TravelPricing: Setting state with average prices');
       setAverageFlightPrices(flightPrices);
       setAverageHotelPrices(hotelPrices);
     } catch (error: any) {
-      console.error('Error fetching average prices:', error);
+      console.error('TravelPricing: Error fetching average prices:', error);
       setError(error.response?.data?.message || 'Failed to fetch average seasonal prices');
     } finally {
       setIsLoadingAverages(false);

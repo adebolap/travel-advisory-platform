@@ -531,11 +531,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/api/hotels/price", async (req, res) => {
     const { cityCode, checkInDate, checkOutDate, adults, radius } = req.query;
     
+    console.log("AMADEUS API: Hotel price request received with params:", { 
+      cityCode, checkInDate, checkOutDate, adults, radius 
+    });
+    
     if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      console.error("AMADEUS API: Missing API credentials");
       return res.status(500).json({ error: "Amadeus API credentials not configured" });
     }
     
     if (!cityCode || !checkInDate || !checkOutDate) {
+      console.error("AMADEUS API: Missing required parameters");
       return res.status(400).json({ 
         error: "Missing required parameters",
         message: "cityCode, checkInDate, and checkOutDate are required" 
@@ -543,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      console.log(`Fetching hotel prices in ${cityCode}`);
+      console.log(`AMADEUS API: Fetching hotel prices in ${cityCode}`);
       const hotelOffers = await getHotelOffers(
         String(cityCode),
         String(checkInDate),
@@ -552,10 +558,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         radius ? Number(radius) : 5
       );
       
-      console.log(`Found ${hotelOffers.length} hotel offers`);
+      console.log(`AMADEUS API: Found ${hotelOffers.length} hotel offers`);
       res.json(hotelOffers);
     } catch (error: any) {
-      console.error("Hotel pricing error:", error.message);
+      console.error("AMADEUS API: Hotel pricing error:", error.message);
       res.status(500).json({ 
         error: "Failed to fetch hotel prices",
         message: error.message 
@@ -567,11 +573,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/api/flights/average", async (req, res) => {
     const { origin, destination, season } = req.query;
     
+    console.log("AMADEUS API: Average flight price request received with params:", { 
+      origin, destination, season 
+    });
+    
     if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      console.error("AMADEUS API: Missing API credentials");
       return res.status(500).json({ error: "Amadeus API credentials not configured" });
     }
     
     if (!origin || !destination || !season) {
+      console.error("AMADEUS API: Missing required parameters for average flight price");
       return res.status(400).json({ 
         error: "Missing required parameters",
         message: "origin, destination, and season are required" 
@@ -579,16 +591,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      console.log(`Fetching average flight prices from ${origin} to ${destination} for ${season} season`);
+      console.log(`AMADEUS API: Fetching average flight prices from ${origin} to ${destination} for ${season} season`);
       const averagePrice = await getAverageFlightPrice(
         String(origin),
         String(destination),
         String(season)
       );
       
+      console.log("AMADEUS API: Average flight price result:", averagePrice);
       res.json(averagePrice);
     } catch (error: any) {
-      console.error("Average flight pricing error:", error.message);
+      console.error("AMADEUS API: Average flight pricing error:", error.message);
       res.status(500).json({ 
         error: "Failed to fetch average flight prices",
         message: error.message 
@@ -600,11 +613,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/api/hotels/average", async (req, res) => {
     const { cityCode, season, nights } = req.query;
     
+    console.log("AMADEUS API: Average hotel price request received with params:", { 
+      cityCode, season, nights 
+    });
+    
     if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      console.error("AMADEUS API: Missing API credentials");
       return res.status(500).json({ error: "Amadeus API credentials not configured" });
     }
     
     if (!cityCode || !season) {
+      console.error("AMADEUS API: Missing required parameters for average hotel price");
       return res.status(400).json({ 
         error: "Missing required parameters",
         message: "cityCode and season are required" 
@@ -612,16 +631,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      console.log(`Fetching average hotel prices in ${cityCode} for ${season} season`);
+      console.log(`AMADEUS API: Fetching average hotel prices in ${cityCode} for ${season} season`);
       const averagePrice = await getAverageHotelPrice(
         String(cityCode),
         String(season),
         nights ? Number(nights) : 3
       );
       
+      console.log("AMADEUS API: Average hotel price result:", averagePrice);
       res.json(averagePrice);
     } catch (error: any) {
-      console.error("Average hotel pricing error:", error.message);
+      console.error("AMADEUS API: Average hotel pricing error:", error.message);
       res.status(500).json({ 
         error: "Failed to fetch average hotel prices",
         message: error.message 
