@@ -9,11 +9,11 @@ if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
 console.log(`Amadeus API key starts with: ${process.env.AMADEUS_API_KEY?.substring(0, 5)}...`);
 console.log(`Amadeus API secret starts with: ${process.env.AMADEUS_API_SECRET?.substring(0, 5)}...`);
 
+// Initialize the Amadeus client with the production API endpoint
 const amadeus = new Amadeus({
   clientId: process.env.AMADEUS_API_KEY,
   clientSecret: process.env.AMADEUS_API_SECRET,
-  // For production use: hostname: 'production'
-  // For testing environment, leave hostname unspecified
+  hostName: 'production' // Use the production API
 });
 
 // Mapping of major cities to their IATA airport codes
