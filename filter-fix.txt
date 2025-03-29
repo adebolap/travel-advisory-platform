@@ -1,0 +1,98 @@
+                    {/* Filter Controls */}
+                    {flightOffers.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <div className="text-xs text-muted-foreground">Filter results:</div>
+                        <div className="flex flex-wrap gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <input 
+                              type="checkbox" 
+                              id="directFlights" 
+                              checked={showDirectFlightsOnly}
+                              onChange={(e) => setShowDirectFlightsOnly(e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <label htmlFor="directFlights" className="text-xs whitespace-nowrap">Non-stop only</label>
+                          </div>
+                          
+                          <div>
+                            <Select value={selectedAirline || "all"} onValueChange={(value) => setSelectedAirline(value === "all" ? null : value)}>
+                              <SelectTrigger className="w-[130px] h-8 text-xs">
+                                <SelectValue placeholder="Airline" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Airlines</SelectItem>
+                                {Array.from(new Set(flightOffers.map(offer => offer.airline).filter(Boolean)))
+                                  .sort()
+                                  .map(airline => (
+                                    <SelectItem key={airline} value={airline as string}>
+                                      {airline}
+                                    </SelectItem>
+                                  ))
+                                }
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-8 text-xs">
+                                  <DollarSign className="mr-1 h-3 w-3" />
+                                  Price Range
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80">
+                                <div className="space-y-4">
+                                  <h4 className="font-medium text-sm">Price Range Filter</h4>
+                                  
+                                  <div className="space-y-2">
+                                    {(() => {
+                                      // Calculate min and max prices
+                                      const prices = flightOffers.map(offer => parseFloat(offer.price));
+                                      const minPrice = Math.floor(Math.min(...prices));
+                                      const maxPrice = Math.ceil(Math.max(...prices));
+                                      const initialRange = priceRange || [minPrice, maxPrice];
+                                      
+                                      return (
+                                        <>
+                                          <div className="flex justify-between text-xs text-muted-foreground">
+                                            <span>{formatPrice(initialRange[0], flightOffers[0]?.currency || 'USD')}</span>
+                                            <span>{formatPrice(initialRange[1], flightOffers[0]?.currency || 'USD')}</span>
+                                          </div>
+                                          <Slider
+                                            defaultValue={initialRange}
+                                            min={minPrice}
+                                            max={maxPrice}
+                                            step={10}
+                                            onValueChange={(value) => setPriceRange(value as [number, number])}
+                                            className="my-4"
+                                          />
+                                          <div className="flex justify-between">
+                                            <Button 
+                                              variant="outline" 
+                                              size="sm" 
+                                              onClick={() => setPriceRange([minPrice, maxPrice])}
+                                            >
+                                              Reset
+                                            </Button>
+                                            <Button 
+                                              variant="default" 
+                                              size="sm" 
+                                              onClick={() => {
+                                                // Close popover
+                                              }}
+                                            >
+                                              Apply
+                                            </Button>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </div>
+                      </div>
+                    )}

@@ -25,6 +25,7 @@ interface FlightPricing {
   destinationCity: string;
   airline?: string;
   duration?: string;
+  stops?: number;
 }
 
 // Types for hotel offers
@@ -625,48 +626,47 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                       </h3>
                     </div>
                     
-                    {/* Filter Controls - Responsive Layout */}
+                    {/* Filter Controls */}
                     {flightOffers.length > 0 && (
-                      <div className="flex flex-wrap gap-2 items-center mt-2">
-                        <div className="flex items-center space-x-1.5 mr-1">
-                          <input 
-                            type="checkbox" 
-                            id="directFlights" 
-                            checked={showDirectFlightsOnly}
-                            onChange={(e) => setShowDirectFlightsOnly(e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                          />
-                          <label htmlFor="directFlights" className="text-xs whitespace-nowrap">Non-stop only</label>
-                        </div>
-                        
-                        {/* Airline Select */}
-                        <div className="flex items-center">
-                          <Select value={selectedAirline || "all"} onValueChange={(value) => setSelectedAirline(value === "all" ? null : value)}>
-                            <SelectTrigger className="w-[130px] h-8 text-xs">
-                              <SelectValue placeholder="Airline" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Airlines</SelectItem>
-                              {Array.from(new Set(flightOffers.map(offer => offer.airline).filter(Boolean)))
-                                .sort()
-                                .map(airline => (
-                                  <SelectItem key={airline} value={airline as string}>
-                                    {airline}
-                                  </SelectItem>
-                                ))
-                              }
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        {/* Price Range Slider - Show only when we have offers */}
-                        {flightOffers.length > 0 && (
-                          <div className="flex-col space-y-2">
+                      <div className="mt-3 space-y-2">
+                        <div className="text-xs text-muted-foreground">Filter results:</div>
+                        <div className="flex flex-wrap gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <input 
+                              type="checkbox" 
+                              id="directFlights" 
+                              checked={showDirectFlightsOnly}
+                              onChange={(e) => setShowDirectFlightsOnly(e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <label htmlFor="directFlights" className="text-xs whitespace-nowrap">Non-stop only</label>
+                          </div>
+                          
+                          <div>
+                            <Select value={selectedAirline || "all"} onValueChange={(value) => setSelectedAirline(value === "all" ? null : value)}>
+                              <SelectTrigger className="w-[130px] h-8 text-xs">
+                                <SelectValue placeholder="Airline" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Airlines</SelectItem>
+                                {Array.from(new Set(flightOffers.map(offer => offer.airline).filter(Boolean)))
+                                  .sort()
+                                  .map(airline => (
+                                    <SelectItem key={airline} value={airline as string}>
+                                      {airline}
+                                    </SelectItem>
+                                  ))
+                                }
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-8 text-xs">
                                   <DollarSign className="mr-1 h-3 w-3" />
-                                  Price
+                                  Price Range
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-80">
@@ -721,7 +721,7 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                               </PopoverContent>
                             </Popover>
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
                   </div>
