@@ -5,12 +5,13 @@ import WeatherDisplay from "@/components/weather-display";
 import TravelSuggestions from "@/components/travel-suggestions";
 import EventList from "@/components/event-list";
 import SeasonalExpectations from "@/components/seasonal-expectations";
+import TravelPricing from "@/components/travel-pricing";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/date-picker";
 import { DateRange } from "react-day-picker";
 import { format, addDays } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Plane, UtensilsCrossed, Music } from "lucide-react";
+import { Calendar, Plane, UtensilsCrossed, Music, DollarSign } from "lucide-react";
 
 export default function Dashboard() {
   const [selectedCity, setSelectedCity] = useState("");
@@ -82,12 +83,15 @@ export default function Dashboard() {
             />
             
             <Tabs defaultValue="events" className="mt-8">
-              <TabsList className="grid w-full grid-cols-4 md:w-auto">
+              <TabsList className="grid w-full grid-cols-5 md:w-auto">
                 <TabsTrigger value="events">
                   <Calendar className="w-4 h-4 mr-2" /> Events
                 </TabsTrigger>
                 <TabsTrigger value="attractions">
                   <Plane className="w-4 h-4 mr-2" /> Attractions
+                </TabsTrigger>
+                <TabsTrigger value="pricing">
+                  <DollarSign className="w-4 h-4 mr-2" /> Pricing
                 </TabsTrigger>
                 <TabsTrigger value="food">
                   <UtensilsCrossed className="w-4 h-4 mr-2" /> Food
@@ -114,6 +118,18 @@ export default function Dashboard() {
                     <TravelSuggestions 
                       city={selectedCity}
                       interests={selectedInterests.length > 0 ? selectedInterests : ['Culture', 'Sightseeing']}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="pricing" className="mt-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <h3 className="text-xl font-semibold mb-4">Travel Cost Estimates for {selectedCity}</h3>
+                    <TravelPricing
+                      city={selectedCity}
+                      dateRange={dateRange}
                     />
                   </CardContent>
                 </Card>

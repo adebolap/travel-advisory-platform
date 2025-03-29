@@ -7,6 +7,7 @@ import axios from "axios";
 import { createCheckoutSession } from "./payment";
 import Stripe from 'stripe';
 import { generateChatbotResponse, chatRequestSchema } from "./chatbot";
+import { getFlightOffers, getHotelOffers, getAverageFlightPrice, getAverageHotelPrice } from "./amadeus";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' });
 
@@ -481,6 +482,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.sendStatus(204);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Amadeus Flight Price API endpoint
+  apiRouter.get("/api/flights/price", async (req, res) => {
+    const { origin, destination, departureDate, returnDate, adults } = req.query;
+    
+    if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      return res.status(500).json({ error: "Amadeus API credentials not configured" });
+    }
+    
+    if (!origin || !destination || !departureDate) {
+      return res.status(400).json({ 
+        error: "Missing required parameters",
+        message: "origin, destination, and departureDate are required" 
+      });
+    }
+    
+    try {
+      console.log(`Fetching flight prices from ${origin} to ${destination}`);
+      const flightOffers = await getFlightOffers(
+        String(origin),
+        String(destination),
+        String(departureDate),
+        returnDate ? String(returnDate) : undefined,
+        adults ? Number(adults) : 1
+      );
+      
+      console.log(`Found ${flightOffers.length} flight offers`);
+      res.json(flightOffers);
+    } catch (error: any) {
+      console.error("Flight pricing error:", error.message);
+      res.status(500).json({ 
+        error: "Failed to fetch flight prices",
+        message: error.message 
+      });
+    }
+  });
+  
+  // Amadeus Hotel Price API endpoint
+  apiRouter.get("/api/hotels/price", async (req, res) => {
+    const { cityCode, checkInDate, checkOutDate, adults, radius } = req.query;
+    
+    if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      return res.status(500).json({ error: "Amadeus API credentials not configured" });
+    }
+    
+    if (!cityCode || !checkInDate || !checkOutDate) {
+      return res.status(400).json({ 
+        error: "Missing required parameters",
+        message: "cityCode, checkInDate, and checkOutDate are required" 
+      });
+    }
+    
+    try {
+      console.log(`Fetching hotel prices in ${cityCode}`);
+      const hotelOffers = await getHotelOffers(
+        String(cityCode),
+        String(checkInDate),
+        String(checkOutDate),
+        adults ? Number(adults) : 1,
+        radius ? Number(radius) : 5
+      );
+      
+      console.log(`Found ${hotelOffers.length} hotel offers`);
+      res.json(hotelOffers);
+    } catch (error: any) {
+      console.error("Hotel pricing error:", error.message);
+      res.status(500).json({ 
+        error: "Failed to fetch hotel prices",
+        message: error.message 
+      });
+    }
+  });
+  
+  // Average Seasonal Flight Price API endpoint
+  apiRouter.get("/api/flights/average", async (req, res) => {
+    const { origin, destination, season } = req.query;
+    
+    if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      return res.status(500).json({ error: "Amadeus API credentials not configured" });
+    }
+    
+    if (!origin || !destination || !season) {
+      return res.status(400).json({ 
+        error: "Missing required parameters",
+        message: "origin, destination, and season are required" 
+      });
+    }
+    
+    try {
+      console.log(`Fetching average flight prices from ${origin} to ${destination} for ${season} season`);
+      const averagePrice = await getAverageFlightPrice(
+        String(origin),
+        String(destination),
+        String(season)
+      );
+      
+      res.json(averagePrice);
+    } catch (error: any) {
+      console.error("Average flight pricing error:", error.message);
+      res.status(500).json({ 
+        error: "Failed to fetch average flight prices",
+        message: error.message 
+      });
+    }
+  });
+  
+  // Average Seasonal Hotel Price API endpoint
+  apiRouter.get("/api/hotels/average", async (req, res) => {
+    const { cityCode, season, nights } = req.query;
+    
+    if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
+      return res.status(500).json({ error: "Amadeus API credentials not configured" });
+    }
+    
+    if (!cityCode || !season) {
+      return res.status(400).json({ 
+        error: "Missing required parameters",
+        message: "cityCode and season are required" 
+      });
+    }
+    
+    try {
+      console.log(`Fetching average hotel prices in ${cityCode} for ${season} season`);
+      const averagePrice = await getAverageHotelPrice(
+        String(cityCode),
+        String(season),
+        nights ? Number(nights) : 3
+      );
+      
+      res.json(averagePrice);
+    } catch (error: any) {
+      console.error("Average hotel pricing error:", error.message);
+      res.status(500).json({ 
+        error: "Failed to fetch average hotel prices",
+        message: error.message 
+      });
     }
   });
 
