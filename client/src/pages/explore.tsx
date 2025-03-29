@@ -9,6 +9,7 @@ import ItineraryBuilder from "@/components/itinerary-builder";
 import CitySearch from "@/components/city-search";
 import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
+import TravelPricing from "@/components/travel-pricing";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -154,6 +155,11 @@ export default function Explore() {
             />
           </div>
           <div className="space-y-4 sm:space-y-8">
+            <TravelPricing
+              city={city}
+              dateRange={dateRange}
+              className="mb-4 sm:mb-8"
+            />
             <BudgetEstimator
               city={city}
               dateRange={dateRange}
