@@ -284,7 +284,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced events API endpoint with Ticketmaster integration
+  // General events API endpoint for all events
+  apiRouter.get("/api/events", async (req, res) => {
+    const { city, startDateTime, endDateTime } = req.query;
+    
+    if (!city) {
+      return res.status(400).json({ error: "City parameter is required" });
+    }
+
+    if (!process.env.TICKETMASTER_API_KEY) {
+      return res.status(500).json({ error: "Ticketmaster API key not configured" });
+    }
+
+    try {
+      // Get events for the specified date range or default to current month
+      const today = new Date();
+      const defaultStartDateTime = format(new Date(today.getFullYear(), today.getMonth(), 1), "yyyy-MM-dd'T'HH:mm:ss'Z'");
+      const defaultEndDateTime = format(new Date(today.getFullYear(), today.getMonth() + 1, 0), "yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+      console.log(`Fetching events for ${city} from ${startDateTime || defaultStartDateTime} to ${endDateTime || defaultEndDateTime}`);
+
+      const response = await axios.get(
+        'https://app.ticketmaster.com/discovery/v2/events.json',
+        {
+          params: {
+            apikey: process.env.TICKETMASTER_API_KEY,
+            city: city,
+            startDateTime: startDateTime || defaultStartDateTime,
+            endDateTime: endDateTime || defaultEndDateTime,
+            size: 20,
+            sort: 'date,asc'
+          }
+        }
+      );
+
+      if (!response.data._embedded?.events) {
+        console.log('No events found for', city);
+        return res.json([]);
+      }
+
+      const events = response.data._embedded.events.map((event: any) => ({
+        id: event.id,
+        name: event.name,
+        url: event.url,
+        date: event.dates.start.localDate,
+        image: event.images?.[0]?.url,
+        venue: event._embedded?.venues?.[0]?.name,
+        location: event._embedded?.venues?.[0]?.city?.name,
+        price: event.priceRanges
+          ? `${event.priceRanges[0].min}-${event.priceRanges[0].max} ${event.priceRanges[0].currency}`
+          : 'Price TBA',
+        category: event.classifications?.[0]?.segment?.name || 'Other',
+        description: event.info || `${event.name} at ${event._embedded?.venues?.[0]?.name}`
+      }));
+
+      console.log(`Found ${events.length} events in ${city}`);
+      res.json(events);
+
+    } catch (error: any) {
+      console.error('Error fetching events:', error.response?.data || error.message);
+
+      if (error.response?.status === 404) {
+        res.json([]); // Return empty array if no events found
+      } else {
+        res.status(500).json({ 
+          error: 'Failed to fetch events',
+          details: error.response?.data?.message || error.message
+        });
+      }
+    }
+  });
+
+  // City-specific events API endpoint with Ticketmaster integration
   apiRouter.get("/api/events/:city", async (req, res) => {
     const { city } = req.params;
 

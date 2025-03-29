@@ -56,7 +56,7 @@ export default function Events() {
       </Card>
 
       {searchSubmitted && city && (
-        <EventList city={city} />
+        <EventList city={city} dateRange={dateRange} />
       )}
     </div>
   );

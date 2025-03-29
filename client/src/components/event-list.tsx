@@ -58,34 +58,52 @@ function EventSkeleton() {
 export default function EventList({ city, dateRange, compact = false }: EventListProps) {
   const [expandedDates, setExpandedDates] = useState<string[]>([]);
 
+  // Format date range for API query if available
+  const formattedStartDate = dateRange?.from 
+    ? format(dateRange.from, "yyyy-MM-dd'T'HH:mm:ss'Z'") 
+    : undefined;
+  
+  const formattedEndDate = dateRange?.to 
+    ? format(dateRange.to, "yyyy-MM-dd'T'HH:mm:ss'Z'") 
+    : undefined;
+
   const { data: events, isLoading } = useQuery<Event[]>({
-    queryKey: [`/api/events/${city}`],
+    queryKey: ['/api/events', city, formattedStartDate, formattedEndDate],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('city', city);
+      
+      if (formattedStartDate) {
+        params.append('startDateTime', formattedStartDate);
+      }
+      
+      if (formattedEndDate) {
+        params.append('endDateTime', formattedEndDate);
+      }
+      
+      const response = await fetch(`/api/events?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+      
+      return response.json();
+    },
     enabled: !!city,
   });
 
-  // Filter and group events by date, ensuring chronological order
+  // Group events by date, ensuring chronological order
   const groupedEvents = useMemo(() => {
     if (!events) return new Map<string, Event[]>();
 
-    // Sort events by date first
+    // Sort events by date first - API already filters by date range
     const sortedEvents = [...events].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    // Filter events based on dateRange if provided
-    const filteredEvents = dateRange?.from && dateRange?.to
-      ? sortedEvents.filter(event => {
-          const eventDate = parseISO(event.date);
-          return isWithinInterval(eventDate, {
-            start: dateRange.from,
-            end: dateRange.to
-          });
-        })
-      : sortedEvents;
-
     // Group events by date
     const grouped = new Map<string, Event[]>();
-    filteredEvents.forEach(event => {
+    sortedEvents.forEach(event => {
       const dateKey = format(parseISO(event.date), 'yyyy-MM-dd');
       if (!grouped.has(dateKey)) {
         grouped.set(dateKey, []);

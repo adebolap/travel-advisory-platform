@@ -5,10 +5,15 @@ if (!process.env.AMADEUS_API_KEY || !process.env.AMADEUS_API_SECRET) {
   throw new Error('Missing required Amadeus API credentials: AMADEUS_API_KEY and AMADEUS_API_SECRET');
 }
 
+// Log the key to help with debugging (only first 5 chars for security)
+console.log(`Amadeus API key starts with: ${process.env.AMADEUS_API_KEY?.substring(0, 5)}...`);
+console.log(`Amadeus API secret starts with: ${process.env.AMADEUS_API_SECRET?.substring(0, 5)}...`);
+
 const amadeus = new Amadeus({
   clientId: process.env.AMADEUS_API_KEY,
   clientSecret: process.env.AMADEUS_API_SECRET,
-  hostname: 'production', // Use the production API instead of test environment
+  // For production use: hostname: 'production'
+  // For testing environment, leave hostname unspecified
 });
 
 // Mapping of major cities to their IATA airport codes
