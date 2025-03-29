@@ -789,12 +789,14 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                           {offer.duration && (
                             <div className="mt-2 text-xs">
                               <Badge variant="secondary" className="font-normal">
-                                {offer.stops === 0
-                                  ? 'Non-stop · ' + offer.duration.replace('PT', '').replace('H', 'h ').replace('M', 'm')
-                                  : (offer.stops === 1 
-                                     ? '1 stop · ' 
-                                     : `${offer.stops} stops · `) + 
-                                    offer.duration.replace('PT', '').replace('H', 'h ').replace('M', 'm')}
+                                {offer.stops !== undefined && offer.stops === 0
+                                  ? 'Non-stop · ' + offer.duration?.replace('PT', '').replace('H', 'h ').replace('M', 'm')
+                                  : (!offer.duration?.includes('~') && !offer.duration?.includes('T0D')
+                                    ? 'Non-stop · ' 
+                                    : (offer.stops === 1 
+                                      ? '1 stop · ' 
+                                      : `${offer.stops || 'Multiple'} stops · `)) + 
+                                    (offer.duration?.replace('PT', '').replace('H', 'h ').replace('M', 'm') || '')}
                               </Badge>
                             </div>
                           )}
