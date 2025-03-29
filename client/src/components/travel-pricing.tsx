@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { DateRange } from 'react-day-picker';
 import { format, differenceInDays } from 'date-fns';
 import axios from 'axios';
-import { Loader2, Plane, HotelIcon, TrendingUp, Calendar, Users, MapPin } from 'lucide-react';
+import { Loader2, Plane, HotelIcon, TrendingUp, Calendar, Users, MapPin, Clock, DollarSign, CalendarClock, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // Types for flight offers
 interface FlightPricing {
@@ -359,6 +360,66 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
     const date = new Date(dateString);
     return format(date, 'MMM d, yyyy');
   };
+  
+  // Determine best time to travel based on price data
+  const getBestTimeToTravel = () => {
+    if (Object.keys(averageFlightPrices).length === 0) {
+      return null;
+    }
+    
+    // Find the season with the lowest flight price
+    let bestSeason = '';
+    let lowestPrice = Infinity;
+    let currency = '';
+    
+    Object.entries(averageFlightPrices).forEach(([season, data]) => {
+      if (data.price > 0 && data.price < lowestPrice) {
+        lowestPrice = data.price;
+        bestSeason = season;
+        currency = data.currency;
+      }
+    });
+    
+    if (bestSeason) {
+      // Get months for this season
+      const seasonObj = seasons.find(s => s.name.toLowerCase() === bestSeason);
+      if (seasonObj) {
+        const monthNames = seasonObj.months.map(monthIndex => {
+          const date = new Date();
+          date.setMonth(monthIndex);
+          return format(date, 'MMMM');
+        });
+        
+        return {
+          season: bestSeason,
+          price: lowestPrice,
+          currency,
+          months: monthNames,
+          percentageSavings: calculateSavings(bestSeason, lowestPrice)
+        };
+      }
+    }
+    
+    return null;
+  };
+  
+  // Calculate savings percentage compared to average of other seasons
+  const calculateSavings = (bestSeason: string, lowestPrice: number) => {
+    let totalOtherSeasons = 0;
+    let countOtherSeasons = 0;
+    
+    Object.entries(averageFlightPrices).forEach(([season, data]) => {
+      if (season !== bestSeason && data.price > 0) {
+        totalOtherSeasons += data.price;
+        countOtherSeasons++;
+      }
+    });
+    
+    if (countOtherSeasons === 0) return 0;
+    
+    const avgOtherSeasons = totalOtherSeasons / countOtherSeasons;
+    return Math.round(((avgOtherSeasons - lowestPrice) / avgOtherSeasons) * 100);
+  };
 
   return (
     <div className={`travel-pricing ${className}`}>
@@ -485,6 +546,62 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
                 )}
               </div>
               
+              {/* Best Time to Travel Section */}
+              {!isLoadingAverages && !dateRange?.from && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium mb-3 flex items-center">
+                    <CalendarClock className="mr-2 h-4 w-4" />
+                    Best Time to Travel
+                  </h3>
+                  
+                  {(() => {
+                    const bestTime = getBestTimeToTravel();
+                    
+                    if (!bestTime) {
+                      return (
+                        <div className="text-center py-4 border rounded-md">
+                          Not enough price data to determine best travel time
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <Alert className="bg-primary/5 border-primary/20">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <AlertTitle className="text-primary font-medium">
+                          Best time to visit {city}
+                        </AlertTitle>
+                        <AlertDescription className="text-sm mt-2">
+                          <div className="flex flex-col space-y-2">
+                            <div className="flex items-center">
+                              <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <span className="capitalize">
+                                <strong>{bestTime.season}</strong> ({bestTime.months.join(', ')})
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <span>
+                                Average price: <strong>{formatPrice(bestTime.price, bestTime.currency)}</strong>
+                              </span>
+                            </div>
+                            
+                            {bestTime.percentageSavings > 0 && (
+                              <div className="flex items-center">
+                                <TrendingUp className="mr-2 h-4 w-4 text-green-600" />
+                                <span className="text-green-600">
+                                  Save up to <strong>{bestTime.percentageSavings}%</strong> compared to other seasons
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  })()}
+                </div>
+              )}
+              
               {/* Real-time Flight Offers */}
               {dateRange?.from && (
                 <div>
@@ -591,6 +708,99 @@ export default function TravelPricing({ city, originCity = 'New York', dateRange
                   </div>
                 )}
               </div>
+              
+              {/* Best Time to Stay Section */}
+              {!isLoadingAverages && !dateRange?.from && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium mb-3 flex items-center">
+                    <CalendarClock className="mr-2 h-4 w-4" />
+                    Best Time for Accommodation
+                  </h3>
+                  
+                  {Object.values(averageHotelPrices).some(data => data.perNight && data.perNight > 0) ? (
+                    (() => {
+                      // Find the season with the lowest hotel price
+                      let bestSeason = '';
+                      let lowestPrice = Infinity;
+                      let currency = '';
+                      
+                      Object.entries(averageHotelPrices).forEach(([season, data]) => {
+                        if (data.perNight && data.perNight > 0 && data.perNight < lowestPrice) {
+                          lowestPrice = data.perNight;
+                          bestSeason = season;
+                          currency = data.currency;
+                        }
+                      });
+                      
+                      // Get months for this season
+                      const seasonObj = seasons.find(s => s.name.toLowerCase() === bestSeason);
+                      if (!seasonObj) return null;
+                      
+                      const monthNames = seasonObj.months.map(monthIndex => {
+                        const date = new Date();
+                        date.setMonth(monthIndex);
+                        return format(date, 'MMMM');
+                      });
+                      
+                      // Calculate savings compared to average of other seasons
+                      let totalOtherSeasons = 0;
+                      let countOtherSeasons = 0;
+                      
+                      Object.entries(averageHotelPrices).forEach(([season, data]) => {
+                        if (season !== bestSeason && data.perNight && data.perNight > 0) {
+                          totalOtherSeasons += data.perNight;
+                          countOtherSeasons++;
+                        }
+                      });
+                      
+                      const avgOtherSeasons = countOtherSeasons > 0 ? totalOtherSeasons / countOtherSeasons : 0;
+                      const percentageSavings = avgOtherSeasons > 0 ? 
+                        Math.round(((avgOtherSeasons - lowestPrice) / avgOtherSeasons) * 100) : 0;
+                      
+                      return (
+                        <Alert className="bg-primary/5 border-primary/20">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <AlertTitle className="text-primary font-medium">
+                            Best time for accommodation in {city}
+                          </AlertTitle>
+                          <AlertDescription className="text-sm mt-2">
+                            <div className="flex flex-col space-y-2">
+                              <div className="flex items-center">
+                                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <span className="capitalize">
+                                  <strong>{bestSeason}</strong> ({monthNames.join(', ')})
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <span>
+                                  Average nightly rate: <strong>{formatPrice(lowestPrice, currency)}</strong>
+                                </span>
+                              </div>
+                              {percentageSavings > 0 && (
+                                <div className="flex items-center">
+                                  <TrendingUp className="mr-2 h-4 w-4 text-green-600" />
+                                  <span className="text-green-600">
+                                    Save up to <strong>{percentageSavings}%</strong> compared to other seasons
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      );
+                    })() || (
+                      <div className="text-center py-4 border rounded-md">
+                        Not enough price data to determine best time for accommodation
+                      </div>
+                    )
+                  ) : (
+                    <div className="text-center py-4 border rounded-md">
+                      Not enough price data to determine best time for accommodation
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Real-time Hotel Offers */}
               {dateRange?.from && dateRange.to && (
