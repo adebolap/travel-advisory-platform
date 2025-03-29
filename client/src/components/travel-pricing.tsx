@@ -549,60 +549,84 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
         
         <TabsContent value="flights">
           <Card>
-            <CardHeader>
-              <CardTitle>Flight Pricing</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <Plane className="mr-2 h-5 w-5 text-primary" />
+                Flight Pricing
+              </CardTitle>
               <CardDescription>
                 {dateRange?.from ? (
                   <>
-                    {userLocation || originCity} to {city} 
-                    on {formatDisplayDate(formatApiDate(dateRange.from))}
-                    {dateRange.to && ` - ${formatDisplayDate(formatApiDate(dateRange.to))}`}
+                    <span className="font-medium">{userLocation || originCity}</span> to <span className="font-medium">{city}</span> 
+                    <span className="ml-1">
+                      {formatDisplayDate(formatApiDate(dateRange.from))}
+                      {dateRange.to && ` – ${formatDisplayDate(formatApiDate(dateRange.to))}`}
+                    </span>
                   </>
                 ) : (
-                  `Average seasonal flight prices from ${userLocation || originCity} to ${city}`
+                  <>
+                    Seasonal pricing from <span className="font-medium">{userLocation || originCity}</span> to <span className="font-medium">{city}</span>
+                  </>
                 )}
               </CardDescription>
             </CardHeader>
             
             <CardContent>
               {/* Average Seasonal Prices Section */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-2 flex items-center">
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  Average Seasonal Prices
-                </h3>
-                
-                {isLoadingAverages ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              {!dateRange?.from && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-medium flex items-center">
+                      <TrendingUp className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Average Pricing by Season
+                    </h3>
+                    <div className="w-32">
+                      <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Season" />
+                        </SelectTrigger>
+                      <SelectContent>
+                        {seasons.map(season => (
+                          <SelectItem key={season.name} value={season.name.toLowerCase()}>
+                            {season.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-2">
-                    {Object.entries(averageFlightPrices).map(([season, data]) => (
-                      <div 
-                        key={season}
-                        className={`p-3 rounded-md flex flex-col items-center text-center 
-                          ${selectedSeason === season ? 'bg-primary/10 border border-primary/30' : 'bg-muted'}
-                        `}
-                      >
-                        <span className="font-medium capitalize">{season}</span>
-                        <span className="text-xl font-bold">
-                          {data.price > 0 ? 
-                            formatPrice(data.price, data.currency) : 
-                            'N/A'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  
+                  {isLoadingAverages ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2">
+                      {Object.entries(averageFlightPrices).map(([season, data]) => (
+                        <div 
+                          key={season}
+                          className={`p-3 rounded-md flex flex-col items-center text-center 
+                            ${selectedSeason === season ? 'bg-primary/10 border border-primary/30' : 'bg-muted'}
+                          `}
+                        >
+                          <span className="font-medium capitalize text-sm">{season}</span>
+                          <span className="text-lg font-bold mt-1">
+                            {data.price > 0 ? 
+                              formatPrice(data.price, data.currency) : 
+                              'N/A'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Best Time to Travel Section */}
               {!isLoadingAverages && !dateRange?.from && (
                 <div className="mb-6">
-                  <h3 className="text-sm font-medium mb-3 flex items-center">
-                    <CalendarClock className="mr-2 h-4 w-4" />
-                    Best Time to Travel
+                  <h3 className="text-sm font-medium mb-2 flex items-center">
+                    <CalendarClock className="mr-2 h-4 w-4 text-primary" />
+                    Best Time to Visit
                   </h3>
                   
                   {(() => {
@@ -610,8 +634,8 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                     
                     if (!bestTime) {
                       return (
-                        <div className="text-center py-4 border rounded-md">
-                          Not enough price data to determine best travel time
+                        <div className="text-center py-3 text-sm text-muted-foreground border rounded-md">
+                          Insufficient data to determine optimal travel time
                         </div>
                       );
                     }
@@ -620,10 +644,10 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                       <Alert className="bg-primary/5 border-primary/20">
                         <Sparkles className="h-4 w-4 text-primary" />
                         <AlertTitle className="text-primary font-medium">
-                          Best time to visit {city}
+                          Best value for {city}
                         </AlertTitle>
-                        <AlertDescription className="text-sm mt-2">
-                          <div className="flex flex-col space-y-2">
+                        <AlertDescription className="text-sm mt-1">
+                          <div className="flex flex-col space-y-1.5">
                             <div className="flex items-center">
                               <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
                               <span className="capitalize">
@@ -633,7 +657,7 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                             <div className="flex items-center">
                               <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
                               <span>
-                                Average price: <strong>{formatPrice(bestTime.price, bestTime.currency)}</strong>
+                                Average fare: <strong>{formatPrice(bestTime.price, bestTime.currency)}</strong>
                               </span>
                             </div>
                             
@@ -641,7 +665,7 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                               <div className="flex items-center">
                                 <TrendingUp className="mr-2 h-4 w-4 text-green-600" />
                                 <span className="text-green-600">
-                                  Save up to <strong>{bestTime.percentageSavings}%</strong> compared to other seasons
+                                  <strong>{bestTime.percentageSavings}% savings</strong> compared to other seasons
                                 </span>
                               </div>
                             )}
@@ -657,12 +681,15 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
               {dateRange?.from && (
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-medium">Available Flights</h3>
+                    <h3 className="text-sm font-medium flex items-center">
+                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Available Flights <span className="text-xs text-muted-foreground ml-2">{filteredFlightOffers.length} found</span>
+                    </h3>
                     
                     {/* Filter Controls */}
                     {flightOffers.length > 0 && (
-                      <div className="flex items-center space-x-4 text-sm">
-                        <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-3 text-sm">
+                        <div className="flex items-center space-x-1.5">
                           <input 
                             type="checkbox" 
                             id="directFlights" 
@@ -670,14 +697,14 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                             onChange={(e) => setShowDirectFlightsOnly(e.target.checked)}
                             className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                           />
-                          <label htmlFor="directFlights" className="text-sm">Direct Flights Only</label>
+                          <label htmlFor="directFlights" className="text-xs">Non-stop only</label>
                         </div>
                         
                         {/* Airline Select */}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center">
                           <Select value={selectedAirline || "all"} onValueChange={(value) => setSelectedAirline(value === "all" ? null : value)}>
-                            <SelectTrigger className="w-[150px] h-8 text-xs">
-                              <SelectValue placeholder="Select Airline" />
+                            <SelectTrigger className="w-[130px] h-8 text-xs">
+                              <SelectValue placeholder="Airline" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All Airlines</SelectItem>
@@ -695,17 +722,17 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                         
                         {/* Price Range Slider - Show only when we have offers */}
                         {flightOffers.length > 0 && (
-                          <div className="flex-col space-y-2 ml-4">
+                          <div className="flex-col space-y-2">
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-8 text-xs">
                                   <DollarSign className="mr-1 h-3 w-3" />
-                                  Price Range
+                                  Price
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-80">
                                 <div className="space-y-4">
-                                  <h4 className="font-medium text-sm">Set Price Range</h4>
+                                  <h4 className="font-medium text-sm">Price Range Filter</h4>
                                   
                                   <div className="space-y-2">
                                     {(() => {
@@ -718,8 +745,8 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                                       return (
                                         <>
                                           <div className="flex justify-between text-xs text-muted-foreground">
-                                            <span>{formatPrice(initialRange[0], 'USD')}</span>
-                                            <span>{formatPrice(initialRange[1], 'USD')}</span>
+                                            <span>{formatPrice(initialRange[0], flightOffers[0]?.currency || 'USD')}</span>
+                                            <span>{formatPrice(initialRange[1], flightOffers[0]?.currency || 'USD')}</span>
                                           </div>
                                           <Slider
                                             defaultValue={initialRange}
@@ -764,8 +791,8 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                   {(showDirectFlightsOnly || selectedAirline || priceRange) && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {showDirectFlightsOnly && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          Direct Flights
+                        <Badge variant="outline" className="flex items-center gap-1 text-xs py-1">
+                          Non-stop flights
                           <button onClick={() => setShowDirectFlightsOnly(false)} className="ml-1 h-3 w-3 rounded-full">
                             ×
                           </button>
@@ -773,8 +800,8 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                       )}
                       
                       {selectedAirline && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          {selectedAirline}
+                        <Badge variant="outline" className="flex items-center gap-1 text-xs py-1">
+                          Airline: {selectedAirline}
                           <button onClick={() => setSelectedAirline(null)} className="ml-1 h-3 w-3 rounded-full">
                             ×
                           </button>
@@ -782,8 +809,8 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                       )}
                       
                       {priceRange && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          {`${formatPrice(priceRange[0], 'USD')} - ${formatPrice(priceRange[1], 'USD')}`}
+                        <Badge variant="outline" className="flex items-center gap-1 text-xs py-1">
+                          Price: {`${formatPrice(priceRange[0], flightOffers[0]?.currency || 'USD')} – ${formatPrice(priceRange[1], flightOffers[0]?.currency || 'USD')}`}
                           <button onClick={() => setPriceRange(null)} className="ml-1 h-3 w-3 rounded-full">
                             ×
                           </button>
@@ -797,15 +824,15 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : filteredFlightOffers.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {filteredFlightOffers.slice(0, 5).map((offer, index) => (
-                        <div key={index} className="border rounded-md p-4 hover:shadow-md transition-shadow">
+                        <div key={index} className="border rounded-md p-3 hover:shadow-md transition-shadow">
                           <div className="flex justify-between items-start">
                             <div>
                               <div className="font-bold text-lg">
                                 {formatPrice(offer.price, offer.currency)}
                               </div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-xs text-muted-foreground mt-0.5">
                                 {offer.airline || 'Various Airlines'}
                               </div>
                             </div>
@@ -813,93 +840,122 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                               <div className="font-medium">
                                 {offer.origin} → {offer.destination}
                               </div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-xs text-muted-foreground mt-0.5">
                                 {formatDisplayDate(offer.departureDate)}
-                                {offer.returnDate && ` - ${formatDisplayDate(offer.returnDate)}`}
+                                {offer.returnDate && ` – ${formatDisplayDate(offer.returnDate)}`}
                               </div>
                             </div>
                           </div>
                           
                           {offer.duration && (
-                            <div className="mt-2 text-sm">
-                              <Badge variant="outline">{offer.duration}</Badge>
+                            <div className="mt-2 text-xs">
+                              <Badge variant="secondary" className="font-normal">
+                                {!offer.duration.includes('~') && !offer.duration.includes('T0D') 
+                                  ? 'Non-stop · ' + offer.duration.replace('PT', '').replace('H', 'h ').replace('M', 'm')
+                                  : 'Connection · ' + offer.duration.replace('PT', '').replace('H', 'h ').replace('M', 'm')}
+                              </Badge>
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-6 border rounded-md">
-                      No flight offers available for the selected dates
+                    <div className="text-center py-6 text-muted-foreground text-sm border rounded-md">
+                      No flights found matching your filters
                     </div>
                   )}
                 </div>
               )}
             </CardContent>
             
-            <CardFooter className="text-sm text-muted-foreground">
-              Prices may vary based on availability and time of booking
+            <CardFooter className="text-xs text-muted-foreground border-t pt-3">
+              Fares shown include taxes and may change based on availability. Additional baggage fees may apply.
             </CardFooter>
           </Card>
         </TabsContent>
         
         <TabsContent value="hotels">
           <Card>
-            <CardHeader>
-              <CardTitle>Hotel Pricing</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <HotelIcon className="mr-2 h-5 w-5 text-primary" />
+                Accommodation
+              </CardTitle>
               <CardDescription>
                 {dateRange?.from ? (
                   <>
-                    Hotels in {city} for {formatDisplayDate(formatApiDate(dateRange.from))}
-                    {dateRange.to && ` - ${formatDisplayDate(formatApiDate(dateRange.to))}`}
-                    {dateRange.to && dateRange.from && 
-                      ` (${differenceInDays(dateRange.to, dateRange.from)} nights)`}
+                    <span className="font-medium">{city}</span>
+                    <span className="ml-1">
+                      {formatDisplayDate(formatApiDate(dateRange.from))}
+                      {dateRange.to && ` – ${formatDisplayDate(formatApiDate(dateRange.to))}`}
+                      {dateRange.to && dateRange.from && 
+                        ` • ${differenceInDays(dateRange.to, dateRange.from)} ${differenceInDays(dateRange.to, dateRange.from) === 1 ? 'night' : 'nights'}`}
+                    </span>
                   </>
                 ) : (
-                  `Average seasonal hotel prices in ${city}`
+                  <>
+                    Seasonal hotel rates in <span className="font-medium">{city}</span>
+                  </>
                 )}
               </CardDescription>
             </CardHeader>
             
             <CardContent>
               {/* Average Seasonal Hotel Prices */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-2 flex items-center">
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  Average Seasonal Prices (Per Night)
-                </h3>
-                
-                {isLoadingAverages ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              {!dateRange?.from && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-medium flex items-center">
+                      <TrendingUp className="mr-2 h-4 w-4 text-muted-foreground" />
+                      Average Nightly Rates
+                    </h3>
+                    <div className="w-32">
+                      <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Season" />
+                        </SelectTrigger>
+                      <SelectContent>
+                        {seasons.map(season => (
+                          <SelectItem key={season.name} value={season.name.toLowerCase()}>
+                            {season.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-2">
-                    {Object.entries(averageHotelPrices).map(([season, data]) => (
-                      <div 
-                        key={season}
-                        className={`p-3 rounded-md flex flex-col items-center text-center 
-                          ${selectedSeason === season ? 'bg-primary/10 border border-primary/30' : 'bg-muted'}
-                        `}
-                      >
-                        <span className="font-medium capitalize">{season}</span>
-                        <span className="text-xl font-bold">
-                          {data.perNight && data.perNight > 0 ? 
-                            formatPrice(data.perNight, data.currency) : 
-                            'N/A'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  
+                  {isLoadingAverages ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2">
+                      {Object.entries(averageHotelPrices).map(([season, data]) => (
+                        <div 
+                          key={season}
+                          className={`p-3 rounded-md flex flex-col items-center text-center 
+                            ${selectedSeason === season ? 'bg-primary/10 border border-primary/30' : 'bg-muted'}
+                          `}
+                        >
+                          <span className="font-medium capitalize text-sm">{season}</span>
+                          <span className="text-lg font-bold mt-1">
+                            {data.perNight && data.perNight > 0 ? 
+                              formatPrice(data.perNight, data.currency) : 
+                              'N/A'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Best Time to Stay Section */}
               {!isLoadingAverages && !dateRange?.from && (
                 <div className="mb-6">
-                  <h3 className="text-sm font-medium mb-3 flex items-center">
-                    <CalendarClock className="mr-2 h-4 w-4" />
-                    Best Time for Accommodation
+                  <h3 className="text-sm font-medium mb-2 flex items-center">
+                    <CalendarClock className="mr-2 h-4 w-4 text-primary" />
+                    Best Value Season
                   </h3>
                   
                   {Object.values(averageHotelPrices).some(data => data.perNight && data.perNight > 0) ? (
@@ -946,10 +1002,10 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                         <Alert className="bg-primary/5 border-primary/20">
                           <Sparkles className="h-4 w-4 text-primary" />
                           <AlertTitle className="text-primary font-medium">
-                            Best time for accommodation in {city}
+                            Best hotel rates in {city}
                           </AlertTitle>
-                          <AlertDescription className="text-sm mt-2">
-                            <div className="flex flex-col space-y-2">
+                          <AlertDescription className="text-sm mt-1">
+                            <div className="flex flex-col space-y-1.5">
                               <div className="flex items-center">
                                 <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
                                 <span className="capitalize">
@@ -959,14 +1015,14 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                               <div className="flex items-center">
                                 <DollarSign className="mr-2 h-4 w-4 text-muted-foreground" />
                                 <span>
-                                  Average nightly rate: <strong>{formatPrice(lowestPrice, currency)}</strong>
+                                  Average per night: <strong>{formatPrice(lowestPrice, currency)}</strong>
                                 </span>
                               </div>
                               {percentageSavings > 0 && (
                                 <div className="flex items-center">
                                   <TrendingUp className="mr-2 h-4 w-4 text-green-600" />
                                   <span className="text-green-600">
-                                    Save up to <strong>{percentageSavings}%</strong> compared to other seasons
+                                    <strong>{percentageSavings}% savings</strong> compared to other seasons
                                   </span>
                                 </div>
                               )}
@@ -975,13 +1031,13 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                         </Alert>
                       );
                     })() || (
-                      <div className="text-center py-4 border rounded-md">
-                        Not enough price data to determine best time for accommodation
+                      <div className="text-center py-3 text-sm text-muted-foreground border rounded-md">
+                        Insufficient data to determine optimal booking period
                       </div>
                     )
                   ) : (
-                    <div className="text-center py-4 border rounded-md">
-                      Not enough price data to determine best time for accommodation
+                    <div className="text-center py-3 text-sm text-muted-foreground border rounded-md">
+                      Insufficient data to determine optimal booking period
                     </div>
                   )}
                 </div>
@@ -990,20 +1046,23 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
               {/* Real-time Hotel Offers */}
               {dateRange?.from && dateRange.to && (
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Available Hotels</h3>
+                  <h3 className="text-sm font-medium mb-3 flex items-center">
+                    <HotelIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Available Properties <span className="text-xs text-muted-foreground ml-2">{hotelOffers.length} found</span>
+                  </h3>
                   
                   {isLoadingHotels ? (
                     <div className="flex justify-center py-4">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : hotelOffers.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {hotelOffers.slice(0, 5).map((hotel, index) => (
-                        <div key={index} className="border rounded-md p-4 hover:shadow-md transition-shadow">
+                        <div key={index} className="border rounded-md p-3 hover:shadow-md transition-shadow">
                           <div className="flex justify-between">
                             <div>
                               <div className="font-bold">{hotel.hotelName}</div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-xs text-muted-foreground mt-0.5">
                                 {hotel.ratingCategory} • {hotel.address}
                               </div>
                             </div>
@@ -1011,33 +1070,36 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                               <div className="font-bold text-lg">
                                 {formatPrice(hotel.price, hotel.currency)}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                Total for {differenceInDays(new Date(hotel.checkOutDate), new Date(hotel.checkInDate))} nights
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {differenceInDays(new Date(hotel.checkOutDate), new Date(hotel.checkInDate))} {differenceInDays(new Date(hotel.checkOutDate), new Date(hotel.checkInDate)) === 1 ? 'night' : 'nights'} total
                               </div>
                             </div>
                           </div>
                           
                           {hotel.amenities && hotel.amenities.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1">
-                              {hotel.amenities.map((amenity, i) => (
-                                <Badge key={i} variant="outline">{amenity}</Badge>
+                              {hotel.amenities.slice(0, 3).map((amenity, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs">{amenity}</Badge>
                               ))}
+                              {hotel.amenities.length > 3 && (
+                                <Badge variant="outline" className="text-xs">+{hotel.amenities.length - 3} more</Badge>
+                              )}
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-6 border rounded-md">
-                      No hotel offers available for the selected dates
+                    <div className="text-center py-6 text-muted-foreground text-sm border rounded-md">
+                      No accommodations available for the selected dates
                     </div>
                   )}
                 </div>
               )}
             </CardContent>
             
-            <CardFooter className="text-sm text-muted-foreground">
-              Hotel prices are for a {adults === 1 ? 'single room' : `room with ${adults} guests`} and may vary based on availability
+            <CardFooter className="text-xs text-muted-foreground border-t pt-3">
+              Rates shown are for {adults === 1 ? 'single occupancy' : `${adults} guests`}. Prices include taxes and may vary based on availability and room type.
             </CardFooter>
           </Card>
         </TabsContent>
