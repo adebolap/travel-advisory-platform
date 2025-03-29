@@ -57,7 +57,7 @@ interface TravelPricingProps {
   className?: string;
 }
 
-export default function TravelPricing({ city, originCity = 'New York', dateRange, className = '' }: TravelPricingProps) {
+export default function TravelPricing({ city, originCity = '', dateRange, className = '' }: TravelPricingProps) {
   const [flightOffers, setFlightOffers] = useState<FlightPricing[]>([]);
   const [hotelOffers, setHotelOffers] = useState<HotelPricing[]>([]);
   const [averageFlightPrices, setAverageFlightPrices] = useState<Record<string, AveragePrice>>({});
