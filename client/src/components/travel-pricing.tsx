@@ -441,111 +441,47 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
           return format(date, 'MMMM');
         });
         
+        // Calculate savings compared to average of other seasons
+        let totalOtherSeasons = 0;
+        let countOtherSeasons = 0;
+        
+        Object.entries(averageFlightPrices).forEach(([season, data]) => {
+          if (season !== bestSeason && data.price > 0) {
+            totalOtherSeasons += data.price;
+            countOtherSeasons++;
+          }
+        });
+        
+        const avgOtherSeasons = countOtherSeasons > 0 ? totalOtherSeasons / countOtherSeasons : 0;
+        const percentageSavings = avgOtherSeasons > 0 ? 
+          Math.round(((avgOtherSeasons - lowestPrice) / avgOtherSeasons) * 100) : 0;
+        
         return {
           season: bestSeason,
           price: lowestPrice,
           currency,
           months: monthNames,
-          percentageSavings: calculateSavings(bestSeason, lowestPrice)
+          percentageSavings
         };
       }
     }
     
     return null;
   };
-  
-  // Calculate savings percentage compared to average of other seasons
-  const calculateSavings = (bestSeason: string, lowestPrice: number) => {
-    let totalOtherSeasons = 0;
-    let countOtherSeasons = 0;
-    
-    Object.entries(averageFlightPrices).forEach(([season, data]) => {
-      if (season !== bestSeason && data.price > 0) {
-        totalOtherSeasons += data.price;
-        countOtherSeasons++;
-      }
-    });
-    
-    if (countOtherSeasons === 0) return 0;
-    
-    const avgOtherSeasons = totalOtherSeasons / countOtherSeasons;
-    return Math.round(((avgOtherSeasons - lowestPrice) / avgOtherSeasons) * 100);
-  };
 
   return (
-    <div className={`travel-pricing ${className}`}>
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-        <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="flights">
-              <Plane className="mr-2 h-4 w-4" />
-              Flights
-            </TabsTrigger>
-            <TabsTrigger value="hotels">
-              <HotelIcon className="mr-2 h-4 w-4" />
-              Hotels
-            </TabsTrigger>
-          </TabsList>
-          
-          <div className="flex space-x-2">
-            <Select value={adults.toString()} onValueChange={(value) => setAdults(parseInt(value))}>
-              <SelectTrigger className="w-[120px]">
-                <Users className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Travelers" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5].map(num => (
-                  <SelectItem key={num} value={num.toString()}>
-                    {num} {num === 1 ? 'Adult' : 'Adults'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={selectedSeason} onValueChange={setSelectedSeason}>
-              <SelectTrigger className="w-[130px]">
-                <Calendar className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Season" />
-              </SelectTrigger>
-              <SelectContent>
-                {seasons.map(season => (
-                  <SelectItem key={season.name} value={season.name.toLowerCase()}>
-                    {season.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={getUserLocation} 
-                  disabled={isLocating}
-                  className="flex-shrink-0"
-                >
-                  {isLocating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <MapPin className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {userLocation 
-                  ? `Using your location: ${userLocation}` 
-                  : "Use your current location"}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
-            {error}
-          </div>
-        )}
+    <div className={className}>
+      <Tabs defaultValue="flights" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="flights">
+            <Plane className="h-4 w-4 mr-2" />
+            Flights
+          </TabsTrigger>
+          <TabsTrigger value="hotels">
+            <HotelIcon className="h-4 w-4 mr-2" />
+            Hotels
+          </TabsTrigger>
+        </TabsList>
         
         <TabsContent value="flights">
           <Card>
@@ -585,14 +521,15 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Season" />
                         </SelectTrigger>
-                      <SelectContent>
-                        {seasons.map(season => (
-                          <SelectItem key={season.name} value={season.name.toLowerCase()}>
-                            {season.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectContent>
+                          {seasons.map(season => (
+                            <SelectItem key={season.name} value={season.name.toLowerCase()}>
+                              {season.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   
                   {isLoadingAverages ? (
@@ -914,14 +851,15 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Season" />
                         </SelectTrigger>
-                      <SelectContent>
-                        {seasons.map(season => (
-                          <SelectItem key={season.name} value={season.name.toLowerCase()}>
-                            {season.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectContent>
+                          {seasons.map(season => (
+                            <SelectItem key={season.name} value={season.name.toLowerCase()}>
+                              {season.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   
                   {isLoadingAverages ? (
