@@ -2,15 +2,20 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Plane, Bed, Utensils, MapPin } from "lucide-react";
+import { DollarSign, Plane, Bed, Utensils, MapPin, Globe, Loader2 } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 import { formatCurrency } from "@/lib/currency";
+import AirportSelector from "./airport-selector";
+import { Airport } from "@/lib/airport-data";
+import { useQuery } from "@tanstack/react-query";
+import { format as formatDate } from "date-fns";
 
 interface BudgetEstimatorProps {
   city: string;
   travelStyle?: string;
   dateRange?: DateRange;
+  originCity?: string;
 }
 
 // Leave cityBaseCosts unchanged - it's already well structured
@@ -180,9 +185,10 @@ const travelStyleMultipliers: Record<string, number> = {
 };
 
 
-export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRange }: BudgetEstimatorProps) {
+export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRange, originCity }: BudgetEstimatorProps) {
   const [days, setDays] = useState(7);
   const [showUSD, setShowUSD] = useState(false);
+  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
 
   // Update days when dateRange changes
   useEffect(() => {
@@ -191,6 +197,44 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
       setDays(numberOfDays);
     }
   }, [dateRange]);
+  
+  // Set selected airport if originCity is provided
+  useEffect(() => {
+    if (originCity) {
+      // This will update when the parent component passes a new originCity
+      setSelectedAirport({
+        code: '', // Will be populated by AirportSelector when user selects
+        name: '',
+        city: originCity,
+        country: ''
+      });
+    }
+  }, [originCity]);
+  
+  // Fetch flight prices if both origin and destination are selected
+  const { data: flightPrices, isLoading: isLoadingFlights } = useQuery<any[]>({
+    queryKey: ['flightPrice', selectedAirport?.city || originCity, city, dateRange?.from, dateRange?.to],
+    queryFn: async () => {
+      if (!selectedAirport?.city && !originCity) return null;
+      if (!dateRange?.from || !dateRange?.to) return null;
+      
+      const params = new URLSearchParams({
+        origin: selectedAirport?.city || originCity || '',
+        destination: city,
+        departureDate: formatDate(dateRange.from, 'yyyy-MM-dd'),
+        returnDate: formatDate(dateRange.to, 'yyyy-MM-dd')
+      });
+      
+      const response = await fetch(`/api/flights/price?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch flight prices');
+      }
+      
+      return response.json();
+    },
+    enabled: !!(((selectedAirport?.city || originCity) && city && dateRange?.from && dateRange?.to)),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   // Get base costs for the city or use defaults
   const baseCosts = cityBaseCosts[city] || defaultCosts;
@@ -205,11 +249,38 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
     transport: Math.round(baseCosts.transport * multiplier * days)
   };
 
-  const totalCost = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
+  // Calculate base costs total
+  const baseTotalCost = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
+  
+  // Parse flight data
+  let bestFlightPrice = 0;
+  let flightCurrency = '';
+  let flightCostInLocalCurrency = 0;
+  
+  if (flightPrices && flightPrices.length > 0) {
+    // Find best flight price
+    bestFlightPrice = Math.min(...flightPrices.map(flight => parseFloat(flight.price)));
+    flightCurrency = flightPrices[0].currency; // Get currency from first flight
+    
+    // Convert flight price to local currency if needed
+    if (flightCurrency === baseCosts.currency) {
+      flightCostInLocalCurrency = bestFlightPrice;
+    } else if (flightCurrency === 'EUR' && baseCosts.exchangeRate) {
+      // Convert EUR to local currency through USD
+      flightCostInLocalCurrency = Math.round(bestFlightPrice * 1.08 / baseCosts.exchangeRate);
+    } else if (flightCurrency === 'USD' && baseCosts.exchangeRate) {
+      // Convert USD to local currency
+      flightCostInLocalCurrency = Math.round(bestFlightPrice / baseCosts.exchangeRate);
+    }
+  }
+  
+  // Calculate total including flights if available
+  const totalCost = flightPrices?.length ? baseTotalCost + flightCostInLocalCurrency : baseTotalCost;
   const totalUSD = baseCosts.exchangeRate ? (totalCost * baseCosts.exchangeRate) : totalCost;
-
+    
+  // Helper function for formatting currency
   const formatLocalCurrency = (amount: number) => {
-    return formatCurrency(amount, baseCosts.currency, baseCosts.symbol);
+    return formatCurrency(amount, baseCosts.currency as any);
   };
 
   return (
@@ -235,6 +306,26 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
               disabled={!!dateRange?.from && !!dateRange?.to}
             />
           </div>
+          
+          {!originCity && !selectedAirport && (
+            <div className="space-y-2">
+              <Label>Departure Airport</Label>
+              <AirportSelector 
+                onSelect={setSelectedAirport}
+                label="Select your departure airport" 
+              />
+              <p className="text-xs text-muted-foreground">
+                Select your departure airport to see flight prices
+              </p>
+            </div>
+          )}
+          
+          {(originCity || selectedAirport) && isLoadingFlights && (
+            <div className="flex items-center gap-2 py-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Loading flight prices...</span>
+            </div>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -293,6 +384,37 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
                 )}
               </div>
             </div>
+            
+            {/* Show flight prices if available */}
+            {(originCity || selectedAirport) && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <span>Flight ({selectedAirport?.city || originCity} to {city})</span>
+                </div>
+                <div className="text-right">
+                  {isLoadingFlights ? (
+                    <div className="flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span className="text-sm">Loading...</span>
+                    </div>
+                  ) : bestFlightPrice ? (
+                    <div>
+                      <div className="font-medium">
+                        {flightCurrency === 'EUR' ? '€' : '$'}{bestFlightPrice}
+                      </div>
+                      {baseCosts.currency !== flightCurrency && baseCosts.exchangeRate && (
+                        <div className="text-sm text-muted-foreground">
+                          ≈ {formatLocalCurrency(flightCostInLocalCurrency)}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No flights found</div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="pt-2 mt-2 border-t">
               <div className="flex items-center justify-between font-semibold">

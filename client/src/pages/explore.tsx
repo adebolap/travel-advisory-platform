@@ -224,6 +224,7 @@ export default function Explore() {
             <BudgetEstimator
               city={city}
               dateRange={dateRange}
+              originCity={originCity}
             />
             <PackingListGenerator
               city={city}
