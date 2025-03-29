@@ -675,12 +675,12 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                         
                         {/* Airline Select */}
                         <div className="flex items-center space-x-2">
-                          <Select value={selectedAirline || ""} onValueChange={(value) => setSelectedAirline(value || null)}>
+                          <Select value={selectedAirline || "all"} onValueChange={(value) => setSelectedAirline(value === "all" ? null : value)}>
                             <SelectTrigger className="w-[150px] h-8 text-xs">
                               <SelectValue placeholder="Select Airline" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">All Airlines</SelectItem>
+                              <SelectItem value="all">All Airlines</SelectItem>
                               {Array.from(new Set(flightOffers.map(offer => offer.airline).filter(Boolean)))
                                 .sort()
                                 .map(airline => (
