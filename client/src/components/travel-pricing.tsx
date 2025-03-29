@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DateRange } from 'react-day-picker';
 import { format, differenceInDays } from 'date-fns';
 import axios from 'axios';
@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Slider } from '@/components/ui/slider';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Types for flight offers
 interface FlightPricing {
@@ -59,6 +61,7 @@ interface TravelPricingProps {
 
 export default function TravelPricing({ city, originCity = '', dateRange, className = '' }: TravelPricingProps) {
   const [flightOffers, setFlightOffers] = useState<FlightPricing[]>([]);
+  const [filteredFlightOffers, setFilteredFlightOffers] = useState<FlightPricing[]>([]);
   const [hotelOffers, setHotelOffers] = useState<HotelPricing[]>([]);
   const [averageFlightPrices, setAverageFlightPrices] = useState<Record<string, AveragePrice>>({});
   const [averageHotelPrices, setAverageHotelPrices] = useState<Record<string, AveragePrice>>({});
@@ -71,6 +74,11 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  
+  // Flight filter options
+  const [showDirectFlightsOnly, setShowDirectFlightsOnly] = useState(false);
+  const [selectedAirline, setSelectedAirline] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
 
   // Define seasons
   const seasons: Season[] = [
@@ -138,6 +146,44 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
       setIsLoadingFlights(false);
     }
   };
+  
+  // Apply filters to flight offers
+  const applyFlightFilters = useCallback(() => {
+    console.log('TravelPricing: Applying flight filters');
+    
+    if (!flightOffers.length) {
+      setFilteredFlightOffers([]);
+      return;
+    }
+    
+    let filtered = [...flightOffers];
+    
+    // Filter direct flights only (based on duration format, direct flights usually have PT2H30M format)
+    if (showDirectFlightsOnly) {
+      console.log('TravelPricing: Filtering for direct flights only');
+      filtered = filtered.filter(offer => 
+        !offer.duration?.includes('~') && !offer.duration?.includes('T0D')
+      );
+    }
+    
+    // Filter by airline if selected
+    if (selectedAirline) {
+      console.log(`TravelPricing: Filtering for airline: ${selectedAirline}`);
+      filtered = filtered.filter(offer => offer.airline === selectedAirline);
+    }
+    
+    // Filter by price range if set
+    if (priceRange) {
+      console.log(`TravelPricing: Filtering for price range: ${priceRange[0]}-${priceRange[1]}`);
+      filtered = filtered.filter(offer => {
+        const price = parseFloat(offer.price);
+        return price >= priceRange[0] && price <= priceRange[1];
+      });
+    }
+    
+    console.log(`TravelPricing: Filtered from ${flightOffers.length} to ${filtered.length} flights`);
+    setFilteredFlightOffers(filtered);
+  }, [flightOffers, showDirectFlightsOnly, selectedAirline, priceRange]);
 
   // Fetch actual hotel prices based on date range
   const fetchHotelPrices = async () => {
@@ -342,6 +388,11 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
       fetchHotelPrices();
     }
   }, [activeTab]);
+  
+  // Apply filters when flight offers or filter settings change
+  useEffect(() => {
+    applyFlightFilters();
+  }, [flightOffers, showDirectFlightsOnly, selectedAirline, priceRange, applyFlightFilters]);
 
   // Format price
   const formatPrice = (price: string | number, currency: string) => {
@@ -605,15 +656,149 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
               {/* Real-time Flight Offers */}
               {dateRange?.from && (
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Available Flights</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-medium">Available Flights</h3>
+                    
+                    {/* Filter Controls */}
+                    {flightOffers.length > 0 && (
+                      <div className="flex items-center space-x-4 text-sm">
+                        <div className="flex items-center space-x-2">
+                          <input 
+                            type="checkbox" 
+                            id="directFlights" 
+                            checked={showDirectFlightsOnly}
+                            onChange={(e) => setShowDirectFlightsOnly(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <label htmlFor="directFlights" className="text-sm">Direct Flights Only</label>
+                        </div>
+                        
+                        {/* Airline Select */}
+                        <div className="flex items-center space-x-2">
+                          <Select value={selectedAirline || ""} onValueChange={(value) => setSelectedAirline(value || null)}>
+                            <SelectTrigger className="w-[150px] h-8 text-xs">
+                              <SelectValue placeholder="Select Airline" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">All Airlines</SelectItem>
+                              {Array.from(new Set(flightOffers.map(offer => offer.airline).filter(Boolean)))
+                                .sort()
+                                .map(airline => (
+                                  <SelectItem key={airline} value={airline as string}>
+                                    {airline}
+                                  </SelectItem>
+                                ))
+                              }
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Price Range Slider - Show only when we have offers */}
+                        {flightOffers.length > 0 && (
+                          <div className="flex-col space-y-2 ml-4">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-8 text-xs">
+                                  <DollarSign className="mr-1 h-3 w-3" />
+                                  Price Range
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80">
+                                <div className="space-y-4">
+                                  <h4 className="font-medium text-sm">Set Price Range</h4>
+                                  
+                                  <div className="space-y-2">
+                                    {(() => {
+                                      // Calculate min and max prices from available offers
+                                      const prices = flightOffers.map(offer => parseFloat(offer.price));
+                                      const minPrice = Math.floor(Math.min(...prices));
+                                      const maxPrice = Math.ceil(Math.max(...prices));
+                                      const initialRange = priceRange || [minPrice, maxPrice];
+                                      
+                                      return (
+                                        <>
+                                          <div className="flex justify-between text-xs text-muted-foreground">
+                                            <span>{formatPrice(initialRange[0], 'USD')}</span>
+                                            <span>{formatPrice(initialRange[1], 'USD')}</span>
+                                          </div>
+                                          <Slider
+                                            defaultValue={initialRange}
+                                            min={minPrice}
+                                            max={maxPrice}
+                                            step={10}
+                                            onValueChange={(value) => setPriceRange(value as [number, number])}
+                                            className="my-4"
+                                          />
+                                          <div className="flex justify-between">
+                                            <Button 
+                                              variant="outline" 
+                                              size="sm" 
+                                              onClick={() => setPriceRange([minPrice, maxPrice])}
+                                            >
+                                              Reset
+                                            </Button>
+                                            <Button 
+                                              variant="default" 
+                                              size="sm" 
+                                              onClick={() => {
+                                                // Close popover logic would go here if needed
+                                              }}
+                                            >
+                                              Apply
+                                            </Button>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Filter Badges */}
+                  {(showDirectFlightsOnly || selectedAirline || priceRange) && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {showDirectFlightsOnly && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          Direct Flights
+                          <button onClick={() => setShowDirectFlightsOnly(false)} className="ml-1 h-3 w-3 rounded-full">
+                            ×
+                          </button>
+                        </Badge>
+                      )}
+                      
+                      {selectedAirline && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          {selectedAirline}
+                          <button onClick={() => setSelectedAirline(null)} className="ml-1 h-3 w-3 rounded-full">
+                            ×
+                          </button>
+                        </Badge>
+                      )}
+                      
+                      {priceRange && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          {`${formatPrice(priceRange[0], 'USD')} - ${formatPrice(priceRange[1], 'USD')}`}
+                          <button onClick={() => setPriceRange(null)} className="ml-1 h-3 w-3 rounded-full">
+                            ×
+                          </button>
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                   
                   {isLoadingFlights ? (
                     <div className="flex justify-center py-4">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                  ) : flightOffers.length > 0 ? (
+                  ) : filteredFlightOffers.length > 0 ? (
                     <div className="space-y-4">
-                      {flightOffers.slice(0, 5).map((offer, index) => (
+                      {filteredFlightOffers.slice(0, 5).map((offer, index) => (
                         <div key={index} className="border rounded-md p-4 hover:shadow-md transition-shadow">
                           <div className="flex justify-between items-start">
                             <div>

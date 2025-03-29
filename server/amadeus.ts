@@ -104,8 +104,21 @@ export async function getFlightOffers(
 ): Promise<FlightPricing[]> {
   try {
     // Convert city names to airport codes
-    const originCode = cityToAirport[originCity] || originCity;
-    const destinationCode = cityToAirport[destinationCity] || destinationCity;
+    let originCode = cityToAirport[originCity] || null;
+    let destinationCode = cityToAirport[destinationCity] || null;
+    
+    // Handle case when city names are provided instead of codes
+    if (!originCode) {
+      console.log(`No IATA code found for origin: ${originCity}, attempting to use as-is`);
+      originCode = originCity.length === 3 ? originCity : 'BRU'; // Default to Brussels if not a code
+    }
+    
+    if (!destinationCode) {
+      console.log(`No IATA code found for destination: ${destinationCity}, attempting to use as-is`);
+      destinationCode = destinationCity.length === 3 ? destinationCity : 'JFK'; // Default to New York if not a code
+    }
+    
+    console.log(`Using IATA codes: Origin=${originCode}, Destination=${destinationCode}`);
 
     // Set up search parameters
     const params: any = {
@@ -160,7 +173,15 @@ export async function getHotelOffers(
 ): Promise<HotelPricing[]> {
   try {
     // Convert city name to code if needed
-    const city = cityToAirport[cityCode] ? cityToAirport[cityCode] : cityCode;
+    let city = cityToAirport[cityCode] || null;
+    
+    // Handle case when city name is provided instead of code
+    if (!city) {
+      console.log(`No IATA code found for city: ${cityCode}, attempting to use as-is`);
+      city = cityCode.length === 3 ? cityCode : 'NYC'; // Default to New York if not a code
+    }
+    
+    console.log(`Using IATA code for hotel search: ${city}`);
     
     // First, search for hotels by city
     const hotelListResponse = await amadeus.referenceData.locations.hotels.byCity.get({
