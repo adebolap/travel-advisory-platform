@@ -617,16 +617,18 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
               {/* Real-time Flight Offers */}
               {dateRange?.from && (
                 <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-medium flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                      Available Flights <span className="text-xs text-muted-foreground ml-2">{filteredFlightOffers.length} found</span>
-                    </h3>
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-sm font-medium flex items-center">
+                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                        Available Flights <span className="text-xs text-muted-foreground ml-2">{filteredFlightOffers.length} found</span>
+                      </h3>
+                    </div>
                     
-                    {/* Filter Controls */}
+                    {/* Filter Controls - Responsive Layout */}
                     {flightOffers.length > 0 && (
-                      <div className="flex items-center space-x-3 text-sm">
-                        <div className="flex items-center space-x-1.5">
+                      <div className="flex flex-wrap gap-2 items-center mt-2">
+                        <div className="flex items-center space-x-1.5 mr-1">
                           <input 
                             type="checkbox" 
                             id="directFlights" 
@@ -634,7 +636,7 @@ export default function TravelPricing({ city, originCity = '', dateRange, classN
                             onChange={(e) => setShowDirectFlightsOnly(e.target.checked)}
                             className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                           />
-                          <label htmlFor="directFlights" className="text-xs">Non-stop only</label>
+                          <label htmlFor="directFlights" className="text-xs whitespace-nowrap">Non-stop only</label>
                         </div>
                         
                         {/* Airline Select */}
