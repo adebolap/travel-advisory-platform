@@ -14,19 +14,43 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Explore() {
   const { toast } = useToast();
   const [city, setCity] = useState("");
+  const [originCity, setOriginCity] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [currentWeather, setCurrentWeather] = useState<string>("Mild");
+  const [showOriginInput, setShowOriginInput] = useState(false);
 
   const interests = ["culture", "food", "nightlife", "shopping", "transport"];
 
   const handleCitySelect = (selectedCity: string) => {
     setCity(selectedCity);
-    setSearchSubmitted(true);
+    setShowOriginInput(true);
+  };
+
+  const handleOriginCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setOriginCity(e.target.value);
+  };
+
+  const handleOriginSubmit = () => {
+    if (originCity.trim()) {
+      setSearchSubmitted(true);
+      toast({
+        title: "Origin selected",
+        description: `Planning your trip from ${originCity} to ${city}`,
+      });
+    } else {
+      toast({
+        title: "Origin required",
+        description: "Please enter your departure city",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleWeatherUpdate = (weather: string) => {
@@ -132,6 +156,42 @@ export default function Explore() {
           </CardContent>
         </Card>
       </div>
+      
+      {showOriginInput && city && !searchSubmitted && (
+        <Card className="mb-6 sm:mb-8 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+          <CardContent className="p-4 sm:p-6">
+            <h3 className="font-semibold text-md mb-3 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2">
+                <path d="M2 18L10 2l8 16" />
+                <path d="M4 14h16" />
+                <path d="M10 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+              </svg>
+              Where are you flying from?
+            </h3>
+            <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
+              <div className="flex-1">
+                <Label htmlFor="originCity" className="sr-only">Origin City</Label>
+                <Input 
+                  id="originCity" 
+                  placeholder="Enter your departure city (e.g. New York)" 
+                  value={originCity}
+                  onChange={handleOriginCityChange}
+                  className="w-full"
+                />
+              </div>
+              <Button 
+                onClick={handleOriginSubmit}
+                className="flex-shrink-0"
+              >
+                Continue
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              This will be used to calculate flight prices and travel times.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {searchSubmitted && city && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
@@ -157,6 +217,7 @@ export default function Explore() {
           <div className="space-y-4 sm:space-y-8">
             <TravelPricing
               city={city}
+              originCity={originCity}
               dateRange={dateRange}
               className="mb-4 sm:mb-8"
             />

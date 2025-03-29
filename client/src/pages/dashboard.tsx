@@ -12,14 +12,30 @@ import { DateRange } from "react-day-picker";
 import { format, addDays } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Plane, UtensilsCrossed, Music, DollarSign } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
+  const { toast } = useToast();
   const [selectedCity, setSelectedCity] = useState("");
+  const [originCity, setOriginCity] = useState("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 7)
   });
+  const [showOriginInput, setShowOriginInput] = useState(false);
+  
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city);
+    setShowOriginInput(true);
+  };
+  
+  const handleOriginCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setOriginCity(e.target.value);
+  };
 
   // Convert date range to string format for API calls
   const getDateRangeStrings = () => {
@@ -45,7 +61,7 @@ export default function Dashboard() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">Destination</label>
-                  <CitySearch onCitySelect={setSelectedCity} />
+                  <CitySearch onCitySelect={handleCitySelect} />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">Travel Dates</label>
@@ -54,6 +70,40 @@ export default function Dashboard() {
                     onDateRangeChange={setDateRange}
                   />
                 </div>
+                {showOriginInput && (
+                  <div className="md:col-span-2 mt-2">
+                    <label className="text-sm font-medium mb-1 block">Departure City</label>
+                    <div className="flex gap-3">
+                      <Input
+                        placeholder="Enter your departure city (e.g. New York)"
+                        value={originCity}
+                        onChange={handleOriginCityChange}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={() => {
+                          if (originCity) {
+                            toast({
+                              title: "Origin selected",
+                              description: `Planning your trip from ${originCity} to ${selectedCity}`,
+                            });
+                          } else {
+                            toast({
+                              title: "Origin required",
+                              description: "Please enter your departure city",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        Set Origin
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This will be used to calculate flight prices and travel times.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -131,6 +181,7 @@ export default function Dashboard() {
                     <h3 className="text-xl font-semibold mb-4">Travel Cost Estimates for {selectedCity}</h3>
                     <TravelPricing
                       city={selectedCity}
+                      originCity={originCity}
                       dateRange={dateRange}
                     />
                   </CardContent>
