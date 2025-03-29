@@ -77,6 +77,7 @@ export interface FlightPricing {
   destinationCity: string;
   airline?: string;
   duration?: string;
+  stops?: number;
 }
 
 // Types for hotel offers
@@ -141,17 +142,23 @@ export async function getFlightOffers(
       const price = offer.price;
       const firstSegment = offer.itineraries[0].segments[0];
       
+      // Get the last segment to find the final destination for multi-leg flights
+      const segments = offer.itineraries[0].segments;
+      const lastSegment = segments[segments.length - 1];
+      const finalDestination = lastSegment.arrival.iataCode;
+      
       return {
         price: price.total,
         currency: price.currency,
         departureDate: firstSegment.departure.at,
         returnDate: returnDate || '',
         origin: firstSegment.departure.iataCode,
-        destination: firstSegment.arrival.iataCode,
+        destination: finalDestination, // Use the final destination instead of first segment's arrival
         originCity: originCity,
         destinationCity: destinationCity,
         airline: firstSegment.carrierCode,
-        duration: offer.itineraries[0].duration
+        duration: offer.itineraries[0].duration,
+        stops: segments.length - 1 // Add number of stops (0 for direct flights)
       };
     });
   } catch (error) {
