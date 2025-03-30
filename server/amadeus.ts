@@ -195,128 +195,145 @@ export async function getHotelOffers(
   ratings: string[] = ['3'] // Default to 3-star hotels
 ): Promise<HotelPricing[]> {
   try {
-    // For hotel searches, we need to use actual city codes, not airport codes
-    // Define a mapping of common cities to their city codes (different from airport codes)
-    const cityToCityCode: Record<string, string> = {
-      'New York': 'NYC',
-      'London': 'LON',
-      'Paris': 'PAR',
-      'Tokyo': 'TYO',
-      'Rome': 'ROM',
-      'Barcelona': 'BCN', 
-      'Prague': 'PRG',
-      'Amsterdam': 'AMS',
-      'Berlin': 'BER',
-      'Madrid': 'MAD',
-      'Vienna': 'VIE',
-      'Brussels': 'BRU',
-      'Lisbon': 'LIS',
-      'Dublin': 'DUB',
-      'Doha': 'DOH'
-    };
-    
-    // Try to get the city code
-    let city = cityToCityCode[cityCode] || null;
-    
-    // Add Doha to our city code mapping if it's not there
-    if (cityCode === 'Doha' && !city) {
-      city = 'DOH'; // City code for Doha
-      console.log(`Using DOH for Doha hotel search`);
-    }
-    
-    // If no city code found, try to use the provided code
-    if (!city) {
-      console.log(`No city code found for city: ${cityCode}, attempting to use as-is`);
-      city = cityCode.length === 3 ? cityCode : cityCode; // Use the original city name
-    }
-    
-    console.log(`Using city code for hotel search: ${city}`);
-    
-    // Hardcoded hotel data for our popular destinations
-    // In a real app, you'd store this in a database or call a different API
-    const dummyHotels = [
-      {
-        cityCode: 'NYC',
-        hotels: [
-          { name: 'Grand Central Hotel', price: 250, currency: 'USD', rating: 4, address: '123 Broadway, New York', amenities: ['WiFi', 'Pool', 'Spa'] },
-          { name: 'Times Square Suites', price: 320, currency: 'USD', rating: 5, address: '456 5th Avenue, New York', amenities: ['Room Service', 'Gym', 'Restaurant'] },
-          { name: 'Manhattan View', price: 180, currency: 'USD', rating: 3, address: '789 Park Ave, New York', amenities: ['WiFi', 'Continental Breakfast'] }
-        ]
-      },
-      {
-        cityCode: 'LON',
-        hotels: [
-          { name: 'Kensington Hotel', price: 210, currency: 'GBP', rating: 4, address: '12 Baker St, London', amenities: ['WiFi', 'Breakfast', 'Bar'] },
-          { name: 'Westminster Suites', price: 280, currency: 'GBP', rating: 5, address: '34 Oxford St, London', amenities: ['Room Service', 'Spa', 'Restaurant'] },
-          { name: 'Piccadilly Inn', price: 160, currency: 'GBP', rating: 3, address: '56 Bond St, London', amenities: ['WiFi', 'Continental Breakfast'] }
-        ]
-      },
-      {
-        cityCode: 'PAR',
-        hotels: [
-          { name: 'Seine View Hotel', price: 230, currency: 'EUR', rating: 4, address: '12 Champs-Élysées, Paris', amenities: ['WiFi', 'Breakfast', 'Bar'] },
-          { name: 'Eiffel Luxury Suites', price: 350, currency: 'EUR', rating: 5, address: '34 Rue de Rivoli, Paris', amenities: ['Room Service', 'Spa', 'Restaurant'] },
-          { name: 'Montmartre Boutique', price: 180, currency: 'EUR', rating: 3, address: '56 Boulevard de Clichy, Paris', amenities: ['WiFi', 'Continental Breakfast'] }
-        ]
-      },
-      {
-        cityCode: 'BER',
-        hotels: [
-          { name: 'Alexanderplatz Hotel', price: 150, currency: 'EUR', rating: 4, address: '12 Unter den Linden, Berlin', amenities: ['WiFi', 'Breakfast', 'Bar'] },
-          { name: 'Brandenburg Suites', price: 210, currency: 'EUR', rating: 5, address: '34 Friedrichstrasse, Berlin', amenities: ['Room Service', 'Spa', 'Restaurant'] },
-          { name: 'Kreuzberg View', price: 120, currency: 'EUR', rating: 3, address: '56 Kurfürstendamm, Berlin', amenities: ['WiFi', 'Bike Rental', 'Breakfast'] }
-        ]
-      },
-      {
-        cityCode: 'PRG',
-        hotels: [
-          { name: 'Old Town Square Hotel', price: 130, currency: 'EUR', rating: 4, address: '12 Wenceslas Square, Prague', amenities: ['WiFi', 'Breakfast', 'Bar'] },
-          { name: 'Charles Bridge Suites', price: 180, currency: 'EUR', rating: 5, address: '34 Old Town Square, Prague', amenities: ['Room Service', 'Spa', 'Restaurant'] },
-          { name: 'Prague Castle View', price: 110, currency: 'EUR', rating: 3, address: '56 Mala Strana, Prague', amenities: ['WiFi', 'Continental Breakfast'] }
-        ]
-      },
-      {
-        cityCode: 'BRU',
-        hotels: [
-          { name: 'Grand Place Hotel', price: 140, currency: 'EUR', rating: 4, address: '12 Grand Place, Brussels', amenities: ['WiFi', 'Breakfast', 'Bar'] },
-          { name: 'EU Quarter Suites', price: 190, currency: 'EUR', rating: 5, address: '34 Rue de la Loi, Brussels', amenities: ['Room Service', 'Spa', 'Restaurant'] },
-          { name: 'Atomium View', price: 120, currency: 'EUR', rating: 3, address: '56 Avenue Louise, Brussels', amenities: ['WiFi', 'Continental Breakfast'] }
-        ]
-      },
-      {
-        cityCode: 'DOH',
-        hotels: [
-          { name: 'West Bay Luxury Hotel', price: 220, currency: 'USD', rating: 4, address: '123 Corniche Street, Doha', amenities: ['WiFi', 'Pool', 'Spa', 'Beach Access'] },
-          { name: 'Pearl Island Resort', price: 340, currency: 'USD', rating: 5, address: 'The Pearl, Doha', amenities: ['Room Service', 'Private Beach', 'Restaurant', 'Gym'] },
-          { name: 'Souq Waqif Boutique', price: 180, currency: 'USD', rating: 3, address: 'Al Jasra, Doha', amenities: ['WiFi', 'Airport Shuttle', 'Traditional Decor'] }
-        ]
-      }
-    ];
-    
-    // Find hotels for the requested city
-    const cityHotels = dummyHotels.find(c => c.cityCode === city) || dummyHotels[0]; // Default to NYC
-    
-    // Apply a small random variation to prices (+/- 10%) to simulate different dates affecting prices
-    const dateInfluence = Math.random() * 0.2 + 0.9; // 0.9 to 1.1
-    
-    // Map the response to our interface
-    return cityHotels.hotels.map(hotel => {
-      // Adjust price based on number of nights
-      const nights = Math.round((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24));
-      const adjustedPrice = Math.round(hotel.price * dateInfluence * nights);
-      
-      return {
-        hotelName: hotel.name,
-        price: String(adjustedPrice),
-        currency: hotel.currency,
-        checkInDate,
-        checkOutDate,
-        ratingCategory: `${hotel.rating}-star`,
-        address: hotel.address,
-        amenities: hotel.amenities,
-        thumbnailUrl: undefined // No thumbnails in our dummy data
-      };
+    console.log(`AMADEUS API: Hotel price request received with params:`, {
+      cityCode,
+      checkInDate,
+      checkOutDate,
+      adults,
+      radius
     });
+    
+    console.log(`AMADEUS API: Fetching hotel prices in ${cityCode}`);
+    
+    // For hotel searches, we need to use actual city codes, not airport codes
+    // Convert city name to airport code first as it's more reliable
+    let cityQuery = cityToAirport[cityCode] || null;
+    
+    // If no airport code found, try to use the provided code
+    if (!cityQuery) {
+      // If it's already a 3-letter code, use it as is, otherwise keep original name
+      cityQuery = cityCode.length === 3 ? cityCode : cityCode;
+    }
+    
+    console.log(`Using city code for hotel search: ${cityQuery}`);
+    
+    // Try to search hotels in this city
+    try {
+      // Step 1: Use the Hotel List API to find hotels in the city
+      const hotelSearchResponse = await amadeus.referenceData.locations.hotels.byCity.get({
+        cityCode: cityQuery,
+        radius: radius,
+        radiusUnit: 'KM'
+      });
+      
+      // Get the top hotels by rating (higher rated first)
+      const topHotels = hotelSearchResponse.data
+        .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 10); // Limit to 10 hotels to avoid rate limiting
+      
+      if (topHotels.length === 0) {
+        throw new Error(`No hotels found in ${cityCode}`);
+      }
+      
+      // Step 2: Use the hotelIds to get offers for those hotels
+      const hotelIds = topHotels.map((hotel: any) => hotel.hotelId);
+      
+      const hotelOfferResponse = await amadeus.shopping.hotelOffersSearch.get({
+        hotelIds: hotelIds.join(','),
+        adults: adults,
+        checkInDate: checkInDate,
+        checkOutDate: checkOutDate,
+        currency: 'EUR',
+        bestRateOnly: true
+      });
+      
+      // Map the response to our interface
+      const hotelOffers = hotelOfferResponse.data.map((offer: any) => {
+        const hotel = offer.hotel;
+        const priceInfo = offer.offers[0]; // Get the first offer
+        
+        // Extract hotel amenities if available
+        const amenities = hotel.amenities || [];
+        
+        // Determine hotel rating (stars)
+        const ratingCategory = hotel.rating ? `${hotel.rating}-star` : '3-star';
+        
+        // Get hotel address
+        const address = hotel.address && hotel.address.lines 
+          ? hotel.address.lines.join(', ') 
+          : `${cityCode}`;
+        
+        if (hotel.address && hotel.address.cityName) {
+          cityCode = hotel.address.cityName;
+        }
+        
+        return {
+          hotelName: hotel.name,
+          price: priceInfo.price.total,
+          currency: priceInfo.price.currency,
+          checkInDate,
+          checkOutDate,
+          ratingCategory,
+          address: `${address}, ${cityCode}`,
+          amenities: amenities.slice(0, 5), // Limit to 5 amenities
+          thumbnailUrl: hotel.media && hotel.media[0] ? hotel.media[0].uri : undefined
+        };
+      });
+      
+      console.log(`AMADEUS API: Found ${hotelOffers.length} hotel offers`);
+      return hotelOffers;
+    } catch (apiError: any) {
+      console.error(`Error in Amadeus Hotel API:`, apiError);
+      
+      // Fallback for test environment or when API has issues
+      console.warn(`Using fallback hotel data for ${cityCode} due to API error: ${apiError.message}`);
+      
+      // Use fallback for testing or when API is unavailable
+      const fallbackHotels = [
+        {
+          hotelName: `Top Hotel in ${cityCode}`,
+          price: "180",
+          currency: "EUR",
+          checkInDate,
+          checkOutDate,
+          ratingCategory: "4-star",
+          address: `Main Street, ${cityCode}`,
+          amenities: ["WiFi", "Breakfast", "Pool"],
+          thumbnailUrl: undefined
+        },
+        {
+          hotelName: `Central ${cityCode} Hotel`,
+          price: "220",
+          currency: "EUR",
+          checkInDate,
+          checkOutDate,
+          ratingCategory: "5-star",
+          address: `Central Square, ${cityCode}`,
+          amenities: ["WiFi", "Spa", "Restaurant", "Gym"],
+          thumbnailUrl: undefined
+        },
+        {
+          hotelName: `Budget Stay ${cityCode}`,
+          price: "120",
+          currency: "EUR",
+          checkInDate,
+          checkOutDate,
+          ratingCategory: "3-star",
+          address: `Side Street, ${cityCode}`,
+          amenities: ["WiFi", "Breakfast"],
+          thumbnailUrl: undefined
+        }
+      ];
+      
+      // Calculate number of nights for more accurate pricing
+      const nights = Math.round((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Adjust prices for number of nights (simple multiplication)
+      return fallbackHotels.map(hotel => ({
+        ...hotel,
+        price: String(parseInt(hotel.price) * nights)
+      }));
+    }
   } catch (error) {
     console.error('Error fetching hotel offers:', error);
     throw error;
@@ -399,85 +416,144 @@ export async function getAverageHotelPrice(
   nights: number = 3
 ): Promise<{ price: number, currency: string, perNight: number }> {
   try {
-    // Seasonal price adjustment factors (summer is more expensive, winter less so)
-    const seasonalFactors: Record<string, number> = {
-      'winter': 0.8,  // Lower prices in winter (80% of base)
-      'spring': 0.9,  // Slightly lower in spring
-      'summer': 1.2,  // Higher in peak summer (120% of base)
-      'fall': 0.9,    // Slightly lower in fall
-    };
+    // Define sample dates for the season (use current year)
+    const currentYear = new Date().getFullYear();
+    let sampleCheckInDate: string;
+    let sampleCheckOutDate: string;
     
-    // For hotel searches, we need to use actual city codes, not airport codes
-    const cityToCityCode: Record<string, string> = {
-      'New York': 'NYC',
-      'London': 'LON',
-      'Paris': 'PAR',
-      'Tokyo': 'TYO',
-      'Rome': 'ROM',
-      'Barcelona': 'BCN', 
-      'Prague': 'PRG',
-      'Amsterdam': 'AMS',
-      'Berlin': 'BER',
-      'Madrid': 'MAD',
-      'Vienna': 'VIE',
-      'Brussels': 'BRU',
-      'Lisbon': 'LIS',
-      'Dublin': 'DUB',
-      'Doha': 'DOH'
-    };
-    
-    // Try to get the city code
-    let city = cityToCityCode[cityCode] || null;
-    
-    // Add Doha to our city code mapping if it's not there
-    if (cityCode === 'Doha' && !city) {
-      city = 'DOH'; // City code for Doha
-      console.log(`Using DOH for Doha average hotel price`);
+    switch(season.toLowerCase()) {
+      case 'winter':
+        sampleCheckInDate = `${currentYear}-01-15`;
+        break;
+      case 'spring':
+        sampleCheckInDate = `${currentYear}-04-15`;
+        break;
+      case 'summer':
+        sampleCheckInDate = `${currentYear}-07-15`;
+        break;
+      case 'fall':
+      case 'autumn':
+        sampleCheckInDate = `${currentYear}-10-15`;
+        break;
+      default:
+        sampleCheckInDate = `${currentYear}-07-15`; // Default to summer
     }
     
-    // If no city code found, try to use the provided code
-    if (!city) {
-      console.log(`No city code found for city: ${cityCode}, attempting to use as-is`);
-      city = cityCode.length === 3 ? cityCode : cityCode; // Use the original city name
+    // Use a future date at least 2 weeks from now
+    const today = new Date();
+    const sampleDateObj = new Date(sampleCheckInDate);
+    if (sampleDateObj < new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)) {
+      // If the sample date is less than 2 weeks away, use next year
+      sampleCheckInDate = sampleCheckInDate.replace(String(currentYear), String(currentYear + 1));
     }
     
-    // Hardcoded base hotel prices for common cities (average price per night)
-    const cityPrices: Record<string, { price: number, currency: string }> = {
-      'NYC': { price: 250, currency: 'USD' },
-      'LON': { price: 210, currency: 'GBP' },
-      'PAR': { price: 230, currency: 'EUR' },
-      'PRG': { price: 130, currency: 'EUR' },
-      'BRU': { price: 150, currency: 'EUR' },
-      'AMS': { price: 170, currency: 'EUR' },
-      'BER': { price: 140, currency: 'EUR' },
-      'ROM': { price: 160, currency: 'EUR' },
-      'BCN': { price: 155, currency: 'EUR' },
-      'MAD': { price: 145, currency: 'EUR' },
-      'VIE': { price: 160, currency: 'EUR' },
-      'DUB': { price: 180, currency: 'EUR' },
-      'LIS': { price: 130, currency: 'EUR' },
-      'DOH': { price: 200, currency: 'USD' }, // Add Doha with QAR currency
-    };
+    // Calculate checkout date (sample date + number of nights)
+    const checkInObj = new Date(sampleCheckInDate);
+    const checkOutObj = new Date(checkInObj);
+    checkOutObj.setDate(checkOutObj.getDate() + nights);
+    sampleCheckOutDate = checkOutObj.toISOString().split('T')[0];
     
-    // Get base price for the city or default
-    const basePrice = cityPrices[city] || { price: 150, currency: 'EUR' };
-    
-    // Apply seasonal factor
-    const seasonFactor = seasonalFactors[season.toLowerCase()] || 1.0;
-    const adjustedPricePerNight = basePrice.price * seasonFactor;
-    const totalPrice = adjustedPricePerNight * nights;
-    
-    return {
-      price: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
-      perNight: Math.round(adjustedPricePerNight * 100) / 100,
-      currency: basePrice.currency
-    };
+    try {
+      // Get real hotel offers for this city and dates
+      const hotelOffers = await getHotelOffers(
+        cityCode,
+        sampleCheckInDate,
+        sampleCheckOutDate,
+        1, // adults
+        10 // radius in km
+      );
+      
+      if (hotelOffers.length === 0) {
+        throw new Error('No hotel offers found');
+      }
+      
+      // Calculate average price
+      const totalPrices = hotelOffers.reduce((sum, hotel) => sum + parseFloat(hotel.price), 0);
+      const avgTotalPrice = totalPrices / hotelOffers.length;
+      const avgPricePerNight = avgTotalPrice / nights;
+      
+      return {
+        price: Math.round(avgTotalPrice * 100) / 100, // Round to 2 decimal places
+        perNight: Math.round(avgPricePerNight * 100) / 100,
+        currency: hotelOffers[0].currency
+      };
+    } catch (apiError) {
+      console.error('Error getting real hotel prices:', apiError);
+      console.log('Falling back to estimated hotel prices');
+      
+      // Seasonal price adjustment factors (summer is more expensive, winter less so)
+      const seasonalFactors: Record<string, number> = {
+        'winter': 0.8,  // Lower prices in winter (80% of base)
+        'spring': 0.9,  // Slightly lower in spring
+        'summer': 1.2,  // Higher in peak summer (120% of base)
+        'fall': 0.9,    // Slightly lower in fall
+      };
+      
+      // Hardcoded base hotel prices for common cities (average price per night)
+      const cityPrices: Record<string, { price: number, currency: string }> = {
+        'NYC': { price: 250, currency: 'USD' },
+        'LON': { price: 210, currency: 'GBP' },
+        'PAR': { price: 230, currency: 'EUR' },
+        'PRG': { price: 130, currency: 'EUR' },
+        'BRU': { price: 150, currency: 'EUR' },
+        'AMS': { price: 170, currency: 'EUR' },
+        'BER': { price: 140, currency: 'EUR' },
+        'ROM': { price: 160, currency: 'EUR' },
+        'BCN': { price: 155, currency: 'EUR' },
+        'MAD': { price: 145, currency: 'EUR' },
+        'VIE': { price: 160, currency: 'EUR' },
+        'DUB': { price: 180, currency: 'EUR' },
+        'LIS': { price: 130, currency: 'EUR' },
+        'DOH': { price: 200, currency: 'USD' },
+      };
+      
+      // Convert city name to code if needed
+      const cityToCityCode: Record<string, string> = {
+        'New York': 'NYC',
+        'London': 'LON',
+        'Paris': 'PAR',
+        'Tokyo': 'TYO',
+        'Rome': 'ROM',
+        'Barcelona': 'BCN', 
+        'Prague': 'PRG',
+        'Amsterdam': 'AMS',
+        'Berlin': 'BER',
+        'Madrid': 'MAD',
+        'Vienna': 'VIE',
+        'Brussels': 'BRU',
+        'Lisbon': 'LIS',
+        'Dublin': 'DUB',
+        'Doha': 'DOH'
+      };
+      
+      // Try to get the city code
+      let city = cityToCityCode[cityCode] || null;
+      
+      // If no city code found, try to use the provided code
+      if (!city) {
+        city = cityCode.length === 3 ? cityCode : 'PAR'; // Default to Paris if unknown
+      }
+      
+      // Get base price for the city or default
+      const basePrice = cityPrices[city] || { price: 150, currency: 'EUR' };
+      
+      // Apply seasonal factor
+      const seasonFactor = seasonalFactors[season.toLowerCase()] || 1.0;
+      const adjustedPricePerNight = basePrice.price * seasonFactor;
+      const totalPrice = adjustedPricePerNight * nights;
+      
+      return {
+        price: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
+        perNight: Math.round(adjustedPricePerNight * 100) / 100,
+        currency: basePrice.currency
+      };
+    }
   } catch (error) {
     console.error('Error getting average hotel price:', error);
     return {
       price: 0,
       perNight: 0,
-      currency: 'USD'
+      currency: 'EUR'
     };
   }
 }
