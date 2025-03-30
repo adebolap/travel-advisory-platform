@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2, LayoutGrid, LayoutList } from "lucide-react";
+import { Plus, Clock, DollarSign, MapPin, GripVertical, Trash2, LayoutGrid, LayoutList, ThumbsUp, ThumbsDown, RefreshCw } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, addDays, differenceInDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import ShareButtons from "@/components/share-buttons";
 import TimelineView from "./timeline-view";
+import { useToast } from "@/hooks/use-toast";
 
 interface ItineraryBuilderProps {
   city: string;
@@ -298,6 +299,9 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
   const [selectedTime, setSelectedTime] = useState("09:00");
   const [draggedItem, setDraggedItem] = useState<{ dayIndex: number; itemIndex: number } | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
+  const [approvedItems, setApprovedItems] = useState<Set<string>>(new Set());
+  const [refreshingItem, setRefreshingItem] = useState<{dayIndex: number, itemIndex: number} | null>(null);
+  const { toast } = useToast();
 
   // Fetch attractions for the city
   const { data: attractions, isLoading: isLoadingAttractions } = useQuery<Attraction[]>({
@@ -382,6 +386,160 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
       return updated;
     });
   };
+  
+  // Function to mark an activity as approved
+  const approveActivity = (itemId: string) => {
+    setApprovedItems(prev => {
+      const newSet = new Set(prev);
+      newSet.add(itemId);
+      return newSet;
+    });
+    
+    toast({
+      title: "Activity approved",
+      description: "This activity will be kept in your itinerary.",
+      duration: 2000,
+    });
+  };
+  
+  // Function to refresh/replace an activity with another suggestion
+  const refreshActivity = (dayIndex: number, itemIndex: number) => {
+    setRefreshingItem({dayIndex, itemIndex});
+    
+    const currentItem = itinerary[dayIndex].items[itemIndex];
+    const isCustomOrLunch = currentItem.type === 'custom' || currentItem.activity.toLowerCase().includes('lunch');
+    
+    // Don't replace lunch or custom activities
+    if (isCustomOrLunch) {
+      toast({
+        title: "Can't replace this activity",
+        description: "Custom activities and meals can't be automatically replaced.",
+        variant: "destructive",
+        duration: 3000
+      });
+      setRefreshingItem(null);
+      return;
+    }
+    
+    // If it's an attraction, find another attraction not already in the itinerary
+    if (currentItem.type === 'attraction' && attractions?.length) {
+      // Get all currently used attraction IDs in the itinerary
+      const usedAttractionIds = new Set<string>();
+      itinerary.forEach(day => {
+        day.items.forEach(item => {
+          if (item.type === 'attraction' && item.id.startsWith('attraction-')) {
+            const attractionId = item.id.replace('attraction-', '');
+            usedAttractionIds.add(attractionId);
+          }
+        });
+      });
+      
+      // Find unused attractions
+      const unusedAttractions = attractions.filter(a => !usedAttractionIds.has(a.id));
+      
+      if (unusedAttractions.length === 0) {
+        toast({
+          title: "No more attractions available",
+          description: "All attractions for this city are already in your itinerary.",
+          variant: "destructive",
+          duration: 3000
+        });
+        setRefreshingItem(null);
+        return;
+      }
+      
+      // Choose a random unused attraction
+      const randomAttraction = unusedAttractions[Math.floor(Math.random() * unusedAttractions.length)];
+      
+      // Create a new itinerary item for the attraction
+      const newItem: ItineraryItem = {
+        id: `attraction-${randomAttraction.id}`,
+        time: currentItem.time,
+        activity: `Visit ${randomAttraction.name}`,
+        location: randomAttraction.location,
+        type: 'attraction',
+        coordinates: randomAttraction.geometry
+      };
+      
+      // Replace the current item with the new one
+      setItinerary(prev => {
+        const updated = [...prev];
+        updated[dayIndex].items[itemIndex] = newItem;
+        return updated;
+      });
+      
+      toast({
+        title: "Activity refreshed",
+        description: `Added: ${randomAttraction.name}`,
+        duration: 3000
+      });
+    } else {
+      // For non-attraction items, replace with a default activity suggestion
+      const timeOfDay = getTimeOfDay(currentItem.time);
+      const defaultActivitiesList = defaultActivities[timeOfDay];
+      
+      // Filter out activities that are already in the itinerary
+      const usedActivities = new Set<string>();
+      itinerary.forEach(day => {
+        day.items.forEach(item => {
+          usedActivities.add(item.activity);
+        });
+      });
+      
+      const availableActivities = defaultActivitiesList.filter(activity => !usedActivities.has(activity));
+      
+      if (availableActivities.length === 0) {
+        // If all activities have been used, just pick a random one
+        const randomActivity = defaultActivitiesList[Math.floor(Math.random() * defaultActivitiesList.length)];
+        
+        const newItem: ItineraryItem = {
+          id: `activity-${Date.now()}`,
+          time: currentItem.time,
+          activity: randomActivity,
+          type: 'custom'
+        };
+        
+        setItinerary(prev => {
+          const updated = [...prev];
+          updated[dayIndex].items[itemIndex] = newItem;
+          return updated;
+        });
+      } else {
+        // Use an unused activity
+        const randomActivity = availableActivities[Math.floor(Math.random() * availableActivities.length)];
+        
+        const newItem: ItineraryItem = {
+          id: `activity-${Date.now()}`,
+          time: currentItem.time,
+          activity: randomActivity,
+          type: 'custom'
+        };
+        
+        setItinerary(prev => {
+          const updated = [...prev];
+          updated[dayIndex].items[itemIndex] = newItem;
+          return updated;
+        });
+      }
+      
+      toast({
+        title: "Activity refreshed",
+        description: "A new suggestion has been added to your itinerary.",
+        duration: 3000
+      });
+    }
+    
+    setRefreshingItem(null);
+  };
+  
+  // Helper function to determine if a time is morning, afternoon, or evening
+  const getTimeOfDay = (time: string): 'morning' | 'afternoon' | 'evening' => {
+    const hour = parseInt(time.split(':')[0]);
+    
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+  };
 
   const generateShareableDescription = () => {
     if (!dateRange?.from || !dateRange?.to) return '';
@@ -453,6 +611,11 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
               <TimelineView
                 items={day.items}
                 onReorder={(newItems) => handleReorder(dayIndex, newItems)}
+                onApprove={approveActivity}
+                onRefresh={(itemIndex) => refreshActivity(dayIndex, itemIndex)}
+                onRemove={(itemIndex) => removeActivity(dayIndex, itemIndex)}
+                approvedItems={approvedItems}
+                refreshingIndex={refreshingItem?.dayIndex === dayIndex ? refreshingItem.itemIndex : undefined}
               />
             ) : (
               <div className="space-y-4">
@@ -476,11 +639,43 @@ export default function ItineraryBuilder({ city, dateRange, events }: ItineraryB
                           {item.location}
                         </span>
                       )}
+
+                      {/* Thumbs up button for approval */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => approveActivity(item.id)}
+                        className={`opacity-0 group-hover:opacity-100 ${
+                          approvedItems.has(item.id) ? "text-green-500 opacity-100" : ""
+                        }`}
+                        title="I like this"
+                      >
+                        <ThumbsUp className="h-4 w-4" />
+                      </Button>
+
+                      {/* Refresh button to get new suggestion */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => refreshActivity(dayIndex, itemIndex)}
+                        className="opacity-0 group-hover:opacity-100"
+                        disabled={refreshingItem !== null}
+                        title="Show me something else"
+                      >
+                        {refreshingItem?.dayIndex === dayIndex && refreshingItem?.itemIndex === itemIndex ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ThumbsDown className="h-4 w-4" />
+                        )}
+                      </Button>
+
+                      {/* Delete button */}
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => removeActivity(dayIndex, itemIndex)}
                         className="opacity-0 group-hover:opacity-100"
+                        title="Remove activity"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

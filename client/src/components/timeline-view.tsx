@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, MapPin, GripVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, MapPin, GripVertical, ThumbsUp, ThumbsDown, RefreshCw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimelineItem {
@@ -14,9 +15,22 @@ interface TimelineItem {
 interface TimelineViewProps {
   items: TimelineItem[];
   onReorder: (items: TimelineItem[]) => void;
+  onApprove?: (itemId: string) => void;
+  onRefresh?: (itemIndex: number) => void;
+  onRemove?: (itemIndex: number) => void;
+  approvedItems?: Set<string>;
+  refreshingIndex?: number;
 }
 
-export default function TimelineView({ items, onReorder }: TimelineViewProps) {
+export default function TimelineView({ 
+  items, 
+  onReorder, 
+  onApprove, 
+  onRefresh, 
+  onRemove, 
+  approvedItems = new Set(),
+  refreshingIndex 
+}: TimelineViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -67,18 +81,66 @@ export default function TimelineView({ items, onReorder }: TimelineViewProps) {
 
           <Card className="flex-1 cursor-move hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  {item.time}
-                </div>
-                {item.location && (
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {item.location}
+                    <Clock className="h-4 w-4" />
+                    {item.time}
                   </div>
-                )}
+                  {item.location && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      {item.location}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Action buttons */}
+                <div className="flex items-center gap-1">
+                  {onApprove && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onApprove(item.id)}
+                      className={`opacity-0 group-hover:opacity-100 ${
+                        approvedItems.has(item.id) ? "text-green-500 opacity-100" : ""
+                      }`}
+                      title="I like this"
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
+                  {onRefresh && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onRefresh(index)}
+                      className="opacity-0 group-hover:opacity-100"
+                      disabled={refreshingIndex !== undefined}
+                      title="Show me something else"
+                    >
+                      {refreshingIndex === index ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ThumbsDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                  
+                  {onRemove && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onRemove(index)}
+                      className="opacity-0 group-hover:opacity-100"
+                      title="Remove activity"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
               <p className="mt-1">{item.activity}</p>
             </CardContent>
