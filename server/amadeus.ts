@@ -260,6 +260,14 @@ export async function getHotelOffers(
         ]
       },
       {
+        cityCode: 'BER',
+        hotels: [
+          { name: 'Alexanderplatz Hotel', price: 150, currency: 'EUR', rating: 4, address: '12 Unter den Linden, Berlin', amenities: ['WiFi', 'Breakfast', 'Bar'] },
+          { name: 'Brandenburg Suites', price: 210, currency: 'EUR', rating: 5, address: '34 Friedrichstrasse, Berlin', amenities: ['Room Service', 'Spa', 'Restaurant'] },
+          { name: 'Kreuzberg View', price: 120, currency: 'EUR', rating: 3, address: '56 Kurfürstendamm, Berlin', amenities: ['WiFi', 'Bike Rental', 'Breakfast'] }
+        ]
+      },
+      {
         cityCode: 'PRG',
         hotels: [
           { name: 'Old Town Square Hotel', price: 130, currency: 'EUR', rating: 4, address: '12 Wenceslas Square, Prague', amenities: ['WiFi', 'Breakfast', 'Bar'] },
