@@ -5,21 +5,21 @@ type PremiumFeature = keyof typeof premiumFeatures;
 
 export function usePremium() {
   const { user } = useAuth();
-  const isPremium = user?.isSubscribed ?? false;
+  const isPremium = user?.isPremium ?? false;
 
   const canAccess = (feature: PremiumFeature) => {
     if (!user) return false; // Not logged in
     if (isPremium) return true; // Premium users can access everything
     
     // Basic users can only access basic features
-    return premiumFeatures[feature].basic !== undefined;
+    return 'basic' in premiumFeatures[feature];
   };
 
   const getFeatureDescription = (feature: PremiumFeature) => {
     if (!user) return null;
     return isPremium ? 
       premiumFeatures[feature].premium : 
-      premiumFeatures[feature].basic;
+      ('basic' in premiumFeatures[feature] ? premiumFeatures[feature].basic : null);
   };
 
   const isPremiumFeature = (feature: PremiumFeature) => {

@@ -48,8 +48,14 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Log the error for debugging
+    console.error(`Error ${status}: ${message}`);
+    if (err.stack) {
+      console.error(err.stack);
+    }
+    
+    // Send error response to client without throwing the error further
     res.status(status).json({ message });
-    throw err;
   });
 
   if (app.get("env") === "development") {

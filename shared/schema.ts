@@ -50,7 +50,11 @@ export const users = pgTable("users", {
   accessibilityNeeds: text("accessibility_needs").array(),
   languagesSpoken: text("languages_spoken").array(),
   isSubscribed: boolean("is_subscribed").default(false),
+  isPremium: boolean("is_premium").default(false), // Premium flag for full feature access
   subscriptionEndDate: timestamp("subscription_end_date"),
+  // Stripe fields
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
 });
 
 export const searchPreferences = pgTable("search_preferences", {
@@ -138,7 +142,10 @@ export const insertUserSchema = createInsertSchema(users)
     accessibilityNeeds: z.array(z.string()).optional(),
     languagesSpoken: z.array(z.string()).optional(),
     isSubscribed: z.boolean().optional(),
-    subscriptionEndDate: z.date().optional()
+    isPremium: z.boolean().optional(),
+    subscriptionEndDate: z.date().optional(),
+    stripeCustomerId: z.string().optional(),
+    stripeSubscriptionId: z.string().optional(),
   });
 
 export const searchPreferenceSchema = createInsertSchema(searchPreferences)

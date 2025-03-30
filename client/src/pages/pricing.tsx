@@ -71,9 +71,9 @@ export default function PricingPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(currencies).map(([code]) => (
-              <SelectItem key={code} value={code}>
-                {code} {currencies[code].symbol}
+            {Object.entries(currencies).map(([code, data]) => (
+              <SelectItem key={code} value={code as keyof typeof currencies}>
+                {code} {data.symbol}
               </SelectItem>
             ))}
           </SelectContent>
@@ -93,10 +93,12 @@ export default function PricingPage() {
           <CardContent>
             <ul className="space-y-4 mb-6">
               {Object.entries(premiumFeatures).map(([key, feature]) => (
-                <li key={key} className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <span>{feature.basic}</span>
-                </li>
+                'basic' in feature && (
+                  <li key={key} className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <span>{(feature as any).basic}</span>
+                  </li>
+                )
               ))}
             </ul>
             <Button disabled className="w-full" variant="outline">
@@ -129,7 +131,7 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            {user?.isSubscribed ? (
+            {isPremium ? (
               <Button disabled className="w-full">
                 Current Plan
               </Button>

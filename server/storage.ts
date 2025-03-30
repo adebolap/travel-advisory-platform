@@ -16,6 +16,7 @@ export interface IStorage {
   createTravelQuizResponse(response: InsertTravelQuizResponse): Promise<TravelQuizResponse>;
   updateUserPreferences(userId: number, preferences: Partial<User>): Promise<User>;
   updateSubscriptionStatus(userId: number, isSubscribed: boolean, endDate?: Date): Promise<User>;
+  updateUserStripeInfo(userId: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User>;
   createTrip(trip: InsertTrip): Promise<Trip>;
   getUserTrips(userId: number): Promise<Trip[]>;
   getTripById(tripId: number): Promise<Trip | undefined>;
@@ -75,7 +76,10 @@ export class MemStorage implements IStorage {
       accessibilityNeeds: null,
       languagesSpoken: null,
       isSubscribed: false,
+      isPremium: false,
       subscriptionEndDate: null,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
     };
     this.users.set(id, user);
     return user;
@@ -139,8 +143,23 @@ export class MemStorage implements IStorage {
     }
     const updatedUser = { 
       ...user, 
-      isSubscribed, 
+      isSubscribed,
+      isPremium: isSubscribed, // Set premium status based on subscription 
       subscriptionEndDate: endDate || null 
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserStripeInfo(userId: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const updatedUser = { 
+      ...user, 
+      stripeCustomerId: stripeInfo.stripeCustomerId,
+      stripeSubscriptionId: stripeInfo.stripeSubscriptionId
     };
     this.users.set(userId, updatedUser);
     return updatedUser;

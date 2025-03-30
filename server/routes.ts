@@ -9,7 +9,10 @@ import Stripe from 'stripe';
 import { generateChatbotResponse, chatRequestSchema } from "./chatbot";
 import { getFlightOffers, getHotelOffers, getAverageFlightPrice, getAverageHotelPrice } from "./amadeus";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' });
+// Initialize Stripe with the latest API version
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'missing_stripe_key', { 
+  apiVersion: '2023-10-16' 
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
@@ -443,9 +446,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Travel chatbot endpoint
   apiRouter.post("/api/chatbot", async (req, res) => {
     try {
+      // Check if OpenAI API key is configured
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('Missing OPENAI_API_KEY environment variable');
+        return res.status(503).json({
+          error: "AI service unavailable",
+          details: "API configuration issue"
+        });
+      }
+      
+      // Check authentication and premium status
+      if (req.isAuthenticated()) {
+        const user = req.user;
+        if (!user.isPremium) {
+          console.log(`User ${user.id} attempted to use chatbot without premium subscription`);
+          return res.status(403).json({ 
+            error: "Premium feature",
+            details: "This feature requires a premium subscription",
+            upgrade: true
+          });
+        }
+      } else {
+        console.log('Unauthenticated user attempted to use chatbot');
+        return res.status(401).json({ 
+          error: "Authentication required",
+          details: "Please log in to use this feature",
+          login: true
+        });
+      }
+      
       // Validate request data
       const chatRequest = chatRequestSchema.parse(req.body);
       console.log("Chatbot request received:", {
+        userId: req.user.id,
         messageCount: chatRequest.messages.length,
         city: chatRequest.city || "Not specified",
         hasInterests: chatRequest.interests && chatRequest.interests.length > 0
@@ -453,11 +486,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate a response from the AI
       const response = await generateChatbotResponse(chatRequest);
-      console.log("Generated chatbot response");
+      console.log(`Generated chatbot response for user ${req.user.id}`);
       res.json(response);
     } catch (error: any) {
       console.error("Chatbot error:", error);
-      res.status(400).json({ 
+      
+      // Check for Zod validation errors
+      if (error.errors) {
+        return res.status(400).json({
+          error: "Invalid request format",
+          details: error.errors
+        });
+      }
+      
+      // Handle OpenAI API errors
+      if (error.response) {
+        console.error(`OpenAI API error (${error.response.status}):`, error.response.data);
+        return res.status(502).json({
+          error: "AI service error",
+          details: "Error communicating with AI service",
+          retry: true
+        });
+      }
+      
+      // Generic error fallback
+      res.status(500).json({ 
         error: "Failed to process chatbot request", 
         details: error.message
       });
