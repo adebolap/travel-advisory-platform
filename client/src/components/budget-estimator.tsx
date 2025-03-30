@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Plane, Bed, Utensils, MapPin, Globe, Loader2 } from "lucide-react";
+import { DollarSign, Plane, Bed, Utensils, MapPin, Globe, Loader2, AlertCircle } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { differenceInDays, format } from "date-fns";
 import { formatCurrency } from "@/lib/currency";
@@ -10,6 +10,7 @@ import AirportSelector from "./airport-selector";
 import { Airport } from "@/lib/airport-data";
 import { useQuery } from "@tanstack/react-query";
 import { format as formatDate } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface BudgetEstimatorProps {
   city: string;
@@ -236,6 +237,31 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
     enabled: !!(((selectedAirport?.city || originCity) && city && dateRange?.from && dateRange?.to)),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+  
+  // Fetch hotel prices if destination and dates are selected
+  const { data: hotelPrices, isLoading: isLoadingHotels } = useQuery<any[]>({
+    queryKey: ['hotelPrice', city, dateRange?.from, dateRange?.to],
+    queryFn: async () => {
+      if (!dateRange?.from || !dateRange?.to) return null;
+      
+      const params = new URLSearchParams({
+        cityCode: city,
+        checkInDate: formatDate(dateRange.from, 'yyyy-MM-dd'),
+        checkOutDate: formatDate(dateRange.to, 'yyyy-MM-dd'),
+        adults: '1',
+        radius: '10'
+      });
+      
+      const response = await fetch(`/api/hotels/price?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch hotel prices');
+      }
+      
+      return response.json();
+    },
+    enabled: !!(city && dateRange?.from && dateRange?.to),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   // Get base costs for the city or use defaults
   const baseCosts = cityBaseCosts[city] || defaultCosts;
@@ -275,8 +301,48 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
     }
   }
   
+  // Parse hotel data
+  let bestHotelPrice = 0;
+  let hotelCurrency = '';
+  let hotelCostInLocalCurrency = 0;
+  let hotelAvailable = false;
+  
+  if (hotelPrices && hotelPrices.length > 0) {
+    // Find best hotel price (for 3-star hotels)
+    const threeStarHotels = hotelPrices.filter(hotel => 
+      hotel.ratingCategory.includes('3-star')
+    );
+    
+    const hotelList = threeStarHotels.length > 0 ? threeStarHotels : hotelPrices;
+    
+    if (hotelList.length > 0) {
+      bestHotelPrice = Math.min(...hotelList.map(hotel => parseFloat(hotel.price)));
+      hotelCurrency = hotelList[0].currency; // Get currency from first hotel
+      hotelAvailable = true;
+      
+      // Convert hotel price to local currency if needed
+      if (hotelCurrency === baseCosts.currency) {
+        hotelCostInLocalCurrency = bestHotelPrice;
+      } else if (hotelCurrency === 'EUR' && baseCosts.exchangeRate) {
+        // Convert EUR to local currency through USD
+        hotelCostInLocalCurrency = Math.round(bestHotelPrice * 1.08 / baseCosts.exchangeRate);
+      } else if (hotelCurrency === 'USD' && baseCosts.exchangeRate) {
+        // Convert USD to local currency
+        hotelCostInLocalCurrency = Math.round(bestHotelPrice / baseCosts.exchangeRate);
+      }
+    }
+  }
+  
+  // Use real hotel price if available, otherwise use the estimated price
+  const accommodationCost = hotelAvailable ? hotelCostInLocalCurrency : costs.accommodation;
+  
   // Calculate total including flights if available
-  const totalCost = flightPrices?.length ? baseTotalCost + flightCostInLocalCurrency : baseTotalCost;
+  const totalCostBase = Object.values({
+    ...costs,
+    accommodation: accommodationCost
+  }).reduce((sum, cost) => sum + cost, 0);
+  
+  const totalCost = flightPrices?.length ? totalCostBase + flightCostInLocalCurrency : totalCostBase;
   const totalUSD = baseCosts.exchangeRate ? (totalCost * baseCosts.exchangeRate) : totalCost;
     
   // Helper function for formatting currency
@@ -335,10 +401,30 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
                 <span>Accommodation</span>
               </div>
               <div className="text-right">
-                <div className="font-medium">{formatLocalCurrency(costs.accommodation)}</div>
-                {baseCosts.currency !== 'USD' && (
-                  <div className="text-sm text-muted-foreground">
-                    ≈ ${Math.round(costs.accommodation * (baseCosts.exchangeRate || 1))}
+                {isLoadingHotels ? (
+                  <div className="flex items-center gap-1 justify-end">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span className="text-sm">Loading hotels...</span>
+                  </div>
+                ) : hotelAvailable ? (
+                  <div>
+                    <div className="font-medium">
+                      {hotelCurrency === 'EUR' ? '€' : hotelCurrency === 'GBP' ? '£' : '$'}{bestHotelPrice}
+                    </div>
+                    {baseCosts.currency !== hotelCurrency && baseCosts.exchangeRate && (
+                      <div className="text-sm text-muted-foreground">
+                        ≈ {formatLocalCurrency(hotelCostInLocalCurrency)}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="font-medium">{formatLocalCurrency(costs.accommodation)}</div>
+                    {baseCosts.currency !== 'USD' && (
+                      <div className="text-sm text-muted-foreground">
+                        ≈ ${Math.round(costs.accommodation * (baseCosts.exchangeRate || 1))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -432,6 +518,17 @@ export default function BudgetEstimator({ city, travelStyle = "Cultural", dateRa
               <p className="text-xs text-muted-foreground mt-1">
                 *Estimates based on {travelStyle.toLowerCase()} travel style in {city}
               </p>
+              
+              {(hotelAvailable || (flightPrices && flightPrices.length > 0)) && (
+                <Alert className="mt-3 py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs ml-2">
+                    Budget includes {hotelAvailable ? 'real-time hotel' : ''} 
+                    {hotelAvailable && (flightPrices && flightPrices.length > 0) ? ' and ' : ''}
+                    {(flightPrices && flightPrices.length > 0) ? 'flight pricing' : ''} data from our API.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           </div>
         </div>
