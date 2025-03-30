@@ -100,11 +100,11 @@ export default function TimelineView({
                 <div className="flex items-center gap-1">
                   {onApprove && (
                     <Button
-                      variant="ghost"
+                      variant={approvedItems.has(item.id) ? "default" : "outline"}
                       size="icon"
                       onClick={() => onApprove(item.id)}
-                      className={`opacity-0 group-hover:opacity-100 ${
-                        approvedItems.has(item.id) ? "text-green-500 opacity-100" : ""
+                      className={`${
+                        approvedItems.has(item.id) ? "bg-green-500 text-white hover:bg-green-600" : "border-green-200 hover:bg-green-100 hover:text-green-800"
                       }`}
                       title="I like this"
                     >
@@ -114,10 +114,10 @@ export default function TimelineView({
                   
                   {onRefresh && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
                       onClick={() => onRefresh(index)}
-                      className="opacity-0 group-hover:opacity-100"
+                      className="border-red-200 hover:bg-red-100 hover:text-red-800"
                       disabled={refreshingIndex !== undefined}
                       title="Show me something else"
                     >
@@ -131,10 +131,10 @@ export default function TimelineView({
                   
                   {onRemove && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
                       onClick={() => onRemove(index)}
-                      className="opacity-0 group-hover:opacity-100"
+                      className="border-gray-200 hover:bg-gray-100"
                       title="Remove activity"
                     >
                       <Trash2 className="h-4 w-4" />
