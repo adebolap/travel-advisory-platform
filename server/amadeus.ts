@@ -13,6 +13,7 @@ console.log(`Amadeus API secret starts with: ${process.env.AMADEUS_API_SECRET?.s
 const amadeus = new Amadeus({
   clientId: process.env.AMADEUS_API_KEY,
   clientSecret: process.env.AMADEUS_API_SECRET,
+  // @ts-ignore hostName is available but not in type definition
   hostName: 'production' // Use the production API
 });
 
@@ -69,6 +70,7 @@ const cityToAirport: Record<string, string> = {
   'Santiago': 'SCL',
   'Lima': 'LIM',
   'Bogota': 'BOG',
+  'Doha': 'DOH',
 };
 
 // Types for flight offers
@@ -114,15 +116,23 @@ export async function getFlightOffers(
     let originCode = cityToAirport[originCity] || null;
     let destinationCode = cityToAirport[destinationCity] || null;
     
+    // Let's add Doha to our airport code mapping if it's not there
+    if (destinationCity === 'Doha' && !destinationCode) {
+      destinationCode = 'DOH'; // Hamad International Airport in Doha
+      console.log(`Using DOH for Doha`);
+    }
+    
     // Handle case when city names are provided instead of codes
     if (!originCode) {
       console.log(`No IATA code found for origin: ${originCity}, attempting to use as-is`);
-      originCode = originCity.length === 3 ? originCity : 'BRU'; // Default to Brussels if not a code
+      // If it's a 3-letter code already, use it; otherwise keep the city name
+      originCode = originCity.length === 3 ? originCity : originCity;
     }
     
     if (!destinationCode) {
       console.log(`No IATA code found for destination: ${destinationCity}, attempting to use as-is`);
-      destinationCode = destinationCity.length === 3 ? destinationCity : 'JFK'; // Default to New York if not a code
+      // If it's a 3-letter code already, use it; otherwise keep the city name
+      destinationCode = destinationCity.length === 3 ? destinationCity : destinationCity;
     }
     
     console.log(`Using IATA codes: Origin=${originCode}, Destination=${destinationCode}`);
@@ -201,16 +211,23 @@ export async function getHotelOffers(
       'Vienna': 'VIE',
       'Brussels': 'BRU',
       'Lisbon': 'LIS',
-      'Dublin': 'DUB'
+      'Dublin': 'DUB',
+      'Doha': 'DOH'
     };
     
     // Try to get the city code
     let city = cityToCityCode[cityCode] || null;
     
+    // Add Doha to our city code mapping if it's not there
+    if (cityCode === 'Doha' && !city) {
+      city = 'DOH'; // City code for Doha
+      console.log(`Using DOH for Doha hotel search`);
+    }
+    
     // If no city code found, try to use the provided code
     if (!city) {
       console.log(`No city code found for city: ${cityCode}, attempting to use as-is`);
-      city = cityCode.length === 3 ? cityCode : 'NYC'; // Default to New York if not a code
+      city = cityCode.length === 3 ? cityCode : cityCode; // Use the original city name
     }
     
     console.log(`Using city code for hotel search: ${city}`);
@@ -256,6 +273,14 @@ export async function getHotelOffers(
           { name: 'Grand Place Hotel', price: 140, currency: 'EUR', rating: 4, address: '12 Grand Place, Brussels', amenities: ['WiFi', 'Breakfast', 'Bar'] },
           { name: 'EU Quarter Suites', price: 190, currency: 'EUR', rating: 5, address: '34 Rue de la Loi, Brussels', amenities: ['Room Service', 'Spa', 'Restaurant'] },
           { name: 'Atomium View', price: 120, currency: 'EUR', rating: 3, address: '56 Avenue Louise, Brussels', amenities: ['WiFi', 'Continental Breakfast'] }
+        ]
+      },
+      {
+        cityCode: 'DOH',
+        hotels: [
+          { name: 'West Bay Luxury Hotel', price: 220, currency: 'USD', rating: 4, address: '123 Corniche Street, Doha', amenities: ['WiFi', 'Pool', 'Spa', 'Beach Access'] },
+          { name: 'Pearl Island Resort', price: 340, currency: 'USD', rating: 5, address: 'The Pearl, Doha', amenities: ['Room Service', 'Private Beach', 'Restaurant', 'Gym'] },
+          { name: 'Souq Waqif Boutique', price: 180, currency: 'USD', rating: 3, address: 'Al Jasra, Doha', amenities: ['WiFi', 'Airport Shuttle', 'Traditional Decor'] }
         ]
       }
     ];
@@ -389,16 +414,23 @@ export async function getAverageHotelPrice(
       'Vienna': 'VIE',
       'Brussels': 'BRU',
       'Lisbon': 'LIS',
-      'Dublin': 'DUB'
+      'Dublin': 'DUB',
+      'Doha': 'DOH'
     };
     
     // Try to get the city code
     let city = cityToCityCode[cityCode] || null;
     
+    // Add Doha to our city code mapping if it's not there
+    if (cityCode === 'Doha' && !city) {
+      city = 'DOH'; // City code for Doha
+      console.log(`Using DOH for Doha average hotel price`);
+    }
+    
     // If no city code found, try to use the provided code
     if (!city) {
       console.log(`No city code found for city: ${cityCode}, attempting to use as-is`);
-      city = cityCode.length === 3 ? cityCode : 'NYC'; // Default to New York if not a code
+      city = cityCode.length === 3 ? cityCode : cityCode; // Use the original city name
     }
     
     // Hardcoded base hotel prices for common cities (average price per night)
@@ -416,6 +448,7 @@ export async function getAverageHotelPrice(
       'VIE': { price: 160, currency: 'EUR' },
       'DUB': { price: 180, currency: 'EUR' },
       'LIS': { price: 130, currency: 'EUR' },
+      'DOH': { price: 200, currency: 'USD' }, // Add Doha with QAR currency
     };
     
     // Get base price for the city or default
