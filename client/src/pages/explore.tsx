@@ -11,12 +11,14 @@ import WeatherDisplay from "@/components/weather-display";
 import EventList from "@/components/event-list";
 import TravelPricing from "@/components/travel-pricing";
 import AirportSelector from "@/components/airport-selector";
+import DestinationComparison from "@/components/destination-comparison";
 import { Airport } from "@/lib/airport-data";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Explore() {
   const { toast } = useToast();
@@ -197,46 +199,63 @@ export default function Explore() {
       )}
 
       {searchSubmitted && city && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
-          <div className="lg:col-span-2 space-y-4 sm:space-y-8">
-            <WeatherDisplay
-              city={city}
-              onWeatherUpdate={handleWeatherUpdate}
-              className="w-full"
-            />
-            <TravelSuggestions
-              city={city}
-              interests={interests}
-            />
-            <EventList
-              city={city}
-              dateRange={dateRange}
-            />
-            <ItineraryBuilder
-              city={city}
-              dateRange={dateRange}
-            />
-          </div>
-          <div className="space-y-4 sm:space-y-8">
-            <TravelPricing
-              city={city}
+        <Tabs defaultValue="single" className="mb-6">
+          <TabsList className="mb-4">
+            <TabsTrigger value="single">Single Destination</TabsTrigger>
+            <TabsTrigger value="compare">Compare Destinations</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="single">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-8">
+                <WeatherDisplay
+                  city={city}
+                  onWeatherUpdate={handleWeatherUpdate}
+                  className="w-full"
+                />
+                <TravelSuggestions
+                  city={city}
+                  interests={interests}
+                />
+                <EventList
+                  city={city}
+                  dateRange={dateRange}
+                />
+                <ItineraryBuilder
+                  city={city}
+                  dateRange={dateRange}
+                />
+              </div>
+              <div className="space-y-4 sm:space-y-8">
+                <TravelPricing
+                  city={city}
+                  originCity={originCity}
+                  dateRange={dateRange}
+                  className="mb-4 sm:mb-8"
+                />
+                <BudgetEstimator
+                  city={city}
+                  dateRange={dateRange}
+                  originCity={originCity}
+                />
+                <PackingListGenerator
+                  city={city}
+                  dateRange={dateRange}
+                  currentWeather={currentWeather}
+                  activities={interests}
+                />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="compare">
+            <DestinationComparison 
               originCity={originCity}
               dateRange={dateRange}
-              className="mb-4 sm:mb-8"
+              initialDestinations={[city]}
             />
-            <BudgetEstimator
-              city={city}
-              dateRange={dateRange}
-              originCity={originCity}
-            />
-            <PackingListGenerator
-              city={city}
-              dateRange={dateRange}
-              currentWeather={currentWeather}
-              activities={interests}
-            />
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

@@ -7,11 +7,11 @@ import axios from "axios";
 import { createCheckoutSession } from "./payment";
 import Stripe from 'stripe';
 import { generateChatbotResponse, chatRequestSchema } from "./chatbot";
-import { getFlightOffers, getHotelOffers, getAverageFlightPrice, getAverageHotelPrice } from "./amadeus";
+import { getFlightOffers, getHotelOffers, getAverageFlightPrice, getAverageHotelPrice, FlightPricing, HotelPricing } from "./amadeus";
 
 // Initialize Stripe with the latest API version
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'missing_stripe_key', { 
-  apiVersion: '2023-10-16' 
+  apiVersion: '2023-10-16' as any // Type assertion needed due to API version mismatch
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -144,16 +144,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.post("/api/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
 
+    if (!sig) {
+      return res.status(400).send('Missing stripe-signature header');
+    }
+
     try {
+      // We already have the raw buffer body from express.raw middleware
       const event = stripe.webhooks.constructEvent(
         req.body,
         sig,
-        process.env.STRIPE_WEBHOOK_SECRET
+        process.env.STRIPE_WEBHOOK_SECRET || ''
       );
 
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        const userId = session.metadata.userId;
+        const userId = session.metadata?.userId;
+        
+        if (!userId) {
+          console.error('Missing userId in session metadata');
+          return res.status(400).send('Missing userId in session metadata');
+        }
 
         // Set subscription end date to 1 year from now
         const subscriptionEndDate = new Date();
@@ -167,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ received: true });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Webhook Error:', err.message);
       res.status(400).send(`Webhook Error: ${err.message}`);
     }
@@ -221,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Found ${attractions.length} attractions in ${city}`);
 
       // Sort attractions by rating
-      attractions.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      attractions.sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
 
       res.json(attractions);
     } catch (error: any) {
@@ -814,6 +824,230 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("AMADEUS API: Average hotel pricing error:", error.message);
       res.status(500).json({ 
         error: "Failed to fetch average hotel prices",
+        message: error.message 
+      });
+    }
+  });
+  
+  // Destination comparison endpoint
+  apiRouter.get("/api/destinations/compare", async (req, res) => {
+    const { destinations, origin, season, startDate, endDate } = req.query;
+    
+    console.log("Destination comparison request received with params:", { 
+      destinations, origin, season, startDate, endDate 
+    });
+    
+    if (!destinations || !origin) {
+      return res.status(400).json({ 
+        error: "Missing required parameters",
+        message: "destinations and origin are required" 
+      });
+    }
+    
+    // Convert destinations to array if it's a string or an array
+    const destinationsList = Array.isArray(destinations) ? destinations : [destinations];
+    const originCity = String(origin);
+    const seasonStr = String(season || 'summer');
+    
+    try {
+      // Process each destination to gather comparison data
+      const comparisonPromises = destinationsList.map(async (city) => {
+        const cityStr = String(city);
+        console.log(`Processing comparison data for ${cityStr}`);
+        
+        // Get flight price data
+        const flightPrices = await getAverageFlightPrice(originCity, cityStr, seasonStr);
+        
+        // Get hotel price data (3 nights by default)
+        const nights = 3; // Default to 3 nights if no date range provided
+        const hotelPrices = await getAverageHotelPrice(cityStr, seasonStr, nights);
+        
+        // Calculate crowd levels based on season
+        const crowdLevelMap: Record<string, Record<string, string>> = {
+          'Paris': {
+            'summer': 'High - Tourist Season',
+            'winter': 'Moderate',
+            'spring': 'Moderate to High',
+            'fall': 'Moderate'
+          },
+          'London': {
+            'summer': 'High',
+            'winter': 'Moderate - Holiday Season',
+            'spring': 'Moderate',
+            'fall': 'Low to Moderate'
+          },
+          'New York': {
+            'summer': 'High',
+            'winter': 'High - Holiday Season',
+            'spring': 'Moderate',
+            'fall': 'Moderate to High'
+          },
+          'Tokyo': {
+            'summer': 'Moderate',
+            'winter': 'Low',
+            'spring': 'High - Cherry Blossom',
+            'fall': 'Moderate - Autumn Colors'
+          },
+          'Rome': {
+            'summer': 'Peak - Very High',
+            'winter': 'Low',
+            'spring': 'Moderate to High',
+            'fall': 'Moderate'
+          }
+        };
+        
+        // Determine best time to visit
+        const bestTimesMap: Record<string, string[]> = {
+          'Paris': ['Spring', 'Fall'],
+          'London': ['Spring', 'Summer'],
+          'New York': ['Spring', 'Fall'],
+          'Tokyo': ['Spring', 'Fall'],
+          'Rome': ['Spring', 'Fall'],
+          'Barcelona': ['Spring', 'Fall'],
+          'Dubai': ['Winter', 'Spring'],
+          'Singapore': ['Spring', 'Winter'],
+          'Sydney': ['Spring', 'Fall'],
+          'Amsterdam': ['Spring', 'Summer'],
+          'Berlin': ['Summer', 'Spring'],
+          'Prague': ['Spring', 'Early Fall'],
+          'Vienna': ['Spring', 'Fall'],
+          'Lisbon': ['Spring', 'Fall'],
+          'Bangkok': ['Winter', 'Spring'],
+          'Hong Kong': ['Fall', 'Winter'],
+          'Cairo': ['Winter', 'Spring'],
+          'Cape Town': ['Spring', 'Fall'],
+          'Rio de Janeiro': ['Fall', 'Winter'],
+          'Dublin': ['Summer', 'Spring'],
+          'Budapest': ['Spring', 'Fall'],
+          'Athens': ['Spring', 'Fall'],
+          'Marrakech': ['Spring', 'Fall'],
+          'Istanbul': ['Spring', 'Fall'],
+          'Bali': ['Spring', 'Fall'],
+          'Seoul': ['Spring', 'Fall'],
+          'Doha': ['Winter', 'Spring']
+        };
+        
+        // Default values for cities not in the map
+        const defaultBestTime = ['Spring', 'Fall'];
+        const defaultCrowdLevel: Record<string, string> = {
+          'summer': 'High - Peak Season',
+          'winter': 'Low to Moderate',
+          'spring': 'Moderate',
+          'fall': 'Moderate'
+        };
+        
+        const crowdLevel = 
+          crowdLevelMap[cityStr]?.[seasonStr.toLowerCase()] || 
+          defaultCrowdLevel[seasonStr.toLowerCase()] || 
+          'Moderate';
+          
+        const bestTimeToVisit = bestTimesMap[cityStr] || defaultBestTime;
+        
+        // Weather data based on season
+        const weatherMap: Record<string, Record<string, any>> = {
+          'summer': {
+            temperature: 'Warm to Hot',
+            condition: 'Generally sunny and clear',
+            seasonalNotes: 'Peak tourist season with longer days and more outdoor events.'
+          },
+          'winter': {
+            temperature: 'Cold to Cool',
+            condition: 'Variable, possible snow in northern cities',
+            seasonalNotes: 'Low season in many destinations except for winter sports areas and holiday markets.'
+          },
+          'spring': {
+            temperature: 'Mild to Warm',
+            condition: 'Variable with occasional rain',
+            seasonalNotes: 'Flowers blooming, fewer tourists, and pleasant temperatures.'
+          },
+          'fall': {
+            temperature: 'Mild to Cool',
+            condition: 'Variable with beautiful foliage',
+            seasonalNotes: 'Shoulder season with fewer crowds and moderate temperatures.'
+          }
+        };
+        
+        // Adjust for city-specific weather patterns
+        const weatherSpecialCases: Record<string, any> = {
+          'Dubai': {
+            'summer': {
+              temperature: 'Very Hot',
+              condition: 'Extremely hot and humid',
+              seasonalNotes: 'Indoor activities recommended due to extreme heat (40°C+).'
+            },
+            'winter': {
+              temperature: 'Warm and Pleasant',
+              condition: 'Sunny and mild',
+              seasonalNotes: 'Perfect weather for outdoor activities and beach time.'
+            }
+          },
+          'Singapore': {
+            'summer': {
+              temperature: 'Hot and Humid',
+              condition: 'Tropical with afternoon showers',
+              seasonalNotes: 'Consistent year-round with high humidity.'
+            }
+          },
+          'London': {
+            'summer': {
+              temperature: 'Mild to Warm',
+              condition: 'Variable with possible rain',
+              seasonalNotes: 'Longer daylight hours and numerous festivals.'
+            }
+          },
+          'Doha': {
+            'summer': {
+              temperature: 'Extremely Hot',
+              condition: 'Hot and dry',
+              seasonalNotes: 'Very high temperatures, indoor activities recommended.'
+            },
+            'winter': {
+              temperature: 'Warm and Pleasant',
+              condition: 'Sunny and comfortable',
+              seasonalNotes: 'Ideal conditions for exploring the city and outdoor activities.'
+            }
+          }
+        };
+        
+        // Get weather data, prioritizing city-specific information
+        const weather = 
+          weatherSpecialCases[cityStr]?.[seasonStr.toLowerCase()] || 
+          weatherMap[seasonStr.toLowerCase()];
+        
+        // Combine all data
+        // Calculate total estimate (flight + hotel)
+        const totalEstimate = flightPrices.price + hotelPrices.price;
+        // Use the flight currency for the total (usually EUR or the origin country currency)
+        const totalCurrency = flightPrices.currency;
+        
+        return {
+          city: cityStr,
+          prices: {
+            flightPrice: flightPrices.price,
+            flightCurrency: flightPrices.currency,
+            hotelTotal: hotelPrices.price,
+            hotelPerNight: hotelPrices.perNight,
+            hotelCurrency: hotelPrices.currency,
+            totalEstimate,
+            totalCurrency
+          },
+          weather,
+          crowdLevel,
+          events: 12, // Placeholder for future actual event counts
+          attractions: 25, // Placeholder for future actual attraction counts
+          bestTimeToVisit
+        };
+      });
+      
+      // Wait for all comparison data to be processed
+      const comparisonResults = await Promise.all(comparisonPromises);
+      
+      console.log(`Completed comparison data for ${destinationsList.length} destinations`);
+      res.json(comparisonResults);
+    } catch (error: any) {
+      console.error("Destination comparison error:", error.message);
+      res.status(500).json({ 
+        error: "Failed to compare destinations",
         message: error.message 
       });
     }

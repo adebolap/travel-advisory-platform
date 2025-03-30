@@ -101,15 +101,19 @@ export interface FlightPricing {
 
 // Types for hotel offers
 export interface HotelPricing {
+  hotelId: string;
   hotelName: string;
+  hotelChain?: string;
   price: string;
   currency: string;
   checkInDate: string;
   checkOutDate: string;
   ratingCategory: string;
   address?: string;
+  cityName?: string;
   amenities?: string[];
   thumbnailUrl?: string;
+  description?: string;
 }
 
 /**
@@ -426,17 +430,43 @@ export async function getHotelOffers(
             }
           }
           
+          // Extract hotel chain if available
+          let hotelChain = undefined;
+          if (hotel.chainCode) {
+            hotelChain = hotel.chainCode;
+          }
+          
+          // Prepare a better formatted hotel name
+          let cleanHotelName = hotel.name || `Hotel in ${displayCity}`;
+          // Remove chain name prefix if it's duplicated in the hotel name
+          if (hotelChain && cleanHotelName.startsWith(hotelChain)) {
+            cleanHotelName = cleanHotelName.replace(hotelChain, '').trim();
+            // Remove any leading dash, colon or similar
+            cleanHotelName = cleanHotelName.replace(/^[-:,\s]+/, '').trim();
+          }
+          
+          // Create a description from available data
+          const description = [
+            `${ratingCategory} hotel`,
+            address ? `located at ${address}` : '',
+            amenities.length > 0 ? `featuring ${amenities.slice(0, 3).join(', ')}` : ''
+          ].filter(Boolean).join(' ');
+          
           return {
-            hotelName: hotel.name || `Hotel in ${displayCity}`,
+            hotelId: hotel.hotelId || offer.id,
+            hotelName: cleanHotelName,
+            hotelChain: hotelChain,
             price: priceInfo.price.total,
             currency: priceInfo.price.currency || 'EUR',
             checkInDate,
             checkOutDate,
             ratingCategory,
-            address: `${address}, ${displayCity}`,
+            address: `${address}`,
+            cityName: displayCity,
             amenities: amenities.slice(0, 5), // Limit to 5 amenities
             thumbnailUrl: hotel.media && hotel.media.length > 0 && hotel.media[0].uri ? 
-              hotel.media[0].uri : undefined
+              hotel.media[0].uri : undefined,
+            description: description
           };
         } catch (error) {
           console.error('Error processing hotel offer:', error);
@@ -475,37 +505,49 @@ export async function getHotelOffers(
       // Use fallback for testing or when API is unavailable
       const fallbackHotels = [
         {
+          hotelId: "GH-" + cityName,
           hotelName: `Grand ${cityName} Hotel`,
+          hotelChain: "GH",
           price: "180",
           currency: "EUR",
           checkInDate,
           checkOutDate,
           ratingCategory: "4-star",
-          address: `Central District, ${cityName}`,
+          address: `Central District`,
+          cityName: cityName,
           amenities: ["WiFi", "Breakfast", "Pool", "Air conditioning", "Room service"],
-          thumbnailUrl: undefined
+          thumbnailUrl: undefined,
+          description: `4-star hotel located at Central District featuring WiFi, Breakfast, and Pool`
         },
         {
+          hotelId: "PZ-" + cityName,
           hotelName: `${cityName} Plaza Hotel`,
+          hotelChain: "PZ",
           price: "220",
           currency: "EUR",
           checkInDate,
           checkOutDate,
           ratingCategory: "5-star",
-          address: `Main Boulevard, ${cityName}`,
+          address: `Main Boulevard`,
+          cityName: cityName,
           amenities: ["WiFi", "Spa", "Restaurant", "Gym", "Conference rooms"],
-          thumbnailUrl: undefined
+          thumbnailUrl: undefined,
+          description: `5-star hotel located at Main Boulevard featuring WiFi, Spa, and Restaurant`
         },
         {
+          hotelId: "CI-" + cityName,
           hotelName: `${cityName} Comfort Inn`,
+          hotelChain: "CI",
           price: "120",
           currency: "EUR",
           checkInDate,
           checkOutDate,
           ratingCategory: "3-star",
-          address: `Business District, ${cityName}`,
+          address: `Business District`,
+          cityName: cityName,
           amenities: ["WiFi", "Breakfast", "24-hour reception"],
-          thumbnailUrl: undefined
+          thumbnailUrl: undefined,
+          description: `3-star hotel located at Business District featuring WiFi, Breakfast, and 24-hour reception`
         }
       ];
       
@@ -513,7 +555,7 @@ export async function getHotelOffers(
       return fallbackHotels.map(hotel => ({
         ...hotel,
         price: String(parseInt(hotel.price) * nights)
-      }));
+      })) as HotelPricing[];
     }
   } catch (error) {
     console.error('Error fetching hotel offers:', error);
