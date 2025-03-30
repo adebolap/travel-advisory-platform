@@ -535,6 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's trips (authenticated)
   apiRouter.get("/api/trips", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -547,20 +548,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
-
-  apiRouter.get("/api/trips/:tripId", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
+  
+  // Get public/featured trips (no auth required)
+  apiRouter.get("/api/public-trips", async (req, res) => {
+    try {
+      const publicTrips = await storage.getPublicTrips();
+      res.json(publicTrips);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
+  });
 
+  // Get specific trip by ID
+  apiRouter.get("/api/trips/:tripId", async (req, res) => {
     try {
       const trip = await storage.getTripById(parseInt(req.params.tripId));
       if (!trip) {
         return res.status(404).json({ message: "Trip not found" });
       }
-      if (trip.userId !== req.user.id) {
+      
+      // Check if the trip is public or belongs to the authenticated user
+      const isPublic = trip.isShared === true;
+      const belongsToUser = req.isAuthenticated() && trip.userId === req.user.id;
+      
+      if (!isPublic && !belongsToUser) {
         return res.status(403).json({ message: "Unauthorized" });
       }
+      
       res.json(trip);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -583,6 +597,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedTrip = await storage.updateTrip(parseInt(req.params.tripId), req.body);
       res.json(updatedTrip);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Toggle trip sharing status
+  apiRouter.post("/api/trips/:tripId/toggle-share", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const tripId = parseInt(req.params.tripId);
+      const trip = await storage.getTripById(tripId);
+      
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      
+      if (trip.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Toggle the isShared status
+      const isShared = trip.isShared !== true;
+      const updatedTrip = await storage.updateTrip(tripId, { isShared });
+      
+      res.json({
+        success: true,
+        isShared,
+        message: isShared ? "Trip is now shared publicly" : "Trip is now private"
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

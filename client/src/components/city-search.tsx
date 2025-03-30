@@ -67,8 +67,8 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
     // Clear any existing timeout
     if (dropdownTimeout) clearTimeout(dropdownTimeout);
     
-    // Set a new timeout with longer delay (1500ms)
-    const timeout = setTimeout(() => setIsDropdownVisible(false), 1500);
+    // Set a new timeout with longer delay (3000ms - give user more time to interact)
+    const timeout = setTimeout(() => setIsDropdownVisible(false), 3000);
     setDropdownTimeout(timeout);
   };
 
@@ -85,7 +85,8 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
     );
   };
 
-  // Determine which cities to show in the dropdown
+  // Determine which cities to show in the dropdown 
+  // Always show popular cities when no search term, even if dropdown is showing without a search term
   const citiesToShow = searchTerm.length >= 2 ? cities : popularCities;
 
   return (
@@ -129,9 +130,10 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
               setSearchTerm(e.target.value);
               setIsDropdownVisible(true);
             }}
+            onClick={() => setIsDropdownVisible(true)} 
             onFocus={() => setIsDropdownVisible(true)}
             onBlur={handleInputBlur}
-            className="pl-14 pr-10 h-12 text-base sm:h-10 sm:text-sm rounded-lg w-full"
+            className="pl-14 pr-10 h-12 text-base sm:h-10 sm:text-sm rounded-lg w-full cursor-pointer"
           />
         )}
       </div>
@@ -168,11 +170,11 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
             <>
               {searchTerm.length < 2 && (
                 <div className="px-4 py-3 border-b border-border/50">
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <div className="flex items-center gap-2 text-primary mb-1">
                     <Compass className="h-4 w-4" />
                     <h3 className="font-medium">Popular Destinations</h3>
                   </div>
-                  <p className="text-xs text-muted-foreground">Type to search more cities or select from below</p>
+                  <p className="text-xs text-muted-foreground">Click any destination below or type to search for more cities</p>
                 </div>
               )}
               

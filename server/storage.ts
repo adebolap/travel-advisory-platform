@@ -19,6 +19,7 @@ export interface IStorage {
   updateUserStripeInfo(userId: number, stripeInfo: { stripeCustomerId: string, stripeSubscriptionId: string }): Promise<User>;
   createTrip(trip: InsertTrip): Promise<Trip>;
   getUserTrips(userId: number): Promise<Trip[]>;
+  getPublicTrips(): Promise<Trip[]>; // New method to get featured/public trips
   getTripById(tripId: number): Promise<Trip | undefined>;
   updateTrip(tripId: number, trip: Partial<Trip>): Promise<Trip>;
   deleteTrip(tripId: number): Promise<void>;
@@ -180,6 +181,13 @@ export class MemStorage implements IStorage {
   async getUserTrips(userId: number): Promise<Trip[]> {
     return Array.from(this.trips.values()).filter(
       (trip) => trip.userId === userId
+    );
+  }
+
+  async getPublicTrips(): Promise<Trip[]> {
+    // Return trips marked as public/shared
+    return Array.from(this.trips.values()).filter(
+      (trip) => trip.isShared === true
     );
   }
 

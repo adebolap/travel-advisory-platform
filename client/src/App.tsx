@@ -53,9 +53,9 @@ export default function App() {
                 <Route path="/pricing" component={Pricing} />
                 <Route path="/profile" component={Profile} />
                 <Route path="/chat" component={Chat} />
-                <ProtectedRoute path="/" component={Home} />
-                <ProtectedRoute path="/explore" component={Explore} />
-                <ProtectedRoute path="/events" component={Events} />
+                <Route path="/" component={Home} />
+                <Route path="/explore" component={Explore} />
+                <Route path="/events" component={Events} />
                 <ProtectedRoute path="/quiz" component={TravelQuiz} />
                 <Route component={NotFound} />
               </Switch>
